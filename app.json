@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Pest-Free",
+    "slug": "snack-afcf5c09-a1e0-4fe9-8bfa-23c265329215",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.cpamporis.pestfree",
+      "buildNumber": "2",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to upload inspection photos.",
+        "NSCameraUsageDescription": "This app uses the camera to take inspection photos during field inspections."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.cpamporis.pestfree"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c4d59ab4-62e2-4bf4-9c30-1eca7b914a47"
+      }
+    },
+    "owner": "cpamporis",
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
