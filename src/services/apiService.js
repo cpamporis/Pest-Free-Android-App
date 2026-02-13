@@ -14,7 +14,6 @@ let authToken = null;
     const token = await AsyncStorage.getItem('authToken');
     if (token) {
       authToken = token;
-      console.log("🔑 Loaded token from AsyncStorage");
     }
   } catch (error) {
     console.error("❌ Failed to load token from storage:", error);

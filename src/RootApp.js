@@ -15,24 +15,6 @@ import CustomerVisitsScreen from "./screens/Customer/CustomerVisitsScreen";
 import CustomerProfile from "./screens/Admin/CustomerProfile";
 import PasswordRecovery from "./screens/PasswordRecovery";
 
-// Import debug
-console.log("=== COMPREHENSIVE IMPORT DEBUG ===");
-
-const checkImport = (name, value) => {
-  console.log(`${name}:`, {
-    exists: !!value,
-    type: typeof value,
-    isFunction: typeof value === 'function',
-    isObject: typeof value === 'object' && value !== null,
-    name: value?.name || value?.constructor?.name || 'no name',
-  });
-};
-
-checkImport("DisinfectionScreen", DisinfectionScreen);
-checkImport("InsecticideScreen", InsecticideScreen);
-checkImport("SpecialServicesScreen", SpecialServicesScreen);
-checkImport("ReportScreen", ReportScreen);
-checkImport("MapScreen", MapScreen || undefined);
 
 export default function RootApp() {
   const [loggedTechnician, setLoggedTechnician] = useState(null);

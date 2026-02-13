@@ -14,7 +14,7 @@ import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import apiService from "../../services/apiService";
 
 
-export default function AdminTechCalendarPreview() {
+export default function AdminTechCalendarPreview({ onTouchStart, onTouchEnd }) {
   const [appointments, setAppointments] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [selectedTech, setSelectedTech] = useState(null);
@@ -394,8 +394,6 @@ const getSpecialServiceLabel = (subtype) => {
     switch (status?.toLowerCase()) {
       case "completed":
         return "#1f9c8b";
-      case "in_progress":
-        return "#7E57C2";
       case "scheduled":  
         return "#1E88E5";
       case "cancelled":
@@ -409,8 +407,6 @@ const getSpecialServiceLabel = (subtype) => {
     switch (status?.toLowerCase()) {
       case "completed":
         return "Completed";
-      case "in_progress":
-        return "In Progress";
       case "scheduled":
         return "Scheduled";
       case "cancelled":
@@ -591,9 +587,10 @@ const getSpecialServiceLabel = (subtype) => {
     <View style={styles.container}>
         {/* Make the main container scrollable */}
         <ScrollView 
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          scrollEnabled={false}
         >
         {/* HEADER */}
         <View style={styles.header}>
@@ -714,7 +711,7 @@ const getSpecialServiceLabel = (subtype) => {
         </View>
 
         <View style={styles.legendContainer}>
-            {['scheduled', 'in_progress', 'completed', 'cancelled'].map(status => (
+            {['scheduled', 'completed', 'cancelled'].map(status => (
             <View key={status} style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: getStatusColor(status) }]} />
                 <Text style={styles.legendText}>{getStatusLabel(status)}</Text>
@@ -743,10 +740,12 @@ const getSpecialServiceLabel = (subtype) => {
         <View style={styles.calendarWrapper}>
             {/* Horizontal scroll container */}
             <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={true}
-            style={styles.calendarHorizontalScroll}
-            contentContainerStyle={styles.calendarHorizontalContent}
+              horizontal 
+              showsHorizontalScrollIndicator={true}
+              style={styles.calendarHorizontalScroll}
+              contentContainerStyle={styles.calendarHorizontalContent}
+              nestedScrollEnabled={true}
+              directionalLockEnabled={true}
             >
             <View style={styles.calendarGrid}>
                 {/* DAY HEADERS - Fixed width to show all days at once */}
@@ -788,10 +787,14 @@ const getSpecialServiceLabel = (subtype) => {
 
                 {/* TIME SLOTS - Vertical scroll inside fixed horizontal layout */}
                 <ScrollView 
-                ref={timeScrollRef}
-                style={styles.timeSlotsScroll}
-                showsVerticalScrollIndicator={true}
-                onLayout={() => setTimeScrollReady(true)}
+                  ref={timeScrollRef}
+                  style={styles.timeSlotsScroll}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                  onLayout={() => setTimeScrollReady(true)}
+                  onTouchStart={onTouchStart}
+                  onTouchEnd={onTouchEnd}
+                  onMomentumScrollEnd={onTouchEnd}
                 >
                 {HOURS.map(hour => (
                     <View key={hour} style={styles.timeRow}>

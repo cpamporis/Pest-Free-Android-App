@@ -13,7 +13,7 @@ import {
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import apiService from "../../services/apiService";
 import ReportScreen from "../Technician/ReportScreen";
-import SwipeableVisitRow from '../../components/SwipeableVisitRow';
+import SwipeableVisitRow from '../../components/SwipeableVisitRow.android.js';
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
 
 export default function CustomerProfile({ customer, onClose, onOpenReport }) {
@@ -471,10 +471,10 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                     <ScrollView 
                       style={styles.dropdownScrollView}
                       showsVerticalScrollIndicator={true}
+                      keyboardShouldPersistTaps="handled"
                       nestedScrollEnabled={true}
                     >
                       {visits.map(visit => (
-                        // UPDATED: Pass appointmentId as a prop
                         <SwipeableVisitRow
                           key={visit.visitId}
                           visit={visit}

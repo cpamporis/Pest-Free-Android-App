@@ -467,18 +467,20 @@ const styles = StyleSheet.create({
   selectedList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    alignItems: 'center', // Add this
+    marginHorizontal: -4, // Compensate for margins
   },
   // GREEN BLOCK STYLES
   chemicalChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1f9c8d', // Green color
+    backgroundColor: '#1f9c8d',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    marginRight: 5,
-    marginBottom: 5,
+    paddingVertical: 10, // Increased for better height
+    borderRadius: 20, // More rounded like web version
+    marginRight: 8,
+    marginBottom: 8,
+    minHeight: 40, // Ensure minimum height
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -488,30 +490,37 @@ const styles = StyleSheet.create({
   chemicalChipContent: {
     flex: 1,
     marginRight: 8,
+    justifyContent: 'center', // Center content vertically
+    minHeight: 24,
   },
   chemicalChipText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 2,
+    includeFontPadding: false, // Fix Android text alignment
+    textAlignVertical: 'center',
   },
   chemicalChipDetails: {
     color: 'rgba(255,255,255,0.85)',
     fontSize: 11,
     fontStyle: 'italic',
+    marginTop: 2,
   },
   removeButton: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   removeText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
+    lineHeight: 20, // Fix vertical alignment of X
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   dropdownTrigger: {
     flexDirection: 'row',

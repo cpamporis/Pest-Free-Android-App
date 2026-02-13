@@ -46,6 +46,7 @@ export default function AdminHomeScreen({ onLogout }) {
     setScheduleCustomerId(customerId);
     setShowTechSchedule(true);
   };
+  const [homeScrollEnabled, setHomeScrollEnabled] = useState(true);
   const [adminReportContext, setAdminReportContext] = useState(null);
   const [showAdminReport, setShowAdminReport] = useState(false);
   const [showStatistics, setShowStatistics] = useState(false);
@@ -172,6 +173,7 @@ export default function AdminHomeScreen({ onLogout }) {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={homeScrollEnabled}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -276,7 +278,10 @@ export default function AdminHomeScreen({ onLogout }) {
 
         {showInlineCalendar && (
           <View style={styles.inlineCalendarContainer}>
-            <AdminTechCalendarPreview />
+            <AdminTechCalendarPreview
+              onTouchStart={() => setHomeScrollEnabled(false)}
+              onTouchEnd={() => setHomeScrollEnabled(true)}
+            />
           </View>
         )}
 

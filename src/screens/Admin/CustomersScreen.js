@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Ionicons, Feather } from '@expo/vector-icons';
-import { launchImageLibrary } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import apiService, { API_BASE_URL } from "../../services/apiService";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -104,27 +104,41 @@ function AddCustomerModal({ onClose, onSave }) {
   const [uploadingMap, setUploadingMap] = useState(false);
 
   const selectImage = async () => {
-    try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        quality: 0.8,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        selectionLimit: 1,
-      });
-      
-      if (result.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (result.errorCode) {
-        Alert.alert('Error', result.errorMessage || 'Failed to pick image');
-      } else if (result.assets && result.assets[0]) {
-        setSelectedImage(result.assets[0]);
-      }
-    } catch (error) {
-      console.error('Image picker error:', error);
-      Alert.alert('Error', 'Failed to access image library');
+  try {
+    // Request permissions first (required for Android)
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        'Permission Required',
+        'You need to allow access to your photos to upload maps.'
+      );
+      return;
     }
-  };
+
+    // New API - use MediaType instead of MediaTypeOptions
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: 'images', // or ['images'] for array format
+      allowsEditing: true,
+      quality: 0.8,
+      base64: false,
+    });
+
+    console.log('Image picker result:', result);
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedImage({
+        uri: asset.uri,
+        type: 'image/jpeg',
+        fileName: asset.uri.split('/').pop() || `map_${Date.now()}.jpg`,
+      });
+    }
+  } catch (error) {
+    console.error('Image picker error:', error);
+    Alert.alert('Error', 'Failed to access image library');
+  }
+};
 
   async function handleSave() {
     if (!customerName.trim()) {
@@ -550,27 +564,41 @@ function EditCustomerModal({ customer, onClose, onSave }) {
 
 
   const selectImage = async () => {
-    try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-        quality: 0.8,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        selectionLimit: 1,
-      });
-      
-      if (result.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (result.errorCode) {
-        Alert.alert('Error', result.errorMessage || 'Failed to pick image');
-      } else if (result.assets && result.assets[0]) {
-        setSelectedImage(result.assets[0]);
-      }
-    } catch (error) {
-      console.error('Image picker error:', error);
-      Alert.alert('Error', 'Failed to access image library');
+  try {
+    // Request permissions first (required for Android)
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        'Permission Required',
+        'You need to allow access to your photos to upload maps.'
+      );
+      return;
     }
-  };
+
+    // New API - use MediaType instead of MediaTypeOptions
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: 'images', // or ['images'] for array format
+      allowsEditing: true,
+      quality: 0.8,
+      base64: false,
+    });
+
+    console.log('Image picker result:', result);
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedImage({
+        uri: asset.uri,
+        type: 'image/jpeg',
+        fileName: asset.uri.split('/').pop() || `map_${Date.now()}.jpg`,
+      });
+    }
+  } catch (error) {
+    console.error('Image picker error:', error);
+    Alert.alert('Error', 'Failed to access image library');
+  }
+};
 
   const uploadMapImage = async () => {
     if (!selectedImage) {
