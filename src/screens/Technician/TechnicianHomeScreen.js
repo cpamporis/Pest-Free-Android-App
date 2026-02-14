@@ -1013,7 +1013,7 @@ export default function TechnicianHomeScreen({
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Pest - Free Technician Portal</Text>
+          <Text style={styles.footerText}>Pestify Technician Portal</Text>
           <Text style={styles.footerSubtext}>
               Version 1.0 • Last updated: {new Date().toLocaleDateString()}
           </Text>

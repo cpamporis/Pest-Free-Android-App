@@ -901,7 +901,7 @@ export default function useCustomerHome({ customer, onLogout, onViewVisits }) {
 
     const email = "info@pest-free.gr";
     const subject = encodeURIComponent(emailSubject);
-    const body = encodeURIComponent(emailBody + "\n\n---\nSent from Pest - Free Customer Portal");
+    const body = encodeURIComponent(emailBody + "\n\n---\nSent from Pestify Customer Portal");
     const url = `mailto:${email}?subject=${subject}&body=${body}`;
 
     setSendingEmail(true);

@@ -1057,7 +1057,7 @@ export default function CustomerHomeScreen({
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Pest - Free Customer Portal • v1.0
+              Pestify Customer Portal 
             </Text>
             <Text style={styles.footerCopyright}>
               © {new Date().getFullYear()} Pest-Free. All rights reserved.
