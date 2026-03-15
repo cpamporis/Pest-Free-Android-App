@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Alert, Platform, Linking } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiService from "../../services/apiService";
-import { launchImageLibrary, launchCamera } from "react-native-image-picker";
+import * as ImagePicker from "expo-image-picker";
 import {
   loadNotifications,
   markNotificationAsRead,
@@ -736,59 +736,64 @@ export default function useCustomerHome({ customer, onLogout, onViewVisits }) {
 
   const pickserviceRequestImagesFromGallery = async () => {
     try {
-      const result = await launchImageLibrary({
-        mediaType: "photo",
-        quality: 0.8,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        selectionLimit: 0,
-      });
 
-      if (result.didCancel) return;
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-      if (result.errorCode) {
-        Alert.alert(i18n.t("common.error"), result.errorMessage || i18n.t("customer.serviceRequest.error.imagePicker") || "Failed to pick image");
+      if (!permission.granted) {
+        Alert.alert("Permission required", "Please allow access to your photos.");
         return;
       }
 
-      if (result.assets?.length > 0) {
-        setServiceRequestImages(prev => {
-          const newImages = result.assets.filter(
-            newImg => !prev.some(oldImg => oldImg.uri === newImg.uri)
-          );
-          return [...prev, ...newImages];
-        });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.8
+      });
+
+      if (!result.canceled) {
+        const newImages = result.assets.map(asset => ({
+          uri: asset.uri,
+          type: "image/jpeg",
+          name: asset.fileName || `photo_${Date.now()}.jpg`
+        }));
+
+        setServiceRequestImages(prev => [...prev, ...newImages]);
       }
+
     } catch (error) {
       console.error("Image picker error:", error);
-      Alert.alert(i18n.t("common.error"), i18n.t("customer.serviceRequest.error.imagePicker") || "Failed to access image library");
+      Alert.alert("Error", "Failed to open gallery");
     }
   };
 
   const captureserviceRequestImages = async () => {
     try {
-      const result = await launchCamera({
-        mediaType: "photo",
-        quality: 0.8,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        cameraType: "back",
-        saveToPhotos: true,
-      });
 
-      if (result.didCancel) return;
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
 
-      if (result.errorCode) {
-        Alert.alert(i18n.t("common.error"), result.errorMessage || i18n.t("customer.serviceRequest.error.camera") || "Failed to capture image");
+      if (!permission.granted) {
+        Alert.alert("Permission required", "Camera permission is required.");
         return;
       }
 
-      if (!result.canceled && result.assets?.length > 0) {
-        setServiceRequestImages(prev => [...prev, ...result.assets]);
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8
+      });
+
+      if (!result.canceled) {
+        const newImages = result.assets.map(asset => ({
+          uri: asset.uri,
+          type: "image/jpeg",
+          name: asset.fileName || `camera_${Date.now()}.jpg`
+        }));
+
+        setServiceRequestImages(prev => [...prev, ...newImages]);
       }
+
     } catch (error) {
       console.error("Camera error:", error);
-      Alert.alert(i18n.t("common.error"), i18n.t("customer.serviceRequest.error.camera") || "Failed to open camera");
+      Alert.alert("Error", "Failed to open camera");
     }
   };
 

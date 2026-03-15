@@ -74,7 +74,14 @@
     "hours_other": "ώρες",
     "minutes_one": "λεπτό",
     "minutes_other": "λεπτά",
-    "chooseOption": "Επιλέξτε επιλογή"
+    "chooseOption": "Επιλέξτε επιλογή",
+    "ok": "Εντάξει"
+  },
+  "services": {
+    "myocide": "Μυοκτονία",
+    "disinfection": "Απολύμανση",
+    "insecticide": "Απεντόμωση",
+    "special": "Ειδική Επέμβαση"
   },
   "admin": {
     "home": {
@@ -439,8 +446,8 @@
         "title_one": "Ιστορικό Υπηρεσιών ({{count}})",
         "title_other": "Ιστορικό Υπηρεσιών ({{count}})",
         "noServices": "Δεν έχουν καταγραφεί υπηρεσίες",
-        "service_one": "υπηρεσία",
-        "service_other": "υπηρεσίες"
+        "service_one": "Υπηρεσία",
+        "service_other": "Υπηρεσίες"
       },
       "footer": {
         "system": "Προβολή Προφίλ Πελάτη",
@@ -485,7 +492,7 @@
         "priority": "ΠΡΟΤΕΡΑΙΟΤΗΤΑ {{priority}}",
         "noDescription": "Δεν παρέχεται περιγραφή",
         "preferred": "Προτιμώμενο: {{datetime}}",
-        "viewDetails": "Προβολή Λεπτομερειών",
+        "viewDetails": "Προβολή",
         "decline": "Απόρριψη",
         "accept": "Αποδοχή"
       },
@@ -534,6 +541,7 @@
         "createAppointment": "Δημιουργία Ραντεβού",
         "approveReschedule": "Έγκριση Αναπρογραμματισμού"
       },
+      "declineNotes": "Το αίτημα σας απορρίφθηκε",
       "passwordModal": {
         "title": "Επαναφορά Κωδικού Πελάτη",
         "subtitle": "Ορίστε νέο κωδικό για αυτόν τον λογαριασμό πελάτη",
@@ -541,7 +549,9 @@
         "confirmPassword": "Επιβεβαίωση Κωδικού",
         "updatePassword": "Ενημέρωση Κωδικού",
         "newPasswordPlaceholder": "Εισάγετε νέο κωδικό",
-        "confirmPasswordPlaceholder": "Επιβεβαιώστε τον νέο κωδικό"
+        "confirmPasswordPlaceholder": "Επιβεβαιώστε τον νέο κωδικό",
+        "updateSuccess": "Ο κωδικός ενημερώθηκε επιτυχώς",
+        "resetPassword": "Επαναφορά Κωδικού"
       },
       "footer": {
         "system": "Σύστημα Διαχείρισης Αιτημάτων Πελατών",
@@ -627,7 +637,8 @@
         "customerNameRequired": "Παρακαλώ προσθέστε το όνομα πελάτη",
         "createSuccess": "Επιτυχής δημιουργία πελάτη",
         "createWithLoginSuccess": "Ο λογαριασμός πελάτη δημιουργήθηκε με επιτυχία",
-        "createWithoutLoginSuccess": "Δεν δημιουργήθηκε λογαριασμός πελάτη"
+        "createWithoutLoginSuccess": "Δεν δημιουργήθηκε λογαριασμός πελάτη",
+        "imagePickerError": "Σφάλμα εικόνας"
       },
       "editModal": {
         "title": "Επεξεργασία Πελάτη",
@@ -646,7 +657,10 @@
         "chooseGallery": "Επιλογή από Συλλογή",
         "changeImage": "Αλλαγή Εικόνας",
         "uploadMap": "Μεταφόρτωση Κάτοψης",
-        "saveChanges": "Αποθήκευση Αλλαγών"
+        "saveChanges": "Αποθήκευση Αλλαγών",
+        "saveSuccess": "Οι αλλαγές αποθηκεύτηκαν με επιτυχία",
+        "deleteMapConfirm": "Θέλετε η κάτοψη να διαγραφτεί;",
+        "deleteMapTitle": "Διαγραφή Κάτοψης"
       },
       "deleteModal": {
         "title": "Αφαίρεση Πελάτη",
@@ -805,8 +819,8 @@
       },
       "serviceRevenue": {
         "title": "Έσοδα ανά Τύπο Υπηρεσίας",
-        "services_one": "υπηρεσία",
-        "services_other": "υπηρεσίες"
+        "services_one": "Υπηρεσία",
+        "services_other": "Υπηρεσίες"
       },
       "topTechnicians": {
         "title": "Κορυφαίοι Τεχνικοί",
@@ -1144,7 +1158,7 @@
         "confirmPlaceholder": "Εισάγετε ξανά τον νέο κωδικό",
         "updateButton": "Ενημέρωση Κωδικού",
         "updating": "Ενημέρωση...",
-        "note": "• Ο κωδικός πρέπει να έχει τουλάχιστον 86 χαρακτήρες\n• Χρησιμοποιήστε συνδυασμό γραμμάτων και αριθμών για καλύτερη ασφάλεια",
+        "note": "• Ο κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες\n• Χρησιμοποιήστε συνδυασμό γραμμάτων και αριθμών για καλύτερη ασφάλεια",
         "validation": {
           "minLength": "Ο κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες",
           "mismatch": "Οι κωδικοί δεν ταιριάζουν"

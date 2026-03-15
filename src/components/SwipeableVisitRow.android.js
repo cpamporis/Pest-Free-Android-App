@@ -158,7 +158,7 @@ export default function SwipeableVisitRow({
 
             <Text style={styles.customerName}>
               {visit.serviceType
-                ? visit.serviceType.charAt(0).toUpperCase() + visit.serviceType.slice(1)
+                ? i18n.t(`services.${visit.serviceType.toLowerCase()}`)
                 : i18n.t("components.swipeableVisitRow.service")}
             </Text>
 
