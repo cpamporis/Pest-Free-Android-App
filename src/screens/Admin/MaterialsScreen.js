@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Ionicons, Feather } from '@expo/vector-icons';
 import apiService from "../../services/apiService";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
+import i18n from "../../services/i18n";
 
 export default function MaterialsScreen({ onClose }) {
   const [activeSection, setActiveSection] = useState("bait"); // "bait" or "chemicals"
@@ -39,24 +40,24 @@ export default function MaterialsScreen({ onClose }) {
   // Configuration for each section
   const sections = {
     bait: {
-      title: "Bait Types",
-      emptyText: "No bait types configured",
+      title: i18n.t("admin.materials.categories.bait"),
+      emptyText: i18n.t("admin.materials.content.emptyTitle", { plural: i18n.t("admin.materials.categories.bait").toLowerCase() }),
       loadItems: apiService.getBaitTypes,
       saveItems: apiService.postBaitTypes,
-      singular: "bait type",
-      plural: "bait types",
+      singular: i18n.t("admin.materials.categories.baitSingular") || "bait type",
+      plural: i18n.t("admin.materials.categories.bait").toLowerCase(),
       icon: "pest-control-rodent",
       color: "#1f9c8b",
       items: baitTypes,
       setItems: setBaitTypes,
     },
     chemicals: {
-      title: "Chemicals",
-      emptyText: "No chemicals configured",
+      title: i18n.t("admin.materials.categories.chemicals"),
+      emptyText: i18n.t("admin.materials.content.emptyTitle", { plural: i18n.t("admin.materials.categories.chemicals").toLowerCase() }),
       loadItems: apiService.getChemicals,
       saveItems: apiService.postChemicals,
-      singular: "chemical",
-      plural: "chemicals",
+      singular: i18n.t("admin.materials.categories.chemicalsSingular") || "chemical",
+      plural: i18n.t("admin.materials.categories.chemicals").toLowerCase(),
       icon: "science",
       color: "#1f9c8b",
       items: chemicals,
@@ -72,86 +73,55 @@ export default function MaterialsScreen({ onClose }) {
     loadAllData();
   }, []);
 
-  // In MaterialsScreen.js - Update loadAllData function
   const loadAllData = async () => {
-  setLoading(true);
-  try {
-    // Define formatItems function locally
-    const formatItems = (items) => {
-      if (!Array.isArray(items)) return [];
+    setLoading(true);
+    try {
+      const formatItems = (items) => {
+        if (!Array.isArray(items)) return [];
+        
+        return items.map(item => {
+          if (typeof item === 'string') {
+            return { name: item, active_ingredient: null, antidote: null };
+          }
+          return {
+            name: item.name || item,
+            active_ingredient: item.active_ingredient || null,
+            antidote: item.antidote || null
+          };
+        });
+      };
       
-      return items.map(item => {
-        if (typeof item === 'string') {
-          // Old format: just a string
-          return { name: item, active_ingredient: null, antidote: null };
-        }
-        // New format: object with name and new fields
-        return {
-          name: item.name || item,
-          active_ingredient: item.active_ingredient || null,
-          antidote: item.antidote || null
-        };
-      });
-    };
-    
-    // Load bait types
-    const baitResult = await apiService.getBaitTypes();
-    console.log("🔍 Bait types API result:", baitResult);
-    
-    // Check if result is array (new format) or wrapped (old format)
-    let baitArray = [];
-    if (Array.isArray(baitResult)) {
-      // New format: direct array
-      baitArray = baitResult;
-    } else if (baitResult?.success && Array.isArray(baitResult.baitTypes)) {
-      // Old format: wrapped response
-      baitArray = baitResult.baitTypes;
+      const baitResult = await apiService.getBaitTypes();
+      
+      let baitArray = [];
+      if (Array.isArray(baitResult)) {
+        baitArray = baitResult;
+      } else if (baitResult?.success && Array.isArray(baitResult.baitTypes)) {
+        baitArray = baitResult.baitTypes;
+      }
+
+      setBaitTypes(formatItems(baitArray));
+
+      const chemResult = await apiService.getChemicals();
+      
+      let chemArray = [];
+      if (Array.isArray(chemResult)) {
+        chemArray = chemResult;
+      } else if (chemResult?.success && Array.isArray(chemResult.chemicals)) {
+        chemArray = chemResult.chemicals;
+      }
+ 
+      setChemicals(formatItems(chemArray));
+      
+    } catch (e) {
+      console.error("Failed to load materials:", e);
+      setBaitTypes([]);
+      setChemicals([]);
+    } finally {
+      setLoading(false);
     }
-    
-    console.log(`✅ Found ${baitArray.length} bait types:`, baitArray);
-    setBaitTypes(formatItems(baitArray));
+  };
 
-    // Load chemicals - SAME FIX
-    const chemResult = await apiService.getChemicals();
-    console.log("🔍 Chemicals API result:", chemResult);
-    
-    let chemArray = [];
-    if (Array.isArray(chemResult)) {
-      // New format: direct array
-      chemArray = chemResult;
-    } else if (chemResult?.success && Array.isArray(chemResult.chemicals)) {
-      // Old format: wrapped response
-      chemArray = chemResult.chemicals;
-    }
-    
-    console.log(`✅ Found ${chemArray.length} chemicals:`, chemArray);
-    setChemicals(formatItems(chemArray));
-    
-  } catch (e) {
-    console.error("Failed to load materials:", e);
-    setBaitTypes([]);
-    setChemicals([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // Then in the dropdown rendering:
-  {baitTypes.map((type, index) => (
-    <TouchableOpacity
-      key={`bait-${index}-${type}`}  // Use index and type for uniqueness
-      style={styles.dropdownItem}
-      onPress={() => {
-        setBaitType(type);  // type is now definitely a string
-        setShowBaitTypeDropdown(false);
-      }}
-    >
-      <Text style={styles.dropdownItemText}>{type}</Text>
-    </TouchableOpacity>
-  ))}
-
-
-  // Refresh current section only
   const refreshCurrentSection = async () => {
     setLoading(true);
     try {
@@ -162,10 +132,8 @@ export default function MaterialsScreen({ onClose }) {
         
         return items.map(item => {
           if (typeof item === 'string') {
-            // Old format: just a string
             return { name: item, active_ingredient: null, antidote: null };
           }
-          // New format: object with name and new fields
           return {
             name: item.name || item,
             active_ingredient: item.active_ingredient || null,
@@ -176,28 +144,20 @@ export default function MaterialsScreen({ onClose }) {
       
       let formattedItems = [];
       
-      // Check for different response formats
       if (Array.isArray(result)) {
-        // New format: direct array
         formattedItems = formatItems(result);
       } else if (result?.success) {
-        // Old format: wrapped response with success property
         if (activeSection === "chemicals" && Array.isArray(result.chemicals)) {
           formattedItems = formatItems(result.chemicals);
         } else if (activeSection === "bait" && Array.isArray(result.baitTypes)) {
           formattedItems = formatItems(result.baitTypes);
         } else if (Array.isArray(result.data)) {
-          // Another possible format: {success: true, data: [...]}
           formattedItems = formatItems(result.data);
         } else if (Array.isArray(result.items)) {
-          // Another possible format: {success: true, items: [...]}
           formattedItems = formatItems(result.items);
         }
       }
       
-      console.log(`🔄 Refreshed ${currentSection.plural}:`, formattedItems);
-      
-      // Update the correct state based on active section
       if (activeSection === "chemicals") {
         setChemicals(formattedItems);
       } else {
@@ -206,10 +166,12 @@ export default function MaterialsScreen({ onClose }) {
       
     } catch (e) {
       console.error(`Failed to load ${currentSection.plural}:`, e);
-      // Don't reset to empty array on error, keep existing data
       Alert.alert(
-        "Refresh Failed", 
-        `Could not refresh ${currentSection.plural}. Please try again.`
+        i18n.t("common.error"), 
+        i18n.t("admin.materials.refreshFailed", { 
+          singular: currentSection.singular,
+          plural: currentSection.plural 
+        }) || `Could not refresh ${currentSection.plural}. Please try again.`
       );
     } finally {
       setLoading(false);
@@ -224,42 +186,46 @@ export default function MaterialsScreen({ onClose }) {
   const persist = async (updated) => {
     setSaving(true);
     try {
-      console.log("Saving:", {
-        section: activeSection,
-        items: updated,
-        itemsLength: updated.length
-      });
       
       let result;
       
-      // Pass the array directly, not wrapped in an object
       if (activeSection === "chemicals") {
-        result = await apiService.postChemicals(updated);  // Pass array directly
-        console.log("Chemicals API result:", result);
+        result = await apiService.postChemicals(updated);
       } else {
-        result = await apiService.postBaitTypes(updated);  // Pass array directly
-        console.log("Bait types API result:", result);
+        result = await apiService.postBaitTypes(updated);
       }
       
       if (result?.success) {
-        // Update the correct state based on active section
         if (activeSection === "chemicals") {
           setChemicals(updated);
         } else {
           setBaitTypes(updated);
         }
-        
-        console.log("Save successful");
-        Alert.alert("Success", `${currentSection.singular}s updated successfully`);
+        Alert.alert(
+          i18n.t("common.success"), 
+          i18n.t("admin.materials.saveSuccess", { 
+            singular: currentSection.singular,
+            plural: currentSection.plural 
+          }) || `${currentSection.singular} updated successfully`
+        );
       } else {
         Alert.alert(
-          "Error",
-          result?.error || `Failed to save ${currentSection.singular}s`
+          i18n.t("common.error"),
+          result?.error || i18n.t("admin.materials.saveFailed", { 
+            singular: currentSection.singular,
+            plural: currentSection.plural 
+          }) || `Failed to save ${currentSection.singular}`
         );
       }
     } catch (e) {
       console.error("Save error:", e);
-      Alert.alert("Error", `Failed to save ${currentSection.singular}s: ${e.message}`);
+      Alert.alert(
+        i18n.t("common.error"), 
+        `${i18n.t("admin.materials.saveFailed", { 
+          singular: currentSection.singular,
+          plural: currentSection.plural 
+        })}: ${e.message}`
+      );
     } finally {
       setSaving(false);
     }
@@ -271,13 +237,22 @@ export default function MaterialsScreen({ onClose }) {
     const trimmedAntidote = newAntidote.trim();
     
     if (!trimmedName) {
-      Alert.alert("Error", `Please enter a ${currentSection.singular} name`);
+      Alert.alert(
+        i18n.t("common.error"), 
+        i18n.t("admin.materials.content.nameRequired", { 
+          singular: currentSection.singular 
+        }) || `Please enter a ${currentSection.singular} name`
+      );
       return;
     }
 
-    // Check for duplicate name
     if (items.some(item => item.name === trimmedName)) {
-      Alert.alert("Duplicate", `This ${currentSection.singular} name already exists`);
+      Alert.alert(
+        i18n.t("common.error"), 
+        i18n.t("admin.materials.duplicateError", { 
+          singular: currentSection.singular 
+        }) || `This ${currentSection.singular} name already exists`
+      );
       return;
     }
 
@@ -289,7 +264,6 @@ export default function MaterialsScreen({ onClose }) {
 
     const updated = [...items, newItem];
     
-    // Reset form
     setNewValue("");
     setNewActiveIngredient("");
     setNewAntidote("");
@@ -321,14 +295,23 @@ export default function MaterialsScreen({ onClose }) {
     const trimmedAntidote = editingAntidote.trim();
     
     if (!trimmedName) {
-      Alert.alert("Error", `${currentSection.singular} name cannot be empty`);
+      Alert.alert(
+        i18n.t("common.error"), 
+        i18n.t("admin.materials.content.nameRequired", { 
+          singular: currentSection.singular 
+        }) || `${currentSection.singular} name cannot be empty`
+      );
       return;
     }
     if (!selectedValue) return;
 
-    // Check for duplicate name (excluding current item)
     if (items.some(item => item.name === trimmedName && item.name !== selectedValue.name)) {
-      Alert.alert("Duplicate", `This ${currentSection.singular} name already exists`);
+      Alert.alert(
+        i18n.t("common.error"), 
+        i18n.t("admin.materials.duplicateError", { 
+          singular: currentSection.singular 
+        }) || `This ${currentSection.singular} name already exists`
+      );
       return;
     }
 
@@ -363,7 +346,6 @@ export default function MaterialsScreen({ onClose }) {
   };
 
   const handleSelectItem = (item) => {
-    // Handle both string and object formats
     const selectedItem = typeof item === 'string' 
       ? { name: item, active_ingredient: null, antidote: null }
       : item;
@@ -376,7 +358,6 @@ export default function MaterialsScreen({ onClose }) {
     setShowDetails(true);
   };
 
-  // Calculate statistics
   const totalBaitTypes = baitTypes.length;
   const totalChemicals = chemicals.length;
   const totalItems = totalBaitTypes + totalChemicals;
@@ -386,7 +367,7 @@ export default function MaterialsScreen({ onClose }) {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1f9c8b" />
-          <Text style={styles.loadingText}>Loading Materials...</Text>
+          <Text style={styles.loadingText}>{i18n.t("admin.materials.loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -403,14 +384,14 @@ export default function MaterialsScreen({ onClose }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollViewContent}
         >
-          {/* HEADER - Keep the same */}
+          {/* HEADER */}
           <View style={styles.header}>
             <View style={styles.headerTop}>
               <View style={styles.brandContainer}>
                 <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
                 <View style={styles.adminBadge}>
                   <MaterialIcons name="inventory" size={14} color="#fff" />
-                  <Text style={styles.adminBadgeText}>MATERIALS</Text>
+                  <Text style={styles.adminBadgeText}>{i18n.t("admin.materials.header.badge")}</Text>
                 </View>
               </View>
               <TouchableOpacity 
@@ -423,24 +404,24 @@ export default function MaterialsScreen({ onClose }) {
             </View>
 
             <View style={styles.headerContent}>
-              <Text style={styles.welcomeText}>Materials Management</Text>
-              <Text style={styles.title}>Manage Inventory Items</Text>
+              <Text style={styles.welcomeText}>{i18n.t("admin.materials.header.welcome")}</Text>
+              <Text style={styles.title}>{i18n.t("admin.materials.header.title")}</Text>
               <Text style={styles.subtitle}>
-                Configure bait types and chemicals for technician use
+                {i18n.t("admin.materials.header.subtitle")}
               </Text>
             </View>
           </View>
 
-          {/* STATS BAR - Keep the same */}
+          {/* STATS BAR */}
           <View style={styles.statsBar}>
             <View style={styles.statItem}>
               <View style={[styles.statIconContainer, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                 <MaterialIcons name="pest-control-rodent" size={18} color="#1f9c8b" />
               </View>
               <Text style={styles.statNumber}>{totalBaitTypes}</Text>
-              <Text style={styles.statLabel}>Bait Types</Text>
+              <Text style={styles.statLabel}>{i18n.t("admin.materials.stats.baitTypes")}</Text>
               <Text style={styles.statTrend}>
-                {activeSection === "bait" ? "Active" : "Stored"}
+                {activeSection === "bait" ? i18n.t("admin.materials.stats.active") : i18n.t("admin.materials.stats.stored")}
               </Text>
             </View>
 
@@ -451,9 +432,9 @@ export default function MaterialsScreen({ onClose }) {
                 <MaterialIcons name="science" size={18} color="#1f9c8b" />
               </View>
               <Text style={styles.statNumber}>{totalChemicals}</Text>
-              <Text style={styles.statLabel}>Chemicals</Text>
+              <Text style={styles.statLabel}>{i18n.t("admin.materials.stats.chemicals")}</Text>
               <Text style={styles.statTrend}>
-                {activeSection === "chemicals" ? "Active" : "Stored"}
+                {activeSection === "chemicals" ? i18n.t("admin.materials.stats.active") : i18n.t("admin.materials.stats.stored")}
               </Text>
             </View>
 
@@ -464,16 +445,16 @@ export default function MaterialsScreen({ onClose }) {
                 <MaterialIcons name="inventory" size={18} color="#1f9c8b" />
               </View>
               <Text style={styles.statNumber}>{totalItems}</Text>
-              <Text style={styles.statLabel}>Total Items</Text>
-              <Text style={styles.statTrend}>Combined</Text>
+              <Text style={styles.statLabel}>{i18n.t("admin.materials.stats.totalItems")}</Text>
+              <Text style={styles.statTrend}>{i18n.t("admin.materials.stats.combined")}</Text>
             </View>
           </View>
 
-          {/* SECTION SELECTION - Keep the same */}
+          {/* SECTION SELECTION */}
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
               <MaterialIcons name="category" size={20} color="#2c3e50" />
-              <Text style={styles.sectionTitle}>Inventory Categories</Text>
+              <Text style={styles.sectionTitle}>{i18n.t("admin.materials.categories.title")}</Text>
             </View>
             <TouchableOpacity
               style={styles.refreshButton}
@@ -486,7 +467,7 @@ export default function MaterialsScreen({ onClose }) {
               ) : (
                 <>
                   <MaterialIcons name="refresh" size={18} color="#1f9c8b" />
-                  <Text style={styles.refreshButtonText}>Refresh</Text>
+                  <Text style={styles.refreshButtonText}>{i18n.t("common.refresh")}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -516,7 +497,7 @@ export default function MaterialsScreen({ onClose }) {
                 styles.sectionTabText,
                 activeSection === "bait" && styles.activeSectionTabText
               ]}>
-                Bait Types
+                {i18n.t("admin.materials.categories.bait")}
               </Text>
               <View style={styles.tabBadge}>
                 <Text style={styles.tabBadgeText}>{totalBaitTypes}</Text>
@@ -546,7 +527,7 @@ export default function MaterialsScreen({ onClose }) {
                 styles.sectionTabText,
                 activeSection === "chemicals" && styles.activeSectionTabText
               ]}>
-                Chemicals
+                {i18n.t("admin.materials.categories.chemicals")}
               </Text>
               <View style={styles.tabBadge}>
                 <Text style={styles.tabBadgeText}>{totalChemicals}</Text>
@@ -562,7 +543,9 @@ export default function MaterialsScreen({ onClose }) {
                 <Text style={styles.contentTitle}>{currentSection.title}</Text>
               </View>
               <Text style={styles.itemCount}>
-                {items.length} {items.length === 1 ? currentSection.singular : currentSection.plural}
+                {items.length === 1
+                  ? i18n.t("admin.materials.content.itemCount_one", { count: items.length, singular: currentSection.singular })
+                  : i18n.t("admin.materials.content.itemCount_other", { count: items.length, plural: currentSection.plural })}
               </Text>
             </View>
 
@@ -571,16 +554,18 @@ export default function MaterialsScreen({ onClose }) {
                 <View style={styles.emptyIconContainer}>
                   <MaterialIcons name={currentSection.icon} size={50} color="#ddd" />
                 </View>
-                <Text style={styles.emptyStateTitle}>No {currentSection.plural}</Text>
+                <Text style={styles.emptyStateTitle}>
+                  {i18n.t("admin.materials.content.emptyTitle", { plural: currentSection.plural })}
+                </Text>
                 <Text style={styles.emptyStateText}>
-                  Add your first {currentSection.singular} below to get started
+                  {i18n.t("admin.materials.content.emptyText", { singular: currentSection.singular })}
                 </Text>
               </View>
             ) : (
               <>
                 {/* SELECT EXISTING ITEM */}
                 <Text style={styles.inputLabel}>
-                  Select {currentSection.singular} to edit
+                  {i18n.t("admin.materials.content.selectToEdit", { singular: currentSection.singular })}
                 </Text>
                 
                 <TouchableOpacity
@@ -601,7 +586,7 @@ export default function MaterialsScreen({ onClose }) {
                     ]}>
                       {selectedValue 
                         ? (typeof selectedValue === 'string' ? selectedValue : selectedValue.name) 
-                        : `Select ${currentSection.singular}`}
+                        : i18n.t("admin.materials.content.selectPlaceholder", { singular: currentSection.singular })}
                     </Text>
                   </View>
                   <MaterialIcons 
@@ -619,11 +604,10 @@ export default function MaterialsScreen({ onClose }) {
                       showsVerticalScrollIndicator={true}
                     >
                       {items.map((item, index) => {
-                        // Get the item name whether it's a string or object
                         const itemName = typeof item === 'string' ? item : item.name;
                         return (
                           <TouchableOpacity
-                            key={`${itemName}-${index}`}  // Combine name and index for uniqueness
+                            key={`${itemName}-${index}`}
                             style={styles.dropdownItem}
                             onPress={() => handleSelectItem(item)}
                           >
@@ -643,7 +627,7 @@ export default function MaterialsScreen({ onClose }) {
                   <View style={styles.editSection}>
                     <View style={styles.editHeader}>
                       <Text style={styles.editTitle}>
-                        Edit {currentSection.singular}
+                        {i18n.t("admin.materials.content.editTitle", { singular: currentSection.singular })}
                       </Text>
                       <TouchableOpacity
                         onPress={() => setShowDetails(!showDetails)}
@@ -657,9 +641,8 @@ export default function MaterialsScreen({ onClose }) {
                       </TouchableOpacity>
                     </View>
                     
-                    {/* Basic Info (always visible) */}
                     <Text style={styles.inputLabel}>
-                      {currentSection.singular.charAt(0).toUpperCase() + currentSection.singular.slice(1)} Name
+                      {i18n.t("admin.materials.content.nameLabel", { type: currentSection.singular.charAt(0).toUpperCase() + currentSection.singular.slice(1) })}
                     </Text>
                     
                     <View style={styles.inputContainer}>
@@ -668,16 +651,15 @@ export default function MaterialsScreen({ onClose }) {
                         value={editingValue}
                         onChangeText={setEditingValue}
                         editable={!saving}
-                        placeholder={`Enter ${currentSection.singular} name`}
+                        placeholder={i18n.t("admin.materials.content.namePlaceholder", { singular: currentSection.singular }) || `Enter ${currentSection.singular} name`}
                         placeholderTextColor="#999"
                       />
                     </View>
 
-                    {/* Additional Details (collapsible) */}
                     {showDetails && (
                       <>
                         <Text style={styles.inputLabel}>
-                          Active Ingredient
+                          {i18n.t("admin.materials.content.activeIngredient")}
                         </Text>
                         
                         <View style={styles.inputContainer}>
@@ -686,13 +668,13 @@ export default function MaterialsScreen({ onClose }) {
                             value={editingActiveIngredient}
                             onChangeText={setEditingActiveIngredient}
                             editable={!saving}
-                            placeholder="Enter active ingredient (optional)"
+                            placeholder={i18n.t("admin.materials.content.activeIngredientPlaceholder")}
                             placeholderTextColor="#999"
                           />
                         </View>
 
                         <Text style={styles.inputLabel}>
-                          Antidote / First Aid
+                          {i18n.t("admin.materials.content.antidote")}
                         </Text>
                         
                         <View style={styles.inputContainer}>
@@ -701,7 +683,7 @@ export default function MaterialsScreen({ onClose }) {
                             value={editingAntidote}
                             onChangeText={setEditingAntidote}
                             editable={!saving}
-                            placeholder="Enter antidote or first aid information (optional)"
+                            placeholder={i18n.t("admin.materials.content.antidotePlaceholder")}
                             placeholderTextColor="#999"
                           />
                         </View>
@@ -728,7 +710,7 @@ export default function MaterialsScreen({ onClose }) {
                             ) : (
                               <>
                                 <MaterialIcons name="save" size={18} color="#fff" />
-                                <Text style={styles.saveButtonText}>Save Changes</Text>
+                                <Text style={styles.saveButtonText}>{i18n.t("admin.materials.content.saveChanges")}</Text>
                               </>
                             )}
                           </TouchableOpacity>
@@ -741,7 +723,7 @@ export default function MaterialsScreen({ onClose }) {
                           >
                             <MaterialIcons name="delete" size={18} color="#fff" />
                             <Text style={styles.deleteButtonText}>
-                              Delete {currentSection.singular}
+                              {i18n.t("admin.materials.content.deleteItem", { singular: currentSection.singular })}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -750,13 +732,14 @@ export default function MaterialsScreen({ onClose }) {
                   </View>
                 )}
 
-                {/* ITEMS LIST - Enhanced */}
+                {/* ITEMS LIST */}
                 <View style={styles.itemsListSection}>
                   <View style={styles.itemsListHeader}>
                     <Text style={styles.itemsListTitle}>
-                      All {currentSection.plural} ({items.length})
+                      {items.length === 1
+                        ? i18n.t("admin.materials.content.allItems_one", { count: items.length, plural: currentSection.plural })
+                        : i18n.t("admin.materials.content.allItems_other", { count: items.length, plural: currentSection.plural })}
                     </Text>
-
                   </View>
                   
                   <View style={styles.itemsList}>
@@ -775,11 +758,10 @@ export default function MaterialsScreen({ onClose }) {
                             activeOpacity={0.7}
                           >
                             <MaterialIcons name="edit" size={16} color="#1f9c8b" />
-                            <Text style={styles.itemActionText}>Edit</Text>
+                            <Text style={styles.itemActionText}>{i18n.t("common.edit")}</Text>
                           </TouchableOpacity>
                         </View>
                         
-                        {/* Additional info preview */}
                         <View style={styles.itemDetailsPreview}>
                           {item.active_ingredient && (
                             <View style={styles.detailTag}>
@@ -794,13 +776,13 @@ export default function MaterialsScreen({ onClose }) {
                             <View style={[styles.detailTag, { backgroundColor: "#E3F2FD" }]}>
                               <MaterialIcons name="medical-services" size={12} color="#1f9c8b" />
                               <Text style={[styles.detailTagText, { color: '#333' }]} numberOfLines={1}>
-                                Antidote: {item.antidote.length > 20 ? item.antidote.substring(0, 20) + '...' : item.antidote}
+                                {i18n.t("admin.materials.content.antidoteLabel")}: {item.antidote.length > 20 ? item.antidote.substring(0, 20) + '...' : item.antidote}
                               </Text>
                             </View>
                           )}
                           
                           {!item.active_ingredient && !item.antidote && (
-                            <Text style={styles.noDetailsText}>No additional details</Text>
+                            <Text style={styles.noDetailsText}>{i18n.t("admin.materials.content.noDetails")}</Text>
                           )}
                         </View>
                       </View>
@@ -810,13 +792,13 @@ export default function MaterialsScreen({ onClose }) {
               </>
             )}
 
-            {/* ADD NEW ITEM SECTION - MOVED OUTSIDE THE CONDITIONAL */}
+            {/* ADD NEW ITEM SECTION */}
             <View style={styles.addSection}>
               <View style={styles.sectionDivider} />
               
               <View style={styles.addHeader}>
                 <Text style={styles.addTitle}>
-                  Add New {currentSection.singular}
+                  {i18n.t("admin.materials.content.addTitle", { singular: currentSection.singular })}
                 </Text>
                 <View style={styles.addIndicator}>
                   <MaterialIcons name="add-circle" size={20} color="#1f9c8b" />
@@ -824,13 +806,13 @@ export default function MaterialsScreen({ onClose }) {
               </View>
               
               <Text style={styles.inputLabel}>
-                {currentSection.singular.charAt(0).toUpperCase() + currentSection.singular.slice(1)} Name *
+                {i18n.t("admin.materials.content.nameLabel", { type: currentSection.singular.charAt(0).toUpperCase() + currentSection.singular.slice(1) })} *
               </Text>
               
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
-                  placeholder={`New ${currentSection.singular} name (required)`}
+                  placeholder={i18n.t("admin.materials.content.addNamePlaceholder", { singular: currentSection.singular })}
                   placeholderTextColor="#999"
                   value={newValue}
                   onChangeText={setNewValue}
@@ -839,13 +821,13 @@ export default function MaterialsScreen({ onClose }) {
               </View>
 
               <Text style={styles.inputLabel}>
-                Active Ingredient
+                {i18n.t("admin.materials.content.activeIngredient")}
               </Text>
               
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Active ingredient (optional)"
+                  placeholder={i18n.t("admin.materials.content.activeIngredientPlaceholder")}
                   placeholderTextColor="#999"
                   value={newActiveIngredient}
                   onChangeText={setNewActiveIngredient}
@@ -854,13 +836,13 @@ export default function MaterialsScreen({ onClose }) {
               </View>
 
               <Text style={styles.inputLabel}>
-                Antidote / First Aid
+                {i18n.t("admin.materials.content.antidote")}
               </Text>
               
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Antidote or first aid information (optional)"
+                  placeholder={i18n.t("admin.materials.content.antidotePlaceholder")}
                   placeholderTextColor="#999"
                   value={newAntidote}
                   onChangeText={setNewAntidote}
@@ -882,13 +864,13 @@ export default function MaterialsScreen({ onClose }) {
                 ) : (
                   <>
                     <MaterialIcons name="add" size={20} color="#fff" />
-                    <Text style={styles.addButtonText}>Add {currentSection.singular}</Text>
+                    <Text style={styles.addButtonText}>{i18n.t("admin.materials.content.addButton", { singular: currentSection.singular })}</Text>
                   </>
                 )}
               </TouchableOpacity>
               
               <Text style={styles.inputHint}>
-                * Required field. Additional fields are optional but recommended.
+                {i18n.t("admin.materials.content.hint")}
               </Text>
             </View>
           </View>
@@ -896,13 +878,13 @@ export default function MaterialsScreen({ onClose }) {
           {/* FOOTER */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Materials Management System 
+              {i18n.t("admin.materials.footer.system")}
             </Text>
-           <Text style={styles.footerSubtext}>
-              Version 1.0 • Last updated: {new Date().toLocaleDateString()}
+            <Text style={styles.footerSubtext}>
+              {i18n.t("admin.materials.footer.version", { date: new Date().toLocaleDateString() })}
             </Text>
             <Text style={styles.footerCopyright}>
-                © {new Date().getFullYear()} Pest-Free. All rights reserved.
+              {i18n.t("admin.materials.footer.copyright", { year: new Date().getFullYear() })}
             </Text>
           </View>
         </ScrollView>
@@ -920,20 +902,20 @@ export default function MaterialsScreen({ onClose }) {
             <View style={styles.modalIconContainer}>
               <MaterialIcons name="warning" size={40} color="#F44336" />
             </View>
-            <Text style={styles.modalTitle}>Delete {currentSection.singular}</Text>
+            <Text style={styles.modalTitle}>{i18n.t("admin.materials.deleteModal.title", { singular: currentSection.singular })}</Text>
             <Text style={styles.modalText}>
-              Are you sure you want to delete "{selectedValue?.name}"?
+              {i18n.t("admin.materials.deleteModal.message", { name: selectedValue?.name })}
             </Text>
             {selectedValue?.active_ingredient && (
               <View style={styles.modalInfo}>
                 <MaterialIcons name="info" size={16} color="#2196F3" />
                 <Text style={styles.modalInfoText}>
-                  Active Ingredient: {selectedValue.active_ingredient}
+                  {i18n.t("admin.materials.deleteModal.activeIngredient", { ingredient: selectedValue.active_ingredient })}
                 </Text>
               </View>
             )}
             <Text style={styles.modalWarning}>
-              This action cannot be undone and will remove this {currentSection.singular} from all records.
+              {i18n.t("admin.materials.deleteModal.warning", { singular: currentSection.singular })}
             </Text>
             
             <View style={styles.modalButtons}>
@@ -942,7 +924,7 @@ export default function MaterialsScreen({ onClose }) {
                 onPress={() => setShowDeleteModal(false)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                <Text style={styles.modalCancelButtonText}>{i18n.t("common.cancel")}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -951,7 +933,7 @@ export default function MaterialsScreen({ onClose }) {
                 activeOpacity={0.7}
               >
                 <MaterialIcons name="delete" size={18} color="#fff" />
-                <Text style={styles.modalDeleteButtonText}>Delete</Text>
+                <Text style={styles.modalDeleteButtonText}>{i18n.t("common.delete")}</Text>
               </TouchableOpacity>
             </View>
           </View>

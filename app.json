@@ -30,10 +30,15 @@
       "edgeToEdgeEnabled": true,
       "package": "com.cpamporis.pestfree",
       "permissions": [
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.CAMERA"
-      ]
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES"
+      ],
+      "blockedPermissions": [],
+        "config": {
+          "googleMaps": {
+            "apiKey": ""
+          }
+        }
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -12,6 +12,7 @@ import {
 import { StyleSheet } from "react-native";
 
 import apiService from "../services/apiService";
+import i18n from "../services/i18n";
 import pestfreeLogo from "../../assets/pestfree_logo.png";
 import loginBackground from "../../assets/background.jpg";
 
@@ -25,17 +26,23 @@ export default function LoginScreen({
   const [password, setPassword] = useState("");
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.getLocale()); // Use getter
+
+  const changeLanguage = (lang) => {
+    i18n.setLocale(lang);
+    setCurrentLanguage(i18n.getLocale()); // Update state with getter
+  };
+
   const tryLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please enter email and password");
+      Alert.alert(i18n.t("login.error.title"), i18n.t("login.error.enterEmailAndPassword"));
       return;
     }
 
     const result = await apiService.login(email, password);
 
     if (!result || !result.success) {
-      Alert.alert("Login Failed");
+      Alert.alert(i18n.t("login.error.loginFailed"));
       setPassword("");
       return;
     }
@@ -57,7 +64,7 @@ export default function LoginScreen({
       return;
     }
 
-    Alert.alert("Login Failed");
+    Alert.alert(i18n.t("login.error.loginFailed"));
     setPassword("");
   };
 
@@ -69,9 +76,41 @@ export default function LoginScreen({
       <View style={styles.loginContent}>
         <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
 
+        {/* Language selector buttons */}
+        <View style={styles.languageSelector}>
+          <TouchableOpacity
+            style={[
+              styles.languageButton,
+              currentLanguage === 'en' && styles.languageButtonActive
+            ]}
+            onPress={() => changeLanguage('en')}
+          >
+            <Text style={[
+              styles.languageButtonText,
+              currentLanguage === 'en' && styles.languageButtonTextActive
+            ]}>
+              {i18n.t("language.en")}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.languageButton,
+              currentLanguage === 'gr' && styles.languageButtonActive
+            ]}
+            onPress={() => changeLanguage('gr')}
+          >
+            <Text style={[
+              styles.languageButtonText,
+              currentLanguage === 'gr' && styles.languageButtonTextActive
+            ]}>
+              {i18n.t("language.gr")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <TextInput
           style={styles.loginInput}
-          placeholder="Email"
+          placeholder={i18n.t("login.emailPlaceholder")}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -79,41 +118,42 @@ export default function LoginScreen({
 
         <TextInput
           style={styles.loginInput}
-          placeholder="Password"
+          placeholder={i18n.t("login.passwordPlaceholder")}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
 
         <TouchableOpacity style={styles.loginButton} onPress={tryLogin}>
-          <Text style={styles.loginButtonText}>Login</Text>
+          <Text style={styles.loginButtonText}>{i18n.t("login.loginButton")}</Text>
         </TouchableOpacity>
+        
         <TouchableOpacity
           style={{ marginTop: 14 }}
           onPress={onPasswordRecovery}
         >
           <Text style={{ color: "#fff", textDecorationLine: "underline" }}>
-            Forgot Password
+            {i18n.t("login.forgotPassword")}
           </Text>
         </TouchableOpacity>
         
-        {/* Footer links moved here to be centered and higher up */}
         <View style={styles.footerLinks}>
           <TouchableOpacity onPress={() => setShowPrivacy(true)}>
-            <Text style={styles.footerText}>Privacy Policy</Text>
+            <Text style={styles.footerText}>{i18n.t("login.privacyPolicy")}</Text>
           </TouchableOpacity>
 
           <Text style={styles.footerSeparator}>|</Text>
 
           <TouchableOpacity onPress={() => setShowTerms(true)}>
-            <Text style={styles.footerText}>Terms of Use</Text>
+            <Text style={styles.footerText}>{i18n.t("login.termsOfUse")}</Text>
           </TouchableOpacity>
         </View>
       </View>
+      
 
       <Modal visible={showPrivacy} animationType="slide">
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Privacy Policy</Text>
+          <Text style={styles.modalTitle}>{i18n.t("privacyPolicy.title")}</Text>
 
           <ScrollView
             style={styles.modalContent}
@@ -121,44 +161,7 @@ export default function LoginScreen({
           >
             <View style={styles.modalTextContainer}>
               <Text style={styles.modalText}>
-                <Text style={styles.bold}>Privacy Policy – Pestify</Text>{"\n\n"}
-                Pestify is a business-to-business mobile application created and owned by <Text style={styles.bold}>Pest-Free</Text> and it's designed to support
-                professional pest control operations, including inspections, service logging,
-                and compliance reporting.{"\n\n"}
-                This application is intended exclusively for authorized business users,
-                such as administrators, technicians, and approved customer representatives.
-                It is not intended for public or consumer use.{"\n\n"}
-                <Text style={styles.bold}>Data We Process{"\n"}</Text>
-                We process only the data necessary to provide the service, which may include:{"\n"}
-                • User identification details (name, email address, role){"\n"}
-                • Authentication credentials (securely encrypted){"\n"}
-                • Top-view photos of the property uploaded by users{"\n"}
-                • Service logs, visit records, and compliance reports{"\n"}
-                • Customer and location identifiers related to inspections{"\n\n"}
-                <Text style={styles.bold}>Purpose of Processing{"\n"}</Text>
-                All data is processed solely for:{"\n"}
-                • User authentication and access control{"\n"}
-                • Performing and documenting pest control services{"\n"}
-                • Generating inspection and compliance reports{"\n"}
-                • Meeting regulatory and contractual obligations{"\n"}
-                • Ensuring system security and operational integrity{"\n\n"}
-                We do not use data for advertising, tracking, profiling, or marketing purposes.{"\n\n"}
-                <Text style={styles.bold}>Data Storage & Security{"\n"}</Text>
-                All data is stored on secure cloud infrastructure using encrypted
-                communications (HTTPS). Access to data is strictly limited to authorized users
-                within the same organization and is protected by role-based permissions.{"\n\n"}
-                <Text style={styles.bold}>Data Sharing{"\n"}</Text>
-                Personal data is not sold, rented, or shared with third parties.
-                Data may be processed by infrastructure providers solely for hosting
-                and technical operation purposes.{"\n\n"}
-                <Text style={styles.bold}>User Rights{"\n"}</Text>
-                Users have the right to access, correct, or request deletion of their data
-                in accordance with the General Data Protection Regulation (GDPR).
-                Such requests must be made through the organization administering access
-                to the application.{"\n\n"}
-                By using this application, you acknowledge and accept this Privacy Policy.{"\n\n"}
-                For full legal details or privacy-related inquiries, contact:
-                <Text style={styles.bold}> info@pest-free.gr</Text>
+                {i18n.t("privacyPolicy.content")}
               </Text>
             </View>
           </ScrollView>
@@ -167,14 +170,14 @@ export default function LoginScreen({
             style={styles.modalCloseButton}
             onPress={() => setShowPrivacy(false)}
           >
-            <Text style={styles.modalCloseText}>Close</Text>
+            <Text style={styles.modalCloseText}>{i18n.t("privacyPolicy.closeButton")}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
 
       <Modal visible={showTerms} animationType="slide">
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Terms of Use</Text>
+          <Text style={styles.modalTitle}>{i18n.t("termsOfUse.title")}</Text>
           
           <ScrollView 
             style={styles.modalContent}
@@ -182,41 +185,7 @@ export default function LoginScreen({
           >
             <View style={styles.modalTextContainer}>
               <Text style={styles.modalText}>
-                <Text style={styles.bold}>Terms of Use - Pestify{"\n\n"}</Text>
-                Pestify is a professional business-to-business application created and owned by <Text style={styles.bold}>Pest-Free</Text>, provided for
-                authorized use in pest control operations, inspections, and reporting.{"\n\n"}
-                <Text style={styles.bold}>Authorized Use{"\n"}</Text>
-                This application may only be used by individuals who have been granted
-                explicit authorization by their organization. Unauthorized access or use
-                is strictly prohibited.{"\n\n"}
-                <Text style={styles.bold}>User Responsibilities{"\n"}</Text>
-                Users are responsible for:{"\n"}
-                • Maintaining the confidentiality of their login credentials{"\n"}
-                • Ensuring the accuracy and completeness of submitted data{"\n"}
-                • Using the application only for lawful and professional purposes{"\n"}
-                • Complying with applicable laws, regulations, and internal company policies{"\n\n"}
-                <Text style={styles.bold}>Accuracy of Data{"\n"}</Text>
-                All inspection data, reports, photos, and records entered into the application
-                are the responsibility of the user and their organization.{"\n\n"}
-                <Text style={styles.bold}>Availability{"\n"}</Text>
-                The application is provided "as is" and "as available".
-                While reasonable efforts are made to ensure reliability, uninterrupted
-                availability is not guaranteed.{"\n\n"}
-                <Text style={styles.bold}>Limitation of Liability{"\n"}</Text>
-                Pest-Free shall not be liable for:{"\n"}
-                • Incorrect or incomplete data entered by users{"\n"}
-                • Operational or business decisions made based on application data{"\n"}
-                • Misuse of the application or violation of these terms{"\n"}
-                • Service interruptions beyond reasonable technical control{"\n\n"}
-                <Text style={styles.bold}>Account Management{"\n"}</Text>
-                Access to the application may be suspended or revoked at any time
-                for security, compliance, or operational reasons.{"\n\n"}
-                <Text style={styles.bold}>Governing Law{"\n"}</Text>
-                Use of this application is governed by the laws of Greece and
-                applicable European Union regulations.{"\n\n"}
-                By using this application, you agree to these Terms of Use.{"\n\n"}
-                For questions regarding usage or access, contact:{"\n"}
-                <Text style={styles.bold}>info@pest-free.gr</Text>
+                {i18n.t("termsOfUse.content")}
               </Text>
             </View>
           </ScrollView>
@@ -225,7 +194,7 @@ export default function LoginScreen({
             style={styles.modalCloseButton}
             onPress={() => setShowTerms(false)}
           >
-            <Text style={styles.modalCloseText}>Close</Text>
+            <Text style={styles.modalCloseText}>{i18n.t("termsOfUse.closeButton")}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -279,12 +248,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  // Updated footer links styling - centered and moved up
   footerLinks: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 40, // Increased margin to move it higher up
+    marginTop: 40,
     paddingHorizontal: 20,
   },
   footerText: {
@@ -323,9 +291,6 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "left",
   },
-  bold: {
-    fontWeight: "bold",
-  },
   modalCloseButton: {
     padding: 16,
     backgroundColor: "#1f9c8d",
@@ -333,8 +298,37 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     alignItems: "center",
   },
+  bold: {
+    fontWeight: "bold",
+  },
   modalCloseText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  // New styles for language selector
+  languageSelector: {
+    flexDirection: "row",
+    position: "absolute",
+    top: 50,
+    right: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 20,
+    padding: 2,
+  },
+  languageButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 18,
+  },
+  languageButtonActive: {
+    backgroundColor: "#1f9c8d",
+  },
+  languageButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  languageButtonTextActive: {
+    color: "#fff",
   },
 });

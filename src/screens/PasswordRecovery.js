@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context"; // Updated import
 import { MaterialIcons } from '@expo/vector-icons';
 import apiService from "../services/apiService";
 import pestfreeLogo from "../../assets/pestfree_logo.png";
+import i18n from "../services/i18n";
 
 export default function PasswordRecovery({ onBack, onDone }) {
   const [email, setEmail] = useState("");
@@ -22,14 +23,20 @@ export default function PasswordRecovery({ onBack, onDone }) {
 
   const submitRecovery = async () => {
     if (!email) {
-      Alert.alert("Error", "Please enter your registered email");
+      Alert.alert(
+        i18n.t("common.error"), 
+        i18n.t("passwordRecovery.errors.noEmail")
+      );
       return;
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert("Error", "Please enter a valid email address");
+      Alert.alert(
+        i18n.t("common.error"), 
+        i18n.t("passwordRecovery.errors.invalidEmail")
+      );
       return;
     }
 
@@ -39,23 +46,29 @@ export default function PasswordRecovery({ onBack, onDone }) {
       const result = await apiService.submitPasswordRecovery(email);
 
       if (!result?.success) {
-        Alert.alert("Error", result?.error || "Failed to submit recovery request");
+        Alert.alert(
+          i18n.t("common.error"), 
+          result?.error || i18n.t("passwordRecovery.errors.submitFailed")
+        );
         return;
       }
 
       Alert.alert(
-        "Password Recovery Request Submitted",
-        "Your request has been sent to the administrator. You will receive a new password within 24 hours.",
+        i18n.t("passwordRecovery.success.title"),
+        i18n.t("passwordRecovery.success.message"),
         [
           {
-            text: "OK",
+            text: i18n.t("common.ok") || "OK",
             onPress: onDone
           }
         ]
       );
     } catch (error) {
       console.error("Password recovery error:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      Alert.alert(
+        i18n.t("common.error"), 
+        i18n.t("passwordRecovery.errors.unexpected")
+      );
     } finally {
       setLoading(false);
     }
@@ -74,7 +87,7 @@ export default function PasswordRecovery({ onBack, onDone }) {
             <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
             <View style={styles.adminBadge}>
               <MaterialIcons name="lock-reset" size={14} color="#fff" />
-              <Text style={styles.adminBadgeText}>PASSWORD RECOVERY</Text>
+              <Text style={styles.adminBadgeText}>{i18n.t("passwordRecovery.badge")}</Text>
             </View>
           </View>
         </View>
@@ -86,20 +99,20 @@ export default function PasswordRecovery({ onBack, onDone }) {
               <MaterialIcons name="lock-reset" size={48} color="#1f9c8b" />
             </View>
             
-            <Text style={styles.title}>Forgot Your Password?</Text>
+            <Text style={styles.title}>{i18n.t("passwordRecovery.title")}</Text>
             
             <Text style={styles.subtitle}>
-              Enter your registered email address below. An administrator will review your request and send you a new password within 24 hours.
+              {i18n.t("passwordRecovery.subtitle")}
             </Text>
             
             {/* Email Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Email Address</Text>
+              <Text style={styles.inputLabel}>{i18n.t("passwordRecovery.emailLabel")}</Text>
               <View style={styles.inputWrapper}>
                 <MaterialIcons name="email" size={20} color="#666" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your registered email"
+                  placeholder={i18n.t("passwordRecovery.emailPlaceholder")}
                   placeholderTextColor="#999"
                   autoCapitalize="none"
                   keyboardType="email-address"
@@ -121,7 +134,7 @@ export default function PasswordRecovery({ onBack, onDone }) {
               ) : (
                 <>
                   <MaterialIcons name="send" size={18} color="#fff" />
-                  <Text style={styles.buttonText}>Submit Recovery Request</Text>
+                  <Text style={styles.buttonText}>{i18n.t("passwordRecovery.submitButton")}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -133,18 +146,18 @@ export default function PasswordRecovery({ onBack, onDone }) {
               disabled={loading}
             >
               <MaterialIcons name="arrow-back" size={18} color="#1f9c8b" />
-              <Text style={styles.backText}>Back to Login</Text>
+              <Text style={styles.backText}>{i18n.t("passwordRecovery.backButton")}</Text>
             </TouchableOpacity>
           </View>
           
           {/* FOOTER */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Need Help? Contact Support</Text>
+            <Text style={styles.footerText}>{i18n.t("passwordRecovery.footer.help")}</Text>
             <Text style={styles.footerSubtext}>
-              info@pest-free.gr • +30 6986244371
+              {i18n.t("passwordRecovery.footer.contact")}
             </Text>
             <Text style={styles.footerCopyright}>
-              © {new Date().getFullYear()} Pest-Free. All rights reserved.
+              {i18n.t("passwordRecovery.footer.copyright", { year: new Date().getFullYear() })}
             </Text>
           </View>
         </View>

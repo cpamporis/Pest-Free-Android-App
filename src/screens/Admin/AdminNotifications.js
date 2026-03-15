@@ -14,6 +14,7 @@ import { buildComplianceNotifications } from "../../utils/complianceNotification
 import styles from "./AdminNotifications.styles";
 import { Image } from "react-native"; 
 import pestfreeLogo from "../../../assets/pestfree_logo.png"; 
+import i18n from "../../services/i18n";
 
 export default function AdminNotifications({ onClose, onOpenSchedule }) {
   const [loading, setLoading] = useState(true);
@@ -29,23 +30,8 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
     setLoading(true);
     try {
       const customers = await apiService.getCustomers();
-      console.log("📋 Total customers loaded:", customers.length);
-      
-      // Debug: Show all customers and their compliance dates
-      customers.forEach(c => {
-        console.log(`🔍 ${c.customerName}:`, {
-          complianceValidUntil: c.complianceValidUntil,
-          parsedDate: c.complianceValidUntil ? new Date(c.complianceValidUntil).toISOString().split('T')[0] : 'No date'
-        });
-      });
       
       const { expiring, expired } = buildComplianceNotifications(customers);
-      
-      console.log("🔔 Compliance notifications:", {
-        expiringCount: expiring.length,
-        expiredCount: expired.length,
-        totalCustomers: customers.length
-      });
       
       setExpiring(expiring);
       setExpired(expired);
@@ -65,7 +51,7 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1f9c8b" />
-        <Text style={styles.loadingText}>Loading Notifications...</Text>
+        <Text style={styles.loadingText}>{i18n.t("admin.notifications.loading")}</Text>
       </SafeAreaView>
     );
   }
@@ -83,7 +69,7 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
               <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.adminBadge}>
                 <MaterialIcons name="notifications-active" size={14} color="#fff" />
-                <Text style={styles.adminBadgeText}>ALERTS</Text>
+                <Text style={styles.adminBadgeText}>{i18n.t("admin.notifications.header.badge")}</Text>
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -92,10 +78,10 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
           </View>
 
           <View style={styles.headerContent}>
-            <Text style={styles.welcomeText}>Compliance Monitoring</Text>
-            <Text style={styles.title}>Certificate Status</Text>
+            <Text style={styles.welcomeText}>{i18n.t("admin.notifications.header.welcome")}</Text>
+            <Text style={styles.title}>{i18n.t("admin.notifications.header.title")}</Text>
             <Text style={styles.subtitle}>
-              Review customers with expiring or expired compliance certificates
+              {i18n.t("admin.notifications.header.subtitle")}
             </Text>
           </View>
         </View>
@@ -106,9 +92,9 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
           {expiring.length === 0 && expired.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialIcons name="check-circle" size={64} color="#1f9c8b" />
-              <Text style={styles.emptyTitle}>All Compliant</Text>
+              <Text style={styles.emptyTitle}>{i18n.t("admin.notifications.emptyState.title")}</Text>
               <Text style={styles.emptyText}>
-                No compliance issues detected. All customers have valid certificates.
+                {i18n.t("admin.notifications.emptyState.text")}
               </Text>
             </View>
           ) : (
@@ -118,10 +104,12 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
                     <MaterialIcons name="warning" size={20} color="#2c3e50" />
-                    <Text style={styles.sectionTitle}>Expiring Soon ({expiring.length})</Text>
+                    <Text style={styles.sectionTitle}>
+                      {i18n.t("admin.notifications.sections.expiringSoon", { count: expiring.length })}
+                    </Text>
                   </View>
                   <Text style={styles.sectionHint}>
-                    Customers with certificates expiring in the next 7 days
+                    {i18n.t("admin.notifications.hints.expiring")}
                   </Text>
 
                   <View style={styles.cardsContainer}>
@@ -137,7 +125,7 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
                           <View style={styles.statusBadge}>
                             <MaterialIcons name="schedule" size={14} color="#fff" />
                             <Text style={styles.statusText}>
-                              {n.daysRemaining} day{n.daysRemaining === 1 ? "" : "s"}
+                              {n.daysRemaining} {n.daysRemaining === 1 ? i18n.t("common.days_one") : i18n.t("common.days_other")}
                             </Text>
                           </View>
                         </View>
@@ -146,16 +134,18 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
                           <View style={styles.detailRow}>
                             <MaterialIcons name="calendar-today" size={16} color="#666" />
                             <Text style={styles.detailText}>
-                              Valid until{" "}
-                              <Text style={styles.bold}>
-                                {n.validUntil.toLocaleDateString("en-GB")}
-                              </Text>
+                              {i18n.t("admin.notifications.cards.validUntil", { 
+                                date: n.validUntil.toLocaleDateString("en-GB") 
+                              })}
                             </Text>
                           </View>
                           <View style={styles.detailRow}>
                             <MaterialIcons name="timer" size={16} color="#666" />
                             <Text style={styles.detailText}>
-                              Expires in {n.daysRemaining} day{n.daysRemaining === 1 ? "" : "s"}
+                              {i18n.t("admin.notifications.cards.expiresIn", { 
+                                count: n.daysRemaining,
+                                days: n.daysRemaining === 1 ? i18n.t("common.days_one") : i18n.t("common.days_other")
+                              })}
                             </Text>
                           </View>
                         </View>
@@ -165,7 +155,7 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
                           onPress={() => handleSchedule(n.customerId)}
                         >
                           <MaterialIcons name="event" size={18} color="#fff" />
-                          <Text style={styles.primaryButtonText}>Schedule Visit</Text>
+                          <Text style={styles.primaryButtonText}>{i18n.t("admin.notifications.cards.scheduleButton")}</Text>
                         </TouchableOpacity>
                       </View>
                     ))}
@@ -184,7 +174,7 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
                     <View style={styles.sectionHeader}>
                       <MaterialIcons name="error" size={20} color="#2c3e50" />
                       <Text style={styles.sectionTitle}>
-                        Expired ({expired.length})
+                        {i18n.t("admin.notifications.sections.expired", { count: expired.length })}
                       </Text>
                     </View>
                     <MaterialIcons
@@ -197,7 +187,7 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
                   {showExpired && (
                     <>
                       <Text style={styles.expiredHint}>
-                        These customers are no longer compliant. You may schedule a visit or leave them inactive.
+                        {i18n.t("admin.notifications.hints.expired")}
                       </Text>
 
                       <View style={styles.cardsContainer}>
@@ -212,7 +202,7 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
                               </View>
                               <View style={[styles.statusBadge, { backgroundColor: '#1f9c8b' }]}>
                                 <MaterialIcons name="block" size={14} color="#fff" />
-                                <Text style={styles.statusText}>Expired</Text>
+                                <Text style={styles.statusText}>{i18n.t("admin.notifications.status.expired")}</Text>
                               </View>
                             </View>
 
@@ -220,10 +210,9 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
                               <View style={styles.detailRow}>
                                 <MaterialIcons name="calendar-today" size={16} color="#666" />
                                 <Text style={styles.detailText}>
-                                  Expired on{" "}
-                                  <Text style={styles.bold}>
-                                    {c.expiredOn.toLocaleDateString("en-GB")}
-                                  </Text>
+                                  {i18n.t("admin.notifications.cards.expiredOn", { 
+                                    date: c.expiredOn.toLocaleDateString("en-GB") 
+                                  })}
                                 </Text>
                               </View>
                             </View>
@@ -233,7 +222,7 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
                               onPress={() => handleSchedule(c.customerId)}
                             >
                               <MaterialIcons name="event" size={18} color="#fff" />
-                              <Text style={styles.primaryButtonText}>Schedule Visit</Text>
+                              <Text style={styles.primaryButtonText}>{i18n.t("admin.notifications.cards.scheduleButton")}</Text>
                             </TouchableOpacity>
                           </View>
                         ))}
@@ -247,12 +236,12 @@ export default function AdminNotifications({ onClose, onOpenSchedule }) {
 
           {/* FOOTER */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Compliance Monitoring System</Text>
+            <Text style={styles.footerText}>{i18n.t("admin.notifications.footer.system")}</Text>
             <Text style={styles.footerSubtext}>
-              Version 1.0 • Last updated: {new Date().toLocaleDateString()}
+              {i18n.t("admin.notifications.footer.version", { date: new Date().toLocaleDateString() })}
             </Text>
             <Text style={styles.footerCopyright}>
-                © {new Date().getFullYear()} Pest-Free. All rights reserved.
+              {i18n.t("admin.notifications.footer.copyright", { year: new Date().getFullYear() })}
             </Text>
           </View>
         </View>

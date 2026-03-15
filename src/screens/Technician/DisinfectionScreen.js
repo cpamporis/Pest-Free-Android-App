@@ -20,6 +20,9 @@ import { Swipeable } from 'react-native-gesture-handler';
 import apiService from '../../services/apiService';
 import ChemicalsDropdown from '../../components/ChemicalsDropdown';
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from "expo-image-picker";
+import { Image } from "react-native";
+import i18n from "../../services/i18n";
 
 /**
  * DisinfectionScreen
@@ -50,6 +53,9 @@ export default function DisinfectionScreen({
   const [storedDuration, setStoredDuration] = useState(null);
   const [selectedChemicals, setSelectedChemicals] = useState([]);
   const [notes, setNotes] = useState('');
+  const [reportImages, setReportImages] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
+
 
   /* =========================
      TREATED AREAS STATE - SAME AS INSECTICIDESCREEN
@@ -70,7 +76,55 @@ export default function DisinfectionScreen({
      DISINFECTION DETAILS FROM ADMIN - SAME STRUCTURE
   ========================= */
   const [disinfectionDetails, setDisinfectionDetails] = useState('');
-  const [serviceTypeLabel, setServiceTypeLabel] = useState('Disinfection');
+  const [serviceTypeLabel, setServiceTypeLabel] = useState(i18n.t("serviceTypes.disinfection"));
+  const pickImagesFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permission.status !== "granted") {
+      Alert.alert("Permission required", "Gallery permission is required.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.7
+    });
+
+    if (!result.canceled) {
+      setReportImages(prev => [...prev, ...result.assets]);
+    }
+  };
+
+  const captureImages = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (permission.status !== "granted") {
+      Alert.alert("Permission required", "Camera permission is required.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.7
+    });
+
+    if (!result.canceled) {
+      setReportImages(prev => [...prev, ...result.assets]);
+    }
+  };
+
+  const openImageChooser = () => {
+    Alert.alert(
+      i18n.t("technician.specialServices.photoUpload.add") || "Add Photo",
+      i18n.t("common.chooseOption") || "Choose an option",
+      [
+        { text: i18n.t("components.chemicalsDropdown.camera") || "Camera", onPress: captureImages },
+        { text: i18n.t("components.chemicalsDropdown.gallery") || "Gallery", onPress: pickImagesFromGallery },
+        { text: i18n.t("common.cancel"), style: "cancel" },
+      ]
+    );
+  };
 
   /* =========================
      HELPERS - SAME AS INSECTICIDESCREEN
@@ -84,35 +138,9 @@ export default function DisinfectionScreen({
   };
 
   const getDisinfectionDetailsLabel = () => {
-    console.log("🔍 DISINFECTION DETAILS CHECK - FULL DEBUG:", {
-      // Check our state
-      stateDisinfectionDetails: disinfectionDetails,
-      hasStateDetails: !!disinfectionDetails,
-      
-      // Check session directly
-      sessionDisinfectionDetails: session?.disinfectionDetails,
-      
-      // Check appointment
-      appointmentDisinfectionDetails: session?.appointment?.disinfectionDetails,
-      
-      // Check raw appointment - THIS IS CRITICAL
-      rawAppointment: session?.rawAppointment,
-      rawDisinfectionDetails: session?.rawAppointment?.disinfectionDetails,
-      rawDisinfection_details: session?.rawAppointment?.disinfection_details, // with underscore
-      
-      // Check other possible fields
-      rawOtherPestName: session?.rawAppointment?.otherPestName,
-      rawOther_pest_name: session?.rawAppointment?.other_pest_name,
-      
-      // Check the actual appointment object from API
-      hasAppointmentId: !!session?.appointmentId,
-      appointmentDate: session?.appointmentDate,
-      appointmentTime: session?.appointmentTime
-    });
 
   // First check our state
     if (disinfectionDetails && disinfectionDetails.trim()) {
-      console.log("✅ Using state disinfection details:", disinfectionDetails);
       return disinfectionDetails;
     }
     
@@ -129,20 +157,19 @@ export default function DisinfectionScreen({
       session?.rawAppointment?.treatment_details ||
       session?.rawAppointment?.notes ||
       '';
-    
-    console.log("🔍 Extracted disinfection details:", details || "(empty)");
-    
     return details;
   };
 
   const formatTime = (ms) => {
-    const total = Math.floor(ms / 1000);
-    const h = Math.floor(total / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    const s = total % 60;
-    if (h) return `${h}h ${m}m ${s}s`;
-    if (m) return `${m}m ${s}s`;
-    return `${s}s`;
+    const totalSeconds = Math.floor(ms / 1000);
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const pad = (n) => String(n).padStart(2, "0");
+
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
   };
 
   /* =========================
@@ -150,8 +177,6 @@ export default function DisinfectionScreen({
   ========================= */
   useEffect(() => {
     const load = async () => {
-      console.log("🧠 DisinfectionScreen session:", session);
-
       try {
         // Set loading first
         setLoading(true);
@@ -160,47 +185,25 @@ export default function DisinfectionScreen({
         const disinfectionDetailsFromSession = getDisinfectionDetailsLabel();
         if (disinfectionDetailsFromSession) {
           setDisinfectionDetails(disinfectionDetailsFromSession);
-          setServiceTypeLabel(`Disinfection - ${disinfectionDetailsFromSession}`);
+          setServiceTypeLabel(`${i18n.t("serviceTypes.disinfection")} - ${disinfectionDetailsFromSession}`);
         }
 
         // Check if we have a completed appointment with visitId
         const hasVisitId = session?.visitId || session?.rawAppointment?.visitId;
         const isCompleted = session?.status === "completed" || 
                           session?.rawAppointment?.status === "completed";
-        
-        console.log("🔍 Edit mode check:", {
-          hasVisitId,
-          isCompleted,
-          sessionStatus: session?.status,
-          rawStatus: session?.rawAppointment?.status
-        });
 
         // If we have a visitId, try to load the service log
         if (hasVisitId) {
           const visitIdToUse = session.visitId || session.rawAppointment?.visitId;
-          
-          console.log("🔍 Loading service log for visitId:", visitIdToUse);
-          
+         
           try {
             const res = await apiService.getServiceLogByVisitId(visitIdToUse);
-            
-            console.log("🔍 Service log API response:", {
-              success: res?.success,
-              hasLog: !!res?.log,
-              hasReport: !!res?.report
-            });
-
             if (res?.success) {
               // Handle both response formats
               const log = res.log || res.report;
               
               if (log) {
-                console.log("✅ Found existing service log:", {
-                  logId: log.logId || log.visitId,
-                  hasChemicals: !!log.chemicalsUsed,
-                  hasAreas: !!log.treatedAreas,
-                  hasNotes: !!log.notes
-                });
 
                 // Extract logId from multiple sources
                 const extractedLogId = 
@@ -211,29 +214,56 @@ export default function DisinfectionScreen({
                 
                 setLogId(extractedLogId);
                 setVisitId(log.visit_id || visitIdToUse);
+
+                // LOAD EXISTING IMAGES
+                if (log?.images && Array.isArray(log.images)) {
+                  const cleaned = log.images
+                    .map(img => {
+                      if (!img) return null;
+                      let v = String(img).split("?")[0].trim();
+                      if (v.includes("/")) v = v.substring(v.lastIndexOf("/") + 1);
+                      return v;
+                    })
+                    .filter(Boolean);
+
+                  setExistingImages(cleaned);
+                }
                 
-                // Normalize chemicals from either format
-                const chemicalsFromLog = log.chemicalsUsed || log.chemicals_used || [];
+                // CRITICAL FIX: Load chemicals from chemicals_used
+                const chemicalsFromLog = log.chemicals_used || log.chemicalsUsed || [];
+
                 const normalizedChemicals = chemicalsFromLog.map(c => {
-                  if (typeof c === "string") return { name: c };
+                  if (typeof c === "string") return { name: c, concentration: '', volume: '' };
                   return {
-                    ...c,
                     name: c.name || c.chemicalName || c.chemical || "",
+                    concentration: c.concentration || c.concentrationPercent || "",
+                    volume: c.volume || c.volumeMl || ""
                   };
                 }).filter(c => c?.name);
                 
-                console.log("📋 Loading chemicals:", normalizedChemicals);
                 setSelectedChemicals(normalizedChemicals);
                 
-                // Get notes from either format
-                const notesFromLog = log.notes || "";
-                console.log("📋 Loading notes:", notesFromLog);
-                setNotes(notesFromLog);
+                // CRITICAL FIX: Load treated areas from treated_areas
+                const areasFromLog = log.treated_areas || log.treatedAreas || [];
+
+                // Ensure areas have the right structure
+                const normalizedAreas = areasFromLog.map(area => ({
+                  id: area.id || `area_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  name: area.name || '',
+                  chemicals: Array.isArray(area.chemicals) ? area.chemicals.map(chem => ({
+                    name: chem.name || chem.chemicalName || '',
+                    concentration: chem.concentration || '',
+                    volume: chem.volume || ''
+                  })) : [],
+                  concentrationPercent: area.concentrationPercent || '',
+                  volumeMl: area.volumeMl || '',
+                  areaNotes: area.areaNotes || ''
+                }));
+                setTreatedAreas(normalizedAreas);
                 
-                // Get treated areas from either format
-                const areasFromLog = log.treatedAreas || log.treated_areas || [];
-                console.log("📋 Loading treated areas:", areasFromLog.length);
-                setTreatedAreas(areasFromLog);
+                // Get notes
+                const notesFromLog = log.notes || "";
+                setNotes(notesFromLog);
                 
                 // Set service as started and completed for edit mode
                 setServiceStarted(true);
@@ -251,7 +281,7 @@ export default function DisinfectionScreen({
                 // Calculate elapsed time
                 if (log.duration) {
                   setStoredDuration(log.duration);
-                  setElapsedTime(log.duration);
+                  setElapsedTime(log.duration * 1000); // Convert seconds to ms for display
                 } else if (startTime) {
                   setElapsedTime(Date.now() - new Date(startTime).getTime());
                 }
@@ -263,12 +293,10 @@ export default function DisinfectionScreen({
                   log.otherPestName ||
                   log.other_pest_name;
                   
-                if (logDisinfectionDetails && !disinfectionDetailsFromSession) {
+                if (logDisinfectionDetails) {
                   setDisinfectionDetails(logDisinfectionDetails);
-                  setServiceTypeLabel(`Disinfection - ${logDisinfectionDetails}`);
+                  setServiceTypeLabel(`${i18n.t("serviceTypes.disinfection")} - ${logDisinfectionDetails}`);
                 }
-                
-                console.log("✅ Service loaded in edit mode");
               }
             }
           } catch (logError) {
@@ -332,8 +360,6 @@ export default function DisinfectionScreen({
           if (!appt || cancelled) return;
 
           if (appt.status === "completed" && appt.visitId) {
-            console.log("✏️ Restoring completed disinfection visit from database", appt);
-
             setServiceStarted(true);
             setServiceCompleted(true);
             setVisitId(appt.visitId);
@@ -357,12 +383,8 @@ export default function DisinfectionScreen({
   useEffect(() => {
     const loadChemicalsForDropdown = async () => {
       try {
-        console.log("🔍 Loading chemicals for dropdown...");
-        
         // Method 1: Use getChemicals()
         const chemicals = await apiService.getChemicals();
-        console.log("🔍 Raw chemicals from API:", chemicals);
-        
         // Extract just the names
         const chemicalNames = chemicals
           .map(chem => {
@@ -372,8 +394,7 @@ export default function DisinfectionScreen({
             return '';
           })
           .filter(name => name);
-        
-        console.log("✅ Chemical names for dropdown:", chemicalNames);
+      
         setAvailableChemicals(chemicalNames);
         
       } catch (error) {
@@ -385,24 +406,11 @@ export default function DisinfectionScreen({
     loadChemicalsForDropdown();
   }, []);
 
-  useEffect(() => {
-    console.log("=== CHEMICALS DATA FLOW ===");
-    console.log("1. selectedChemicals (raw):", selectedChemicals);
-    console.log("2. selectedChemicals transformed to strings:", 
-      selectedChemicals.map(chem => {
-        if (typeof chem === 'string') return chem;
-        if (chem && typeof chem === 'object') return chem.name || '';
-        return '';
-      }).filter(name => name)
-    );
-    console.log("3. availableChemicals:", availableChemicals);
-  }, [selectedChemicals, availableChemicals]);
-
   const showStartServiceAlert = () => {
     Alert.alert(
-      "Start Service Required",
-      "Please start the service before entering data.",
-      [{ text: "OK" }]
+      i18n.t("technician.specialServices.alerts.startServiceRequired"),
+      i18n.t("technician.specialServices.alerts.startServiceMessage"),
+      [{ text: i18n.t("technician.common.ok") }]
     );
   };
 
@@ -415,17 +423,8 @@ export default function DisinfectionScreen({
         dateFrom: session?.appointmentDate,
         dateTo: session?.appointmentDate
       });
-      
-      console.log("🔍 FETCHING DISINFECTION DETAILS FROM SCHEDULE:", {
-        customerId: customer?.customerId,
-        date: session?.appointmentDate,
-        time: session?.appointmentTime,
-        appointmentsCount: appointments?.length,
-        rawAppointments: appointments
-      });
 
       if (!appointments || !Array.isArray(appointments)) {
-        console.log("⚠️ No appointments returned");
         return;
       }
 
@@ -460,26 +459,8 @@ export default function DisinfectionScreen({
         const dateMatch = apptDate === session?.appointmentDate;
         const timeMatch = apptTime === session?.appointmentTime;
         
-        console.log("📅 Appointment match check:", {
-          apptCustomerId,
-          expectedCustomer: customer?.customerId,
-          customerMatch,
-          apptDate,
-          expectedDate: session?.appointmentDate,
-          dateMatch,
-          apptTime,
-          expectedTime: session?.appointmentTime,
-          timeMatch,
-          serviceType: apptServiceType,
-          isDisinfection,
-          matchesAll: customerMatch && dateMatch && timeMatch && isDisinfection
-        });
-        
         return customerMatch && dateMatch && timeMatch && isDisinfection;
       });
-
-      console.log("✅ Found matching disinfection appointment:", matchingAppointment);
-
       if (matchingAppointment) {
         // Check ALL possible fields - including different naming conventions
         const details = 
@@ -492,28 +473,11 @@ export default function DisinfectionScreen({
           matchingAppointment.notes ||                      // generic notes
           matchingAppointment.details ||                    // generic details
           '';
-        
-        console.log("🔍 EXTRACTED DISINFECTION DETAILS:", {
-          details,
-          hasDetails: !!details,
-          disinfectionDetails: matchingAppointment.disinfectionDetails,
-          disinfection_details: matchingAppointment.disinfection_details, // THIS IS KEY
-          treatment_details: matchingAppointment.treatment_details,
-          treatmentDetails: matchingAppointment.treatmentDetails,
-          otherPestName: matchingAppointment.otherPestName,
-          other_pest_name: matchingAppointment.other_pest_name,
-          notes: matchingAppointment.notes,
-          details: matchingAppointment.details,
-          fullAppointment: matchingAppointment
-        });
-        
         if (details && details.trim()) {
           setDisinfectionDetails(details);
-          setServiceTypeLabel(`Disinfection - ${details}`);
-          console.log("✅ SET DISINFECTION DETAILS FROM DATABASE:", details);
+          setServiceTypeLabel(`${i18n.t("serviceTypes.disinfection")} - ${details}`);
           return;
         } else {
-          console.log("⚠️ No disinfection details found in database appointment");
           
           // Also check appointment data if it exists
           if (matchingAppointment.appointment) {
@@ -524,10 +488,9 @@ export default function DisinfectionScreen({
               matchingAppointment.appointment.otherPestName ||
               matchingAppointment.appointment.notes;
             
-            if (appointmentDetails) {
-              console.log("✅ Found details in nested appointment object:", appointmentDetails);
+            if (appointmentDetails) {             
               setDisinfectionDetails(appointmentDetails);
-              setServiceTypeLabel(`Disinfection - ${appointmentDetails}`);
+              setServiceTypeLabel(`${i18n.t("serviceTypes.disinfection")} - ${appointmentDetails}`);
               return;
             }
           }
@@ -538,25 +501,20 @@ export default function DisinfectionScreen({
             matchingAppointment.insecticide_details;
           
           if (insecticideDetails) {
-            console.log("🔄 Found insecticide details (admin might have used wrong field):", insecticideDetails);
             setDisinfectionDetails(insecticideDetails);
-            setServiceTypeLabel(`Disinfection - ${insecticideDetails}`);
+            setServiceTypeLabel(`${i18n.t("serviceTypes.disinfection")} - ${insecticideDetails}`);
             return;
           }
         }
-      } else {
-        console.log("❌ No matching disinfection appointment found in database");
-      }
-      
+      } 
       // If we get here, no details were found
-      console.log("❌ Setting empty disinfection details");
       setDisinfectionDetails('');
-      setServiceTypeLabel('Disinfection');
+      setServiceTypeLabel(i18n.t("serviceTypes.disinfection"));
       
     } catch (error) {
       console.error("❌ Failed to fetch disinfection details:", error);
       setDisinfectionDetails('');
-      setServiceTypeLabel('Disinfection');
+      setServiceTypeLabel(i18n.t("serviceTypes.disinfection"));
     }
   };
 
@@ -590,22 +548,17 @@ export default function DisinfectionScreen({
   const startService = () => {
     // If we already have data loaded (edit mode), just enable editing
     if (selectedChemicals.length > 0 || treatedAreas.length > 0 || notes) {
-      console.log("✏️ Entering edit mode with existing data:", {
-        chemicals: selectedChemicals.length,
-        areas: treatedAreas.length,
-        hasNotes: !!notes
-      });
       
       Alert.alert(
-        "Edit Service",
-        "You are entering edit mode. All existing data will be preserved.",
+        i18n.t("technician.specialServices.alerts.editMode") || "Edit Service",
+        i18n.t("technician.specialServices.alerts.editModeMessage") || "You are entering edit mode. All existing data will be preserved.",
         [
           { 
-            text: "Cancel", 
+            text: i18n.t("common.cancel"), 
             style: "cancel" 
           },
           { 
-            text: "Edit Service", 
+            text: i18n.t("technician.specialServices.actionButtons.updateService") || "Edit Service", 
             style: "default",
             onPress: () => {
               setServiceStarted(true);
@@ -617,8 +570,9 @@ export default function DisinfectionScreen({
                 setServiceStartTime(Date.now() - 3600000); // 1 hour ago
               }
               
-              Alert.alert('Edit Mode', 
-                'You can now edit the service data.'
+              Alert.alert(
+                i18n.t("technician.specialServices.alerts.editMode") || 'Edit Mode', 
+                i18n.t("technician.specialServices.alerts.editModeMessage") || 'You can now edit the service data.'
               );
             }
           }
@@ -632,15 +586,15 @@ export default function DisinfectionScreen({
         (session?.rawAppointment?.status === "completed" && session?.rawAppointment?.visitId)) {
       
       Alert.alert(
-        "Load Completed Service",
-        "This service has already been completed. Would you like to load the existing data for editing?",
+        i18n.t("technician.common.info") || "Load Completed Service",
+        i18n.t("technician.specialServices.alerts.dataNotReadyMessage") || "This service has already been completed. Would you like to load the existing data for editing?",
         [
           { 
-            text: "Cancel", 
+            text: i18n.t("common.cancel"), 
             style: "cancel" 
           },
           { 
-            text: "Load & Edit", 
+            text: i18n.t("technician.specialServices.actionButtons.loadData") || "Load & Edit", 
             style: "default",
             onPress: async () => {
               try {
@@ -652,7 +606,7 @@ export default function DisinfectionScreen({
                   const log = res.log;
                   
                   // Load chemicals
-                  const chemicalsFromLog = log.chemicalsUsed || log.chemicals_used || [];
+                  const chemicalsFromLog = log.chemicals_used || log.chemicalsUsed || [];
                   const normalizedChemicals = chemicalsFromLog.map(c => {
                     if (typeof c === "string") return { name: c };
                     return {
@@ -666,7 +620,7 @@ export default function DisinfectionScreen({
                   setNotes(log.notes || "");
                   
                   // Load treated areas
-                  const areasFromLog = log.treatedAreas || log.treated_areas || [];
+                  const areasFromLog = log.treated_areas || log.treatedAreas || [];
                   setTreatedAreas(areasFromLog);
                   
                   // Set service states
@@ -674,12 +628,14 @@ export default function DisinfectionScreen({
                   setServiceCompleted(true);
                   setShowGenerateReport(true);
                   
-                  Alert.alert('Edit Mode', 
-                    'Service data loaded. You can now edit.'
+                  Alert.alert(
+                    i18n.t("technician.specialServices.alerts.editMode") || 'Edit Mode', 
+                    i18n.t("technician.specialServices.alerts.dataNotReady") || 'Service data loaded. You can now edit.'
                   );
                 } else {
-                  Alert.alert('Error', 
-                    'Could not load existing service data. Starting new service instead.'
+                  Alert.alert(
+                    i18n.t("common.error"), 
+                    i18n.t("technician.specialServices.errors.noDataFound") || 'Could not load existing service data. Starting new service instead.'
                   );
                   // Start fresh if loading fails
                   const start = Date.now();
@@ -689,7 +645,10 @@ export default function DisinfectionScreen({
                 }
               } catch (error) {
                 console.error("Failed to load service data:", error);
-                Alert.alert('Error', 'Failed to load service data');
+                Alert.alert(
+                  i18n.t("common.error"), 
+                  i18n.t("technician.specialServices.errors.noDataFound") || 'Failed to load service data'
+                );
               } finally {
                 setLoading(false);
               }
@@ -707,21 +666,16 @@ export default function DisinfectionScreen({
     setServiceCompleted(false);
     setHasGeneratedReport(false);
     
-    Alert.alert('Service Started', 
-      `${getDisinfectionDetailsLabel() ? `Disinfection - ${getDisinfectionDetailsLabel()}` : 'Disinfection'} service started for ${customer?.customerName || 'customer'}`
+    Alert.alert(
+      i18n.t("technician.specialServices.alerts.serviceStarted") || 'Service Started', 
+      `${getDisinfectionDetailsLabel() ? `${i18n.t("serviceTypes.disinfection")} - ${getDisinfectionDetailsLabel()}` : i18n.t("serviceTypes.disinfection")} ${i18n.t("technician.specialServices.alerts.serviceStartedMessage", { 
+        name: customer?.customerName || i18n.t("technician.common.customer") 
+      })}`
     );
 };
 
   const markAppointmentCompleted = async (appointmentId, visitId, appointment) => {
     if (!appointmentId) return;
-
-    console.log("💾 Marking appointment completed:", {
-      appointmentId,
-      visitId,
-      // 🚨 Don't send servicePrice - technicians can't see/set it
-      // servicePrice: appointment?.service_price
-    });
-
     try {
       const result = await apiService.updateAppointment({
         id: appointmentId,
@@ -737,9 +691,9 @@ export default function DisinfectionScreen({
         // Check if it's a price error
         if (result?.error?.includes('Service price must be set')) {
           Alert.alert(
-            "Price Not Set",
-            "Admin has not set the service price yet. Please contact admin to set the price before completing this appointment.",
-            [{ text: "OK" }]
+            i18n.t("technician.specialServices.alerts.priceNotSet"),
+            i18n.t("technician.specialServices.alerts.priceNotSetMessage"),
+            [{ text: i18n.t("technician.common.ok") }]
           );
         }
       }
@@ -750,150 +704,241 @@ export default function DisinfectionScreen({
 
 
   const completeService = async () => {
-    try {
-      // Validate required fields
-      if (!customer?.customerId || !technician?.id) {
-        throw new Error("Missing customer or technician information");
-      }
+  try {
+    // Validate required fields
+    if (!customer?.customerId || !technician?.id) {
+      throw new Error(i18n.t("technician.specialServices.errors.missingInfo") || "Missing customer or technician information");
+    }
 
-      // Format chemicals properly before sending
-      const formattedChemicals = selectedChemicals.map(chem => {
-        if (typeof chem === 'string') {
-          return { name: chem, concentration: '', volume: '' };
-        }
-        return {
-          name: chem.name || chem.chemicalName || '',
-          concentration: chem.concentration || chem.concentrationPercent || '',
-          volume: chem.volume || chem.volumeMl || ''
+    // Format chemicals properly
+    const formattedChemicals = selectedChemicals.map(chem => {
+      if (typeof chem === 'string') {
+        return { 
+          name: chem, 
+          concentration: '', 
+          volume: '' 
         };
-      }).filter(chem => chem.name);
-      
-      // Format treated areas before sending
-      const formattedTreatedAreas = treatedAreas.map(area => ({
-        ...area,
+      }
+      return {
+        name: chem.name || chem.chemicalName || '',
+        concentration: chem.concentration || chem.concentrationPercent || '',
+        volume: chem.volume || chem.volumeMl || ''
+      };
+    }).filter(chem => chem.name);
+    // Format treated areas
+    const formattedTreatedAreas = treatedAreas.map(area => {
+      const areaChemicals = Array.isArray(area.chemicals) 
+        ? area.chemicals.map(chem => {
+            if (typeof chem === 'string') {
+              return { name: chem, concentration: '', volume: '' };
+            }
+            return {
+              name: chem.name || chem.chemicalName || '',
+              concentration: chem.concentration || chem.concentrationPercent || '',
+              volume: chem.volume || chem.volumeMl || ''
+            };
+          }).filter(chem => chem.name)
+        : [];
+
+      return {
         id: area.id || `area_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: area.name || '',
-        chemicals: Array.isArray(area.chemicals) ? area.chemicals.map(chem => ({
-          name: chem.name || chem.chemicalName || '',
-          concentration: chem.concentration && !chem.concentration.includes('%') 
-            ? `${chem.concentration}%` 
-            : chem.concentration || '',
-          volume: chem.volume && !chem.volume.includes('ml')
-            ? `${chem.volume}ml`
-            : chem.volume || ''
-        })) : [],
-        concentrationPercent: area.concentrationPercent && !area.concentrationPercent.includes('%') 
-          ? `${area.concentrationPercent}%` 
-          : area.concentrationPercent || '',
-        volumeMl: area.volumeMl && !area.volumeMl.includes('ml')
-          ? `${area.volumeMl}ml`
-          : area.volumeMl || '',
+        chemicals: areaChemicals,
+        concentrationPercent: area.concentrationPercent || '',
+        volumeMl: area.volumeMl || '',
         areaNotes: area.areaNotes || ''
-      }));
-
-      // Create stableVisitId BEFORE using it
-      const stableVisitId =
-        session?.visitId ||
-        logId ||
-        getStableLogId();
-
-      const finalLogId = logId || stableVisitId;
-      
-      // Use finalLogId instead of stableLogId
-      console.log("✅ Using logId for completion:", finalLogId);
-
-      const payload = {
-        logId: finalLogId, // Use finalLogId here
-        visitId: stableVisitId,
-        customerId: customer.customerId,
-        customerName: customer.customerName,
-        technicianId: technician.id,
-        technicianName: `${technician.firstName} ${technician.lastName}`,
-        serviceType: 'disinfection',
-        disinfectionDetails: getDisinfectionDetailsLabel() || 
-                     session?.rawAppointment?.otherPestName || 
-                     session?.rawAppointment?.disinfectionDetails || 
-                     session?.rawAppointment?.other_pest_name || 
-                     '',
-        serviceStartTime: new Date(serviceStartTime).toISOString(),
-        serviceEndTime: new Date().toISOString(),
-        duration: Date.now() - serviceStartTime,
-        chemicalsUsed: formattedChemicals,
-        treatedAreas: formattedTreatedAreas,
-        notes: notes || '',
-        completedAt: new Date().toISOString(),
       };
+    });
 
-      console.log("📤 Completing service with payload:", {
-        customerId: payload.customerId,
-        technicianId: payload.technicianId,
-        chemicalsCount: payload.chemicalsUsed.length,
-        areasCount: payload.treatedAreas.length,
-        logId: payload.logId,
-        visitId: payload.visitId,
-        disinfectionDetails: payload.disinfectionDetails
-      });
+    // Create stableVisitId
+    const stableVisitId =
+      session?.visitId ||
+      logId ||
+      getStableLogId();
 
-      const res = await apiService.logService(payload);
-      if (!res?.success) throw new Error('Save failed');
+    const finalLogId = logId || stableVisitId;
 
-      // MARK APPOINTMENT AS COMPLETED
-      if (session?.appointmentId) {
-        await markAppointmentCompleted(
-          session.appointmentId,
-          payload.visitId,
-          session.rawAppointment || session.appointment
-        );
+    // Calculate duration with multiple fallbacks
+    let durationSeconds = 0;
+
+    // Try 1: Use storedDuration if available and valid
+    if (storedDuration !== null && storedDuration !== undefined) {
+      const parsed = Number(storedDuration);
+      if (!isNaN(parsed) && parsed > 0) {
+        durationSeconds = parsed;
       }
+    }
 
-      // Update state
-      setLogId(finalLogId); // Save the logId to state
-      setVisitId(stableVisitId);
-      setServiceCompleted(true);
-      setShowGenerateReport(true);
-      setHasGeneratedReport(false);
-      
-      Alert.alert(
-        'Service Completed', 
-        'Data saved successfully.\n\nYou can now generate a report.',
-        [
-          { 
-            text: "OK",
-            onPress: () => {
-              // User can now generate report
+    // Try 2: Calculate from serviceStartTime if storedDuration didn't work
+    if (durationSeconds === 0 && serviceStartTime) {
+      const startTimeNum = Number(serviceStartTime);
+      if (!isNaN(startTimeNum) && startTimeNum > 0) {
+        const now = Date.now();
+        const diffMs = now - startTimeNum;
+        const diffSeconds = Math.floor(diffMs / 1000);
+        
+        if (!isNaN(diffSeconds) && diffSeconds > 0 && diffSeconds < 86400) { // Less than 24 hours
+          durationSeconds = diffSeconds;
+        }
+      } else {
+        // Try to parse serviceStartTime as ISO string
+        try {
+          const startDate = new Date(serviceStartTime);
+          if (!isNaN(startDate.getTime())) {
+            const now = Date.now();
+            const diffMs = now - startDate.getTime();
+            const diffSeconds = Math.floor(diffMs / 1000);
+            
+            if (!isNaN(diffSeconds) && diffSeconds > 0 && diffSeconds < 86400) {
+              durationSeconds = diffSeconds;
             }
           }
-        ]
-      );
-      
-    } catch (e) {
-      console.error("❌ Complete service error:", e);
-      Alert.alert('Error', e.message || 'Failed to complete service');
+        } catch (e) {
+          console.warn("⚠️ Could not parse serviceStartTime as date:", e);
+        }
+      }
     }
-  };
+
+    // Try 3: Use elapsedTime if available
+    if (durationSeconds === 0 && elapsedTime) {
+      const elapsedSeconds = Math.floor(elapsedTime / 1000);
+      if (!isNaN(elapsedSeconds) && elapsedSeconds > 0) {
+        durationSeconds = elapsedSeconds;
+      }
+    }
+
+    // Final fallback
+    if (durationSeconds === 0 || isNaN(durationSeconds)) {
+      console.warn("⚠️ No valid duration found, using default 3600 seconds");
+      durationSeconds = 3600; // 1 hour default
+    }
+
+    // Now create the payload with this validated duration
+    const payload = {
+      logId: finalLogId,
+      visitId: stableVisitId,
+      customerId: customer.customerId,
+      customerName: customer.customerName,
+      technicianId: technician.id,
+      technicianName: `${technician.firstName} ${technician.lastName}`,
+      serviceType: 'disinfection',
+      disinfectionDetails: getDisinfectionDetailsLabel() ||
+        session?.rawAppointment?.otherPestName ||
+        session?.rawAppointment?.disinfectionDetails ||
+        session?.rawAppointment?.disinfection_details ||
+        session?.rawAppointment?.other_pest_name ||
+        '',
+      serviceStartTime: serviceStartTime ? new Date(serviceStartTime).toISOString() : new Date().toISOString(),
+      serviceEndTime: new Date().toISOString(),
+      duration: durationSeconds, // Now this is guaranteed to be a valid number
+      chemicals_used: formattedChemicals,
+      treated_areas: formattedTreatedAreas,
+      notes: notes || '',
+      updatedAt: new Date().toISOString(),
+    };
+    // Create FormData
+    const formData = new FormData();
+
+    // Add all payload fields - stringify arrays/objects
+    Object.keys(payload).forEach(key => {
+      const value = payload[key];
+
+      if (key === 'chemicals_used' || key === 'treated_areas') {
+        formData.append(key, JSON.stringify(value));
+      } else if (typeof value === 'object' && value !== null) {
+        formData.append(key, JSON.stringify(value));
+      } else {
+        formData.append(key, String(value)); // Convert to string
+      }
+    });
+
+    // Add images
+    reportImages.forEach((img, index) => {
+      formData.append("images", {
+        uri: img.uri,
+        name: img.fileName || `photo_${Date.now()}_${index}.jpg`,
+        type: "image/jpeg"
+      });
+    });
+    
+    if (existingImages.length > 0) {
+      formData.append("existingImages", JSON.stringify(existingImages));
+    }
+
+    const res = await apiService.submitServiceLog(formData);
+
+    if (!res?.success) throw new Error(i18n.t("technician.specialServices.errors.saveFailed") || 'Save failed');
+
+    if (session?.appointmentId) {
+      await markAppointmentCompleted(
+        session.appointmentId,
+        payload.visitId,
+        session.rawAppointment || session.appointment
+      );
+    }
+
+    setLogId(finalLogId);
+    setVisitId(stableVisitId);
+    setServiceCompleted(true);
+    setShowGenerateReport(true);
+    setHasGeneratedReport(false);
+    
+    // FIX: Store finalLogId in a variable that's accessible in the callback
+    const reportId = finalLogId;
+    
+    Alert.alert(
+      i18n.t("technician.specialServices.alerts.serviceCompleted") || 'Service Completed', 
+      i18n.t("technician.specialServices.alerts.serviceCompletedMessage") || 'Data saved successfully.\n\nYou can now generate a report.',
+      [
+        { 
+          text: i18n.t("technician.common.ok"),
+          onPress: () => {
+            onGenerateReport({
+              ...buildDisinfectionReportContext(reportId),
+              duration: formatTime(durationSeconds * 1000),
+              visitId: reportId,
+              _refreshKey: Date.now()
+            });
+          }
+        }
+      ]
+    );
+    
+  } catch (e) {
+    console.error("❌ Complete service error:", e);
+    Alert.alert(
+      i18n.t("common.error"), 
+      e.message || i18n.t("technician.specialServices.errors.saveFailed") || 'Failed to complete service'
+    );
+  }
+};
 
   const updateService = async () => {
     try {
-      console.log("🔄 Updating disinfection service...");
-      
       // Validate required fields
       if (!customer?.customerId || !technician?.id) {
-        throw new Error("Missing customer or technician information");
+        throw new Error(i18n.t("technician.specialServices.errors.missingInfo") || "Missing customer or technician information");
       }
       
       // Use logId, visitId, or create a new stable ID
       const stableLogId = logId || visitId || session?.visitId || getStableLogId();
       
       if (!stableLogId) {
-        Alert.alert("Error", "Missing service ID. Cannot update.");
+        Alert.alert(
+          i18n.t("common.error"), 
+          i18n.t("technician.specialServices.errors.missingServiceId") || "Missing service ID. Cannot update."
+        );
         return;
       }
-      
-      console.log("✅ Using logId for update:", stableLogId);
-      
+
+      // Format chemicals properly
       const formattedChemicals = selectedChemicals.map(chem => {
         if (typeof chem === 'string') {
-          return { name: chem, concentration: '', volume: '' };
+          return { 
+            name: chem, 
+            concentration: '', 
+            volume: '' 
+          };
         }
         return {
           name: chem.name || chem.chemicalName || '',
@@ -902,30 +947,60 @@ export default function DisinfectionScreen({
         };
       }).filter(chem => chem.name);
     
-      const formattedTreatedAreas = treatedAreas.map(area => ({
-        ...area,
-        id: area.id || `area_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: area.name || '',
-        chemicals: Array.isArray(area.chemicals) ? area.chemicals.map(chem => ({
-          name: chem.name || chem.chemicalName || '',
-          concentration: chem.concentration && !chem.concentration.includes('%') 
-            ? `${chem.concentration}%` 
-            : chem.concentration || '',
-          volume: chem.volume && !chem.volume.includes('ml')
-            ? `${chem.volume}ml`
-            : chem.volume || ''
-        })) : [],
-        concentrationPercent: area.concentrationPercent && !area.concentrationPercent.includes('%') 
-          ? `${area.concentrationPercent}%` 
-          : area.concentrationPercent || '',
-        volumeMl: area.volumeMl && !area.volumeMl.includes('ml')
-          ? `${area.volumeMl}ml`
-          : area.volumeMl || '',
-        areaNotes: area.areaNotes || ''
-      }));
+      // Format treated areas
+      const formattedTreatedAreas = treatedAreas.map(area => {
+        const areaChemicals = Array.isArray(area.chemicals) 
+          ? area.chemicals.map(chem => {
+              if (typeof chem === 'string') {
+                return { name: chem, concentration: '', volume: '' };
+              }
+              return {
+                name: chem.name || chem.chemicalName || '',
+                concentration: chem.concentration || chem.concentrationPercent || '',
+                volume: chem.volume || chem.volumeMl || ''
+              };
+            }).filter(chem => chem.name)
+          : [];
+
+        return {
+          id: area.id || `area_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: area.name || '',
+          chemicals: areaChemicals,
+          concentrationPercent: area.concentrationPercent || '',
+          volumeMl: area.volumeMl || '',
+          areaNotes: area.areaNotes || ''
+        };
+      });
       
       const effectiveStartTime = serviceStartTime || Date.now() - 3600000;
       const stableVisitId = visitId || session?.visitId || stableLogId;
+      
+      // CRITICAL FIX: Calculate duration properly and ensure it's a number
+      let durationSeconds = 0;
+      
+      // Try to get duration from storedDuration or calculate from serviceStartTime
+      if (storedDuration && !isNaN(storedDuration) && storedDuration > 0) {
+        durationSeconds = Number(storedDuration);
+      } else if (serviceStartTime) {
+        const now = Date.now();
+        const startTimeMs = typeof serviceStartTime === 'number' 
+          ? serviceStartTime 
+          : new Date(serviceStartTime).getTime();
+        
+        if (!isNaN(startTimeMs) && startTimeMs > 0) {
+          const diffMs = now - startTimeMs;
+          durationSeconds = Math.floor(diffMs / 1000);
+        }
+      }
+      
+      // Ensure duration is a valid positive number
+      if (!durationSeconds || isNaN(durationSeconds) || durationSeconds <= 0) {
+        console.warn("⚠️ Invalid duration, using default 3600 seconds");
+        durationSeconds = 3600; // Default to 1 hour
+      }
+      
+      // Make sure it's a number, not a string
+      durationSeconds = Number(durationSeconds);
       
       const payload = {
         logId: stableLogId,
@@ -938,33 +1013,64 @@ export default function DisinfectionScreen({
         disinfectionDetails: getDisinfectionDetailsLabel() ||
           session?.rawAppointment?.otherPestName ||
           session?.rawAppointment?.disinfectionDetails ||
+          session?.rawAppointment?.disinfection_details ||
           session?.rawAppointment?.other_pest_name ||
           '',
         serviceStartTime: new Date(effectiveStartTime).toISOString(),
-        chemicalsUsed: formattedChemicals,
-        treatedAreas: formattedTreatedAreas,
+        serviceEndTime: new Date().toISOString(),
+        duration: durationSeconds, // This is now a number
+        chemicals_used: formattedChemicals,
+        treated_areas: formattedTreatedAreas,
         notes: notes || '',
         updatedAt: new Date().toISOString(),
       }; 
 
-      console.log("📤 Updating service with payload:", {
-        customerId: payload.customerId,
-        technicianId: payload.technicianId,
-        serviceType: payload.serviceType,
-        visitId: payload.visitId,
-        logId: payload.logId,
-        chemicalsCount: payload.chemicalsUsed.length,
-        areasCount: payload.treatedAreas.length,
-        disinfectionDetails: payload.disinfectionDetails
+      const formData = new FormData();
+
+      // Stringify ALL array/object fields before appending
+      Object.keys(payload).forEach(key => {
+        const value = payload[key];
+
+        if (key === 'chemicals_used' || key === 'treated_areas') {
+          // These MUST be stringified JSON
+          formData.append(key, JSON.stringify(value));
+        } else if (key === 'duration') {
+          // CRITICAL: Duration must be a number, not a string
+          // When using FormData, we need to append it as a string, but ensure it's a valid number string
+          const durationValue = String(value);
+          formData.append(key, durationValue);
+        } else if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
       });
-      
-      const res = await apiService.logService(payload);
-      
-      if (!res?.success) {
-        throw new Error(res?.error || 'Update failed');
+
+      // Add images
+      if (reportImages.length > 0) {
+        reportImages.forEach((img, index) => {
+          formData.append("images", {
+            uri: img.uri,
+            name: img.fileName || `photo_${Date.now()}_${index}.jpg`,
+            type: "image/jpeg"
+          });
+        });
       }
       
-      console.log("✅ Service update successful");
+      // Add existing images
+      if (existingImages.length > 0) {
+        formData.append("existingImages", JSON.stringify(existingImages));
+      }
+
+      // Log the actual duration value in FormData
+      // @ts-ignore
+      const durationPart = formData._parts?.find(part => part[0] === 'duration');
+
+      const res = await apiService.submitServiceLog(formData);
+      
+      if (!res?.success) {
+        throw new Error(res?.error || i18n.t("technician.specialServices.errors.updateFailed") || 'Update failed');
+      }
       
       setServiceCompleted(true);
       setHasGeneratedReport(false);
@@ -978,18 +1084,15 @@ export default function DisinfectionScreen({
       }
       
       Alert.alert(
-        'Service Updated', 
-        'Data saved successfully!\n\n' +
-        'You will be navigated to Report Screen automatically.',
+        i18n.t("technician.specialServices.alerts.serviceUpdated") || 'Service Updated', 
+        i18n.t("technician.specialServices.alerts.serviceUpdatedMessage") || 'Data saved successfully!\n\nYou will be navigated to Report Screen automatically.',
         [
           { 
-            text: 'OK', 
+            text: i18n.t("technician.common.ok"), 
             onPress: () => {
               onGenerateReport({
                 ...buildDisinfectionReportContext(stableVisitId),
-                duration: formatTime(
-                  storedDuration !== null ? storedDuration : elapsedTime
-                ),
+                duration: formatTime(durationSeconds),
                 visitId: stableVisitId,
                 _refreshKey: Date.now()
               });
@@ -1000,8 +1103,29 @@ export default function DisinfectionScreen({
       
     } catch (e) {
       console.error("❌ Update service error:", e);
-      Alert.alert('Error', e.message || 'Failed to update service');
+      Alert.alert(
+        i18n.t("common.error"), 
+        e.message || i18n.t("technician.specialServices.errors.updateFailed") || 'Failed to update service'
+      );
     }
+  };
+
+  const buildImageUrl = (img) => {
+    if (!img) return null;
+
+    let value = String(img).trim().replace(/[{}"]/g, "");
+
+    // remove query strings
+    value = value.split("?")[0];
+
+    // if contains full URL keep only filename
+    if (value.includes("/")) {
+      value = value.substring(value.lastIndexOf("/") + 1);
+    }
+
+    const base = apiService.API_BASE_URL.replace("/api", "");
+
+    return `${base}/uploads/${value}`;
   };
 
   const buildDisinfectionReportContext = (visitIdOverride) => {
@@ -1012,20 +1136,27 @@ export default function DisinfectionScreen({
       console.warn("⚠️ No visitId available for report context");
     }
     
+    const detailsText = getDisinfectionDetailsLabel() || '';
+    
     return {
       date: date.toLocaleDateString(),
       duration: formatTime(
         storedDuration !== null ? storedDuration : elapsedTime
       ),
-      customerName: customer?.customerName || 'Unknown Customer',
-      technicianName: technician ? `${technician.firstName} ${technician.lastName}` : 'Unknown Technician',
+      customerName: customer?.customerName || i18n.t("technician.common.unknown") || 'Unknown Customer',
+      technicianName: technician ? `${technician.firstName} ${technician.lastName}` : i18n.t("technician.common.unknown") || 'Unknown Technician',
       serviceType: 'disinfection',
-      serviceTypeName: getDisinfectionDetailsLabel() 
-        ? `Disinfection - ${getDisinfectionDetailsLabel()}`
-        : 'Disinfection Service',
+      serviceTypeName: detailsText 
+        ? `${i18n.t("serviceTypes.disinfection")} - ${detailsText}`
+        : i18n.t("technician.disinfection.title") || 'Disinfection Service',
       visitId: effectiveVisitId,
-      chemicalsUsed: selectedChemicals,
-      treatedAreas: treatedAreas,
+      disinfection_details: detailsText,  // snake_case
+      disinfectionDetails: detailsText,   // camelCase
+      details: detailsText,                // generic details field
+      otherPestName: detailsText,          // fallback
+      other_pest_name: detailsText, 
+      chemicals_used: selectedChemicals,
+      treated_areas: treatedAreas,
       notes: notes,
       serviceStartTime: serviceStartTime ? new Date(serviceStartTime).toISOString() : null,
       serviceEndTime: new Date().toISOString(),
@@ -1040,15 +1171,15 @@ export default function DisinfectionScreen({
 
   const cancelWork = () => {
     Alert.alert(
-      "Cancel Service",
-      "Are you sure you want to cancel this service? All unsaved data will be lost.",
+      i18n.t("technician.specialServices.alerts.cancelServiceConfirm") || "Cancel Service",
+      i18n.t("technician.specialServices.alerts.unsavedChangesMessage") || "Are you sure you want to cancel this service? All unsaved data will be lost.",
       [
         { 
-          text: "No, Continue", 
+          text: i18n.t("technician.specialServices.alerts.continueService") || "No, Continue", 
           style: "cancel" 
         },
         { 
-          text: "Yes, Cancel", 
+          text: i18n.t("technician.specialServices.alerts.cancelServiceConfirm") || "Yes, Cancel", 
           style: "destructive",
           onPress: () => {
             if (timerRef.current) {
@@ -1065,11 +1196,7 @@ export default function DisinfectionScreen({
             setNotes('');
             setHasGeneratedReport(false);
             
-            Alert.alert(
-              "Service Cancelled", 
-              "Service cancelled. No data was saved.",
-              [{ text: "OK" }]
-            );
+            onBack();
           }
         }
       ]
@@ -1091,12 +1218,12 @@ export default function DisinfectionScreen({
                 onBack();
               } else if (serviceStarted) {
                 Alert.alert(
-                  "Unsaved Changes",
-                  "You have an active service. Do you want to cancel it?",
+                  i18n.t("technician.specialServices.alerts.unsavedChanges") || "Unsaved Changes",
+                  i18n.t("technician.specialServices.alerts.unsavedChangesMessage") || "You have an active service. Do you want to cancel it?",
                   [
-                    { text: "Continue Service", style: "cancel" },
+                    { text: i18n.t("technician.specialServices.alerts.continueService") || "Continue Service", style: "cancel" },
                     { 
-                      text: "Cancel Service", 
+                      text: i18n.t("technician.specialServices.alerts.cancelServiceConfirm") || "Cancel Service", 
                       style: "destructive",
                       onPress: () => {
                         cancelWork();
@@ -1111,17 +1238,19 @@ export default function DisinfectionScreen({
             }}
           >
             <MaterialIcons name="arrow-back" size={24} color="#fff" />
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.backText}>{i18n.t("technician.common.back")}</Text>
           </TouchableOpacity>
 
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>
               {getDisinfectionDetailsLabel() 
-                ? `Disinfection - ${getDisinfectionDetailsLabel()}`
-                : 'Disinfection Service'}
+                ? `${i18n.t("serviceTypes.disinfection")} - ${getDisinfectionDetailsLabel()}`
+                : i18n.t("technician.disinfection.title") || 'Disinfection Service'}
             </Text>
             <Text style={styles.headerSubtitle}>
-              {serviceStarted ? 'Service in Progress' : 'Service Setup'}
+              {serviceStarted 
+                ? i18n.t("technician.specialServices.serviceInProgress") || 'Service in Progress'
+                : i18n.t("technician.specialServices.serviceSetup") || 'Service Setup'}
             </Text>
           </View>
 
@@ -1130,7 +1259,7 @@ export default function DisinfectionScreen({
             onPress={onNavigate}
           >
             <MaterialIcons name="navigation" size={20} color="#fff" />
-            <Text style={styles.navigateText}>Navigate</Text>
+            <Text style={styles.navigateText}>{i18n.t("technician.common.navigate")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -1144,7 +1273,10 @@ export default function DisinfectionScreen({
                 const visitIdToLoad = visitId || session?.visitId;
                 
                 if (!visitIdToLoad) {
-                  Alert.alert('Error', 'No visit ID found to load data');
+                  Alert.alert(
+                    i18n.t("common.error"), 
+                    i18n.t("technician.specialServices.errors.noVisitId") || 'No visit ID found to load data'
+                  );
                   return;
                 }
                 
@@ -1154,7 +1286,7 @@ export default function DisinfectionScreen({
                   const log = res.log;
                   
                   // Load chemicals
-                  const chemicalsFromLog = log.chemicalsUsed || log.chemicals_used || [];
+                  const chemicalsFromLog = log.chemicals_used || log.chemicalsUsed || [];
                   const normalizedChemicals = chemicalsFromLog.map(c => {
                     if (typeof c === "string") return { name: c };
                     return {
@@ -1168,23 +1300,32 @@ export default function DisinfectionScreen({
                   setNotes(log.notes || "");
                   
                   // Load treated areas
-                  const areasFromLog = log.treatedAreas || log.treated_areas || [];
+                  const areasFromLog = log.treated_areas || log.treatedAreas || [];
                   setTreatedAreas(areasFromLog);
                   
-                  Alert.alert('Success', 'Service data loaded successfully');
+                  Alert.alert(
+                    i18n.t("technician.common.success"), 
+                    i18n.t("technician.specialServices.alerts.serviceUpdated") || 'Service data loaded successfully'
+                  );
                 } else {
-                  Alert.alert('Error', 'No data found for this service');
+                  Alert.alert(
+                    i18n.t("common.error"), 
+                    i18n.t("technician.specialServices.errors.noDataFound") || 'No data found for this service'
+                  );
                 }
               } catch (error) {
                 console.error("Failed to load data:", error);
-                Alert.alert('Error', 'Failed to load service data');
+                Alert.alert(
+                  i18n.t("common.error"), 
+                  i18n.t("technician.specialServices.errors.noDataFound") || 'Failed to load service data'
+                );
               } finally {
                 setLoading(false);
               }
             }}
           >
             <MaterialIcons name="cloud-download" size={20} color="#fff" />
-            <Text style={styles.secondaryButtonText}>Load Service Data</Text>
+            <Text style={styles.secondaryButtonText}>{i18n.t("technician.specialServices.actionButtons.loadData") || 'Load Service Data'}</Text>
           </TouchableOpacity>
         )}
 
@@ -1201,12 +1342,13 @@ export default function DisinfectionScreen({
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
       >
         {/* CUSTOMER INFO CARD */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <MaterialIcons name="person" size={20} color="#1f9c8b" />
-            <Text style={styles.cardTitle}>Customer Information</Text>
+            <Text style={styles.cardTitle}>{i18n.t("technician.specialServices.customerInfo")}</Text>
           </View>
           
           <View style={styles.customerInfo}>
@@ -1215,28 +1357,35 @@ export default function DisinfectionScreen({
             <View style={styles.infoRow}>
               <MaterialIcons name="schedule" size={16} color="#666" />
               <Text style={styles.infoText}>
-                Appointment: {session?.appointmentTime || 'N/A'}
+                {i18n.t("technician.specialServices.appointment", { time: session?.appointmentTime || 'N/A' })}
               </Text>
             </View>
             
             <View style={styles.infoRow}>
               <MaterialIcons name="person-pin" size={16} color="#666" />
               <Text style={styles.infoText}>
-                Technician: {technician?.firstName} {technician?.lastName}
+                {i18n.t("technician.specialServices.technician", { 
+                  firstName: technician?.firstName, 
+                  lastName: technician?.lastName 
+                })}
               </Text>
             </View>
             
             <View style={styles.infoRow}>
               <MaterialIcons name="location-on" size={16} color="#666" />
               <Text style={styles.infoText}>
-                {customer?.address || 'No address available'}
+                {customer?.address || i18n.t("technician.common.noAddress") || 'No address available'}
               </Text>
             </View>
             
             <View style={styles.infoRow}>
               <MaterialIcons name="medical-services" size={16} color="#666" />
               <Text style={styles.serviceTypeText}>
-                Service: <Text style={styles.serviceTypeValue}>{serviceTypeLabel}</Text>
+                {i18n.t("technician.specialServices.service")} <Text style={styles.serviceTypeValue}>
+                  {getDisinfectionDetailsLabel() 
+                    ? `${i18n.t("serviceTypes.disinfection")} - ${getDisinfectionDetailsLabel()}`
+                    : i18n.t("serviceTypes.disinfection")}
+                </Text>
               </Text>
             </View>
           </View>
@@ -1246,8 +1395,8 @@ export default function DisinfectionScreen({
             <View style={styles.warningCard}>
               <MaterialIcons name="info" size={20} color="#ff9800" />
               <Text style={styles.warningText}>
-                This disinfection appointment doesn't have specific details. 
-                Please contact admin or specify the treatment in your notes below.
+                {i18n.t("technician.disinfection.warning.noDetails") || 
+                  "This disinfection appointment doesn't have specific details. Please contact admin or specify the treatment in your notes below."}
               </Text>
             </View>
           )}
@@ -1256,7 +1405,7 @@ export default function DisinfectionScreen({
         {/* SERVICE STATUS INDICATOR */}
         {serviceStarted && (
           <View style={styles.statusCard}>
-            <Text style={styles.sectionTitle}>Service Progress</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.serviceProgress")}</Text>
             <View style={styles.progressContainer}>
               <View style={styles.progressStep}>
                 <View style={[
@@ -1270,7 +1419,7 @@ export default function DisinfectionScreen({
                 <Text style={[
                   styles.progressLabel,
                   serviceStarted && styles.progressLabelActive
-                ]}>Started</Text>
+                ]}>{i18n.t("technician.specialServices.progress.started")}</Text>
               </View>
               
               <View style={[
@@ -1290,7 +1439,7 @@ export default function DisinfectionScreen({
                 <Text style={[
                   styles.progressLabel,
                   serviceCompleted && styles.progressLabelActive
-                ]}>Completed</Text>
+                ]}>{i18n.t("technician.specialServices.progress.completed")}</Text>
               </View>
             </View>
           </View>
@@ -1300,7 +1449,7 @@ export default function DisinfectionScreen({
         <View style={styles.sectionContainer}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="science" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Chemicals Used</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.chemicalsUsed")}</Text>
           </View>
           
           <View style={[
@@ -1311,7 +1460,10 @@ export default function DisinfectionScreen({
               selectedChemicals={selectedChemicals}
               onChemicalsChange={(newChemicals) => {
                 if (!serviceStarted) {
-                  Alert.alert("Start Service Required", "Please start the service before selecting chemicals.");
+                  Alert.alert(
+                    i18n.t("technician.specialServices.alerts.startServiceRequired"),
+                    i18n.t("technician.specialServices.alerts.startServiceMessage")
+                  );
                   return;
                 }
                 setSelectedChemicals(newChemicals);
@@ -1320,10 +1472,10 @@ export default function DisinfectionScreen({
               editable={serviceStarted}
             />
             {!serviceStarted && !serviceCompleted && (
-              <Text style={styles.disabledHint}>Start service to enable</Text>
+              <Text style={styles.disabledHint}>{i18n.t("technician.specialServices.startHint")}</Text>
             )}
             {serviceCompleted && selectedChemicals.length === 0 && (
-              <Text style={styles.disabledHint}>Update service to edit chemicals</Text>
+              <Text style={styles.disabledHint}>{i18n.t("technician.specialServices.updateHint") || "Update service to edit chemicals"}</Text>
             )}
           </View>
         </View>
@@ -1332,7 +1484,7 @@ export default function DisinfectionScreen({
         <View style={styles.sectionContainer}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="layers" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Treated Areas</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.treatedAreas")}</Text>
           </View>
 
           {/* Add Area Input */}
@@ -1342,7 +1494,7 @@ export default function DisinfectionScreen({
                 styles.areaInput,
                 !serviceStarted && styles.disabledInput
               ]}
-              placeholder="Enter area name (e.g. Bathroom)"
+              placeholder={i18n.t("technician.specialServices.areaPlaceholder")}
               placeholderTextColor="#999"
               value={areaNameInput}
               onChangeText={setAreaNameInput}
@@ -1373,7 +1525,7 @@ export default function DisinfectionScreen({
               }}
             >
               <MaterialIcons name="add" size={20} color="#fff" />
-              <Text style={styles.addAreaButtonText}>Add</Text>
+              <Text style={styles.addAreaButtonText}>{i18n.t("technician.specialServices.add")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1398,7 +1550,7 @@ export default function DisinfectionScreen({
                   }}
                 >
                   <MaterialIcons name="info-outline" size={20} color="#fff" />
-                  <Text style={styles.areaActionText}>Details</Text>
+                  <Text style={styles.areaActionText}>{i18n.t("technician.specialServices.areaDetails.title")}</Text>
                 </TouchableOpacity>
               )}
             >
@@ -1415,7 +1567,7 @@ export default function DisinfectionScreen({
                   {a.chemicals && a.chemicals.length > 0 ? (
                     <View style={styles.areaChemicalsPreview}>
                       <Text style={styles.areaChemicalsCount}>
-                        {a.chemicals.length} chemical{a.chemicals.length > 1 ? 's' : ''} used
+                        {a.chemicals.length} {i18n.t("technician.specialServices.chemicalsInArea")}
                       </Text>
                       <Text style={styles.areaChemicalsList}>
                         {a.chemicals.slice(0, 2).map(c => c.name).join(', ')}
@@ -1424,7 +1576,7 @@ export default function DisinfectionScreen({
                     </View>
                   ) : (
                     <Text style={styles.noChemicalsText}>
-                      No chemicals added yet
+                      {i18n.t("technician.specialServices.noChemicals")}
                     </Text>
                   )}
                 </View>
@@ -1434,11 +1586,126 @@ export default function DisinfectionScreen({
           ))}
         </View>
 
+        {/* PHOTO UPLOAD */}
+        <View style={{ marginTop: 20 }}>
+
+          {/* Title row aligned like other section headers */}
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+            <MaterialIcons name="add-a-photo" size={20} color="#1f9c8b" />
+            <Text style={{ marginLeft: 6, fontSize: 16, fontWeight: "600", color: "#333" }}>
+              {i18n.t("technician.specialServices.treatmentPhotos")}
+            </Text>
+          </View>
+
+          {/* Upload Button */}
+          <TouchableOpacity
+            style={{ marginBottom: 40, marginTop: 20,alignItems: "flex-start" }}
+            onPress={() => {
+            if (!serviceStarted && !serviceCompleted) {
+              showStartServiceAlert();
+              return;
+            }
+            openImageChooser();
+          }}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons
+            name="add-a-photo"
+            size={30}
+            color={(serviceStarted || serviceCompleted) ? "#1f9c8b" : "#ccc"}
+          />
+
+          <Text
+            style={{
+              marginTop: 6,
+              fontSize: 14,
+              fontWeight: "600",
+              color: (serviceStarted || serviceCompleted) ? "#1f9c8b" : "#999",
+            }}
+          >
+            {reportImages.length > 0 
+              ? i18n.t("technician.specialServices.photoUpload.addMore")
+              : i18n.t("technician.specialServices.photoUpload.add")}
+          </Text>
+        </TouchableOpacity>
+
+          {/* Image Preview */}
+          {(existingImages.length > 0 || reportImages.length > 0) && (
+            <View style={{ marginTop: 15 }} >
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+
+                {/* EXISTING IMAGES */}
+                {existingImages.map((img, index) => (
+                  <View key={`existing-${index}`} style={{ marginRight: 10, position: "relative" }}>
+                    <Image
+                      source={{ uri: buildImageUrl(img) }}
+                      style={{ width: 120, height: 120, borderRadius: 10 }}
+                      resizeMode="cover"
+                    />
+
+                    <TouchableOpacity
+                      style={{
+                        position: "absolute",
+                        top: -6,
+                        right: -6,
+                        backgroundColor: "#e74c3c",
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      onPress={() => {
+                        const updated = existingImages.filter((_, i) => i !== index);
+                        setExistingImages(updated);
+                      }}
+                    >
+                      <MaterialIcons name="close" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                {/* NEW IMAGES */}
+                {reportImages.map((img, index) => (
+                  <View key={`new-${index}`} style={{ marginRight: 10, position: "relative" }}>
+                    <Image
+                      source={{ uri: img.uri }}
+                      style={{ width: 120, height: 120, borderRadius: 10 }}
+                      resizeMode="cover"
+                    />
+
+                    <TouchableOpacity
+                      style={{
+                        position: "absolute",
+                        top: -6,
+                        right: -6,
+                        backgroundColor: "#e74c3c",
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      onPress={() => {
+                        const updated = reportImages.filter((_, i) => i !== index);
+                        setReportImages(updated);
+                      }}
+                    >
+                      <MaterialIcons name="close" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+              </ScrollView>
+            </View>
+          )}
+        </View>
+
         {/* SERVICE NOTES SECTION */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="notes" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Service Notes</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.serviceNotes")}</Text>
           </View>
           
           <TextInput
@@ -1456,7 +1723,7 @@ export default function DisinfectionScreen({
               }
               setNotes(text);
             }}
-            placeholder="Enter service notes, observations, or special instructions..."
+            placeholder={i18n.t("technician.specialServices.notesPlaceholder")}
             placeholderTextColor="#999"
             editable={serviceStarted}
           />
@@ -1475,8 +1742,8 @@ export default function DisinfectionScreen({
               <MaterialIcons name="play-arrow" size={22} color="#fff" />
               <Text style={styles.primaryButtonText}>
                 {!getDisinfectionDetailsLabel() 
-                  ? 'Start Service (No Details)'
-                  : `Start ${serviceTypeLabel}`}
+                  ? i18n.t("technician.disinfection.actionButtons.startNoDetails") || 'Start Service (No Details)'
+                  : i18n.t("technician.disinfection.actionButtons.startService") || `Start ${serviceTypeLabel}`}
               </Text>
             </TouchableOpacity>
           )}
@@ -1488,7 +1755,7 @@ export default function DisinfectionScreen({
                 onPress={completeService}
               >
                 <MaterialIcons name="check-circle" size={22} color="#fff" />
-                <Text style={styles.primaryButtonText}>Complete Service</Text>
+                <Text style={styles.primaryButtonText}>{i18n.t("technician.specialServices.actionButtons.completeService")}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -1496,7 +1763,7 @@ export default function DisinfectionScreen({
                 onPress={cancelWork}
               >
                 <MaterialIcons name="cancel" size={20} color="#fff" />
-                <Text style={styles.cancelButtonText}>Cancel Service</Text>
+                <Text style={styles.cancelButtonText}>{i18n.t("technician.specialServices.actionButtons.cancelService")}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -1508,7 +1775,7 @@ export default function DisinfectionScreen({
                 onPress={updateService}
               >
                 <MaterialIcons name="edit" size={20} color="#fff" />
-                <Text style={styles.updateButtonText}>Update Service</Text>
+                <Text style={styles.updateButtonText}>{i18n.t("technician.specialServices.actionButtons.updateService")}</Text>
               </TouchableOpacity>
 
               {!hasGeneratedReport && (
@@ -1520,9 +1787,9 @@ export default function DisinfectionScreen({
                   onPress={() => {
                     if (!visitId && !logId) {
                       Alert.alert(
-                        "Data Not Ready",
-                        "Please wait a moment for the service data to be saved, or tap 'Update Service' first.",
-                        [{ text: "OK" }]
+                        i18n.t("technician.specialServices.alerts.dataNotReady"),
+                        i18n.t("technician.specialServices.alerts.dataNotReadyMessage"),
+                        [{ text: i18n.t("technician.common.ok") }]
                       );
                       return;
                     }
@@ -1534,7 +1801,7 @@ export default function DisinfectionScreen({
                   disabled={!visitId && !logId}
                 >
                   <MaterialIcons name="description" size={20} color="#fff" />
-                  <Text style={styles.secondaryButtonText}>Generate Report</Text>
+                  <Text style={styles.secondaryButtonText}>{i18n.t("technician.specialServices.actionButtons.generateReport")}</Text>
                 </TouchableOpacity>
               )}
             </>
@@ -1544,10 +1811,10 @@ export default function DisinfectionScreen({
         {/* FOOTER */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Pest - Free Technician Portal • Disinfection Module
+            {i18n.t("technician.disinfection.footer") || "Pestify Technician Portal • Disinfection Module"}
           </Text>
           <Text style={styles.footerCopyright}>
-            © {new Date().getFullYear()} All data is securely recorded
+            {i18n.t("technician.home.footer.copyright", { year: new Date().getFullYear() })}
           </Text>
         </View>
       </ScrollView>
@@ -1568,7 +1835,7 @@ export default function DisinfectionScreen({
                   <MaterialIcons name="close" size={24} color="#666" />
                 </TouchableOpacity>
                 <Text style={styles.modalTitle}>
-                  Area Details
+                  {i18n.t("technician.specialServices.areaDetails.title")}
                 </Text>
                 <View style={{ width: 40 }} />
               </View>
@@ -1580,7 +1847,7 @@ export default function DisinfectionScreen({
                 <View style={styles.areaHeaderCard}>
                   <MaterialIcons name="location-on" size={24} color="#1f9c8b" />
                   <Text style={styles.areaModalName}>
-                    {treatedAreas.find(a => a.id === activeAreaId)?.name || 'Untitled Area'}
+                    {treatedAreas.find(a => a.id === activeAreaId)?.name || i18n.t("technician.common.unknown") || 'Untitled Area'}
                   </Text>
                 </View>
 
@@ -1589,10 +1856,10 @@ export default function DisinfectionScreen({
                   <View style={styles.referenceSection}>
                     <View style={styles.referenceHeader}>
                       <MaterialIcons name="science" size={18} color="#1f9c8b" />
-                      <Text style={styles.referenceTitle}>Available Chemicals</Text>
+                      <Text style={styles.referenceTitle}>{i18n.t("technician.specialServices.areaDetails.availableChemicals")}</Text>
                     </View>
                     <Text style={styles.referenceSubtitle}>
-                      Tap to add to this area:
+                      {i18n.t("technician.specialServices.areaDetails.tapToAdd")}
                     </Text>
                     <ScrollView 
                       horizontal 
@@ -1646,7 +1913,7 @@ export default function DisinfectionScreen({
                 <View style={styles.areaChemicalsSection}>
                   <View style={styles.sectionTitleContainer}>
                     <MaterialIcons name="format-list-bulleted" size={18} color="#1f9c8b" />
-                    <Text style={styles.sectionTitle}>Chemicals in this Area</Text>
+                    <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.chemicalsInArea")}</Text>
                   </View>
                   
                   {(() => {
@@ -1658,10 +1925,10 @@ export default function DisinfectionScreen({
                         <View style={styles.emptyState}>
                           <MaterialIcons name="science" size={40} color="#e0e0e0" />
                           <Text style={styles.emptyStateText}>
-                            No chemicals added yet
+                            {i18n.t("technician.specialServices.noChemicals")}
                           </Text>
                           <Text style={styles.emptyStateSubtext}>
-                            Tap on a chemical above to add it
+                            {i18n.t("technician.specialServices.areaDetails.tapToAdd")}
                           </Text>
                         </View>
                       );
@@ -1673,7 +1940,7 @@ export default function DisinfectionScreen({
                           <View style={styles.chemicalNameContainer}>
                             <MaterialIcons name="water-drop" size={16} color="#1f9c8b" />
                             <Text style={styles.chemicalItemName}>
-                              {chemical.name || `Chemical ${chemIndex + 1}`}
+                              {chemical.name || `${i18n.t("technician.specialServices.chemicalsUsed")} ${chemIndex + 1}`}
                             </Text>
                           </View>
                           <TouchableOpacity
@@ -1696,11 +1963,11 @@ export default function DisinfectionScreen({
                         
                         <View style={styles.chemicalInputsRow}>
                           <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Concentration (%)</Text>
+                            <Text style={styles.inputLabel}>{i18n.t("components.chemicalsDropdown.concentration")}</Text>
                             <View style={styles.inputContainer}>
                               <TextInput
                                 style={styles.chemicalInput}
-                                placeholder="e.g., 10"
+                                placeholder={i18n.t("components.chemicalsDropdown.concentrationPlaceholder")}
                                 value={chemical.concentration?.replace('%', '') || ''}
                                 onChangeText={(text) => {
                                   const currentArea = treatedAreas.find(a => a.id === activeAreaId);
@@ -1724,11 +1991,11 @@ export default function DisinfectionScreen({
                           </View>
                           
                           <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Volume (ml)</Text>
+                            <Text style={styles.inputLabel}>{i18n.t("components.chemicalsDropdown.volume")}</Text>
                             <View style={styles.inputContainer}>
                               <TextInput
                                 style={styles.chemicalInput}
-                                placeholder="e.g., 500"
+                                placeholder={i18n.t("components.chemicalsDropdown.volumePlaceholder")}
                                 value={chemical.volume?.replace('ml', '') || ''}
                                 onChangeText={(text) => {
                                   const currentArea = treatedAreas.find(a => a.id === activeAreaId);
@@ -1760,11 +2027,11 @@ export default function DisinfectionScreen({
                 <View style={styles.notesSection}>
                   <View style={styles.sectionTitleContainer}>
                     <MaterialIcons name="notes" size={18} color="#1f9c8b" />
-                    <Text style={styles.sectionTitle}>Area Notes</Text>
+                    <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.areaDetails.areaNotes")}</Text>
                   </View>
                   <TextInput
                     style={styles.areaNotesInput}
-                    placeholder="Enter area-specific notes, observations, or special instructions..."
+                    placeholder={i18n.t("technician.specialServices.areaDetails.notesPlaceholder")}
                     placeholderTextColor="#999"
                     multiline
                     numberOfLines={4}
@@ -1779,7 +2046,7 @@ export default function DisinfectionScreen({
                     style={styles.modalCancelButton}
                     onPress={() => setAreaModalVisible(false)}
                   >
-                    <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                    <Text style={styles.modalCancelButtonText}>{i18n.t("technician.specialServices.areaDetails.cancel")}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
@@ -1817,7 +2084,7 @@ export default function DisinfectionScreen({
                     }}
                   >
                     <MaterialIcons name="save" size={20} color="#fff" />
-                    <Text style={styles.modalSaveButtonText}>Save Area</Text>
+                    <Text style={styles.modalSaveButtonText}>{i18n.t("technician.specialServices.areaDetails.save")}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -1833,25 +2100,19 @@ export default function DisinfectionScreen({
       <SafeAreaView style={styles.centerContainer}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1f9c8b" />
-          <Text style={styles.loadingText}>Loading service details...</Text>
+          <Text style={styles.loadingText}>{i18n.t("technician.common.loading")} {i18n.t("serviceTypes.disinfection").toLowerCase()}...</Text>
         </View>
       </SafeAreaView>
     );
   }
-
   return (
     <SafeAreaView style={styles.container}>
-      {!areaModalVisible ? (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={{ flex: 1 }}>
-            {renderContent()}
-          </View>
-        </TouchableWithoutFeedback>
-      ) : (
-        <View style={{ flex: 1 }}>
-          {renderContent()}
-        </View>
-      )}
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {renderContent()}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

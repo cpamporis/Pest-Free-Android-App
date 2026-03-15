@@ -20,6 +20,7 @@ import { MaterialIcons, FontAwesome5, MaterialCommunityIcons, Feather, Entypo } 
 import DateTimePicker from "@react-native-community/datetimepicker";
 import apiService, { API_BASE_URL } from "../../services/apiService";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
+import i18n from "../../services/i18n";
 
 export default function AdminTechSchedule({ onClose, initialCustomerId, onAppointmentChanged }) {
   const [appointments, setAppointments] = useState([]);
@@ -40,6 +41,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   const [showSpecialSubtypeDropdown, setShowSpecialSubtypeDropdown] = useState(false);
   const [otherPestName, setOtherPestName] = useState("");
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showTechnicianDropdown, setShowTechnicianDropdown] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     completed: 0,
@@ -51,13 +53,13 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   const [appointmentCategory, setAppointmentCategory] = useState("first_time");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const appointmentCategories = [
-    { id: "first_time", label: "First-Time Appointment" },
-    { id: "follow_up", label: "Follow-Up Visit" },
-    { id: "one_time", label: "One-Time Treatment" },
-    { id: "installation", label: "Installation Appointment" },
-    { id: "inspection", label: "Inspection / Assessment" },
-    { id: "emergency", label: "Emergency Call-Out" },
-    { id: "contract_service", label: "Contract / Recurring Service" },
+    { id: "first_time", label: i18n.t("admin.schedule.appointmentCategory.first_time") },
+    { id: "follow_up", label: i18n.t("admin.schedule.appointmentCategory.follow_up") },
+    { id: "one_time", label: i18n.t("admin.schedule.appointmentCategory.one_time") },
+    { id: "installation", label: i18n.t("admin.schedule.appointmentCategory.installation") },
+    { id: "inspection", label: i18n.t("admin.schedule.appointmentCategory.inspection") },
+    { id: "emergency", label: i18n.t("admin.schedule.appointmentCategory.emergency") },
+    { id: "contract_service", label: i18n.t("admin.schedule.appointmentCategory.contract_service") },
   ];
   const [editingAppointment, setEditingAppointment] = useState(null);
   const [editDetails, setEditDetails] = useState("");
@@ -79,28 +81,30 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   const [showEditTimePicker, setShowEditTimePicker] = useState(false);
   const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
   const MINUTES = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [selectedCustomerForAdd, setSelectedCustomerForAdd] = useState(null);
 
   // Define special service subtypes
   const specialServiceSubtypes = [
-    { id: "grass_cutworm", label: "Grass Cutworm", icon: "seedling", library: "FontAwesome5" },
-    { id: "fumigation", label: "Fumigation", icon: "cloud", library: "Feather" },
-    { id: "termites", label: "Termites", icon: "bug", library: "FontAwesome5" },
-    { id: "exclusion", label: "Exclusion Service", icon: "block", library: "Entypo" }, 
-    { id: "snake_repulsion", label: "Snake Repulsion", icon: "snake", library: "MaterialCommunityIcons" }, 
-    { id: "bird_control", label: "Bird Control", icon: "feather", library: "Feather" },
-    { id: "bed_bugs", label: "Bed Bugs", icon: "bug-report", library: "MaterialIcons" },
-    { id: "fleas", label: "Fleas", icon: "paw", library: "FontAwesome5" }, 
-    { id: "plant_protection", label: "Plant Protection", icon: "grass", library: "MaterialIcons" }, 
-    { id: "palm_weevil", label: "Palm Weevil", icon: "tree", library: "FontAwesome5" },
-    { id: "other", label: "Other", icon: "more-horizontal", library: "Feather" },
+    { id: "grass_cutworm", label: i18n.t("admin.schedule.specialSubtypes.grass_cutworm"), icon: "seedling", library: "FontAwesome5" },
+    { id: "fumigation", label: i18n.t("admin.schedule.specialSubtypes.fumigation"), icon: "cloud", library: "Feather" },
+    { id: "termites", label: i18n.t("admin.schedule.specialSubtypes.termites"), icon: "bug", library: "FontAwesome5" },
+    { id: "exclusion", label: i18n.t("admin.schedule.specialSubtypes.exclusion"), icon: "block", library: "Entypo" }, 
+    { id: "snake_repulsion", label: i18n.t("admin.schedule.specialSubtypes.snake_repulsion"), icon: "snake", library: "MaterialCommunityIcons" }, 
+    { id: "bird_control", label: i18n.t("admin.schedule.specialSubtypes.bird_control"), icon: "feather", library: "Feather" },
+    { id: "bed_bugs", label: i18n.t("admin.schedule.specialSubtypes.bed_bugs"), icon: "bug-report", library: "MaterialIcons" },
+    { id: "fleas", label: i18n.t("admin.schedule.specialSubtypes.fleas"), icon: "paw", library: "FontAwesome5" }, 
+    { id: "plant_protection", label: i18n.t("admin.schedule.specialSubtypes.plant_protection"), icon: "grass", library: "MaterialIcons" }, 
+    { id: "palm_weevil", label: i18n.t("admin.schedule.specialSubtypes.palm_weevil"), icon: "tree", library: "FontAwesome5" },
+    { id: "other", label: i18n.t("admin.schedule.specialSubtypes.other"), icon: "more-horizontal", library: "Feather" },
   ];
 
   // Update serviceTypes with icons
   const serviceTypes = [
-    { id: "myocide", label: "Myocide", description: "Standard bait station service", icon: "pest-control-rodent", color: "#1f9c8b" },
-    { id: "disinfection", label: "Disinfection", description: "Disinfection service", icon: "clean-hands", color: "#1f9c8b" },
-    { id: "insecticide", label: "Insecticide", description: "Insecticide treatment", icon: "pest-control", color: "#1f9c8b" },
-    { id: "special", label: "Special Service", description: "Custom pest control services", icon: "star", color: "#1f9c8b" },
+    { id: "myocide", label: i18n.t("admin.schedule.serviceType.myocide.label"), description: i18n.t("admin.schedule.serviceType.myocide.description"), icon: "pest-control-rodent", color: "#1f9c8b" },
+    { id: "disinfection", label: i18n.t("admin.schedule.serviceType.disinfection.label"), description: i18n.t("admin.schedule.serviceType.disinfection.description"), icon: "clean-hands", color: "#1f9c8b" },
+    { id: "insecticide", label: i18n.t("admin.schedule.serviceType.insecticide.label"), description: i18n.t("admin.schedule.serviceType.insecticide.description"), icon: "pest-control", color: "#1f9c8b" },
+    { id: "special", label: i18n.t("admin.schedule.serviceType.special.label"), description: i18n.t("admin.schedule.serviceType.special.description"), icon: "star", color: "#1f9c8b" },
   ];
 
   // Generate time options
@@ -124,16 +128,6 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
     }
   }, [specialServiceSubtype]);
 
-  //Temporary
-  useEffect(() => {
-    console.log("👨‍🔧 Edit Technician ID state:", {
-      editTechnicianId,
-      techniciansAvailable: technicians.length,
-      selectedTechExists: editTechnicianId && technicians.some(t => t.id === editTechnicianId),
-      techniciansList: technicians.map(t => ({ id: t.id, name: t.name }))
-    });
-  }, [editTechnicianId, technicians]);
-
   useEffect(() => {
     const now = new Date();
     // Set the DateTimePicker value
@@ -155,15 +149,6 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
     }
   }, [selectedTech, selectedDate]);
 
-  useEffect(() => {
-    console.log("🔍 Technician selection state:", {
-      selectedTech,
-      techniciansCount: technicians.length,
-      technicians: technicians.map(t => ({ id: t.id, name: t.name })),
-      isSelectedTechValid: selectedTech && technicians.some(t => t.id === selectedTech)
-    });
-  }, [selectedTech, technicians]);
-
   function isUUID(value) {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
   }
@@ -171,7 +156,6 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   async function loadInitialData() {
     setLoading(true);
     try {
-      console.log("Loading schedule data...");
 
       // Load technicians separately
       await loadTechnicians();
@@ -193,7 +177,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
       
     } catch (error) {
       console.error("Failed to load initial data:", error);
-      Alert.alert("Error", "Failed to load schedule data");
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.loading"));
     } finally {
       setLoading(false);
     }
@@ -201,25 +185,16 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
 
   async function loadTechnicians() {
     try {
-      console.log("🔍 Fetching technicians from API...");
       const techResult = await apiService.getTechnicians();
-      
-      console.log("📊 Raw technicians API response:", {
-        type: typeof techResult,
-        isArray: Array.isArray(techResult),
-        length: Array.isArray(techResult) ? techResult.length : 'N/A',
-        data: techResult
-      });
       
       let techsList = [];
       if (Array.isArray(techResult)) {
         techsList = techResult.map(tech => {
-          console.log("📋 Processing technician item:", tech);
           
           // Handle different ID field names
           const id = tech.id || tech.technicianId || tech.userId;
           const name = `${tech.first_name || tech.firstName || ''} ${tech.last_name || tech.lastName || ''}`.trim() || 
-                      tech.name || tech.username || 'Unknown';
+                      tech.name || tech.username || i18n.t("admin.schedule.technician.unknown") || 'Unknown';
           
           return {
             id: id,
@@ -231,13 +206,12 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         });
       } else if (techResult && typeof techResult === 'object' && !Array.isArray(techResult)) {
         // Handle object response (maybe success wrapper)
-        console.log("📦 Technicians response is an object, checking for data property...");
         
         if (techResult.success !== false && Array.isArray(techResult.technicians)) {
           techsList = techResult.technicians.map(tech => ({
             id: tech.id || tech.technicianId,
             name: `${tech.first_name || tech.firstName || ''} ${tech.last_name || tech.lastName || ''}`.trim() || 
-                  tech.username || 'Unknown',
+                  tech.username || i18n.t("admin.schedule.technician.unknown") || 'Unknown',
             firstName: tech.first_name || tech.firstName,
             lastName: tech.last_name || tech.lastName,
             username: tech.username
@@ -246,20 +220,13 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
           techsList = techResult.data.map(tech => ({
             id: tech.id || tech.technicianId,
             name: `${tech.first_name || tech.firstName || ''} ${tech.last_name || tech.lastName || ''}`.trim() || 
-                  tech.username || 'Unknown',
+                  tech.username || i18n.t("admin.schedule.technician.unknown") || 'Unknown',
             firstName: tech.first_name || tech.firstName,
             lastName: tech.last_name || tech.lastName,
             username: tech.username
           }));
         }
       }
-      
-      console.log("✅ Processed technicians list:", techsList.map(t => ({
-        id: t.id,
-        name: t.name,
-        type: typeof t.id,
-        idLength: t.id?.length
-      })));
       
       setTechnicians(techsList);
       
@@ -270,7 +237,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
       
     } catch (error) {
       console.error("❌ Failed to load technicians:", error);
-      Alert.alert("Error", "Failed to load technicians");
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.technician.loadError") || "Failed to load technicians");
       setTechnicians([]);
     }
   }
@@ -278,27 +245,11 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   // Load schedule and calculate stats
   async function loadAppointments() {
     const dateStr = selectedDate.toISOString().split("T")[0];
-
-    console.log("🔍 Loading appointments for:", {
-      date: dateStr,
-      technician: selectedTech
-    });
-
     try {
       const data = await apiService.getAppointments({
         dateFrom: dateStr,
         dateTo: dateStr,
         technicianId: selectedTech
-      });
-
-      console.log("📊 Appointments loaded:", {
-        count: data.length,
-        data: data.map(d => ({
-          id: d.id,
-          date: d.date,
-          time: d.time,
-          status: d.status
-        }))
       });
       
       // Directly set the appointments - no filtering needed
@@ -313,85 +264,83 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
       
     } catch (error) {
       console.error("❌ Failed to load appointments:", error);
-      Alert.alert("Error", "Failed to load appointments");
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.appointments.loadError") || "Failed to load appointments");
     }
   }
 
-  useEffect(() => {
-    if (initialCustomerId) {
-      console.log("📌 Preselected customer for scheduling:", initialCustomerId);
-    }
-  }, [initialCustomerId]);
-
   async function addCustomerToSchedule(customerId) {
-    console.log("➕ Adding customer to schedule:", {
-      customerId,
-      selectedTech,
-      technicians,
-      isTechSelected: !!selectedTech
-    });
 
     customerId = String(customerId);
 
     if (!customerId || customerId === "undefined") {
       console.error("Invalid customerId:", customerId);
-      return Alert.alert("Error", "Invalid customer selected");
+      return Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.addCustomer.invalidCustomer") || "Invalid customer selected");
     }
 
     if (!selectedTech) {
       console.error("No technician selected:", { selectedTech, technicians });
-      Alert.alert("Error", "Please select a technician first");
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.addCustomer.noTechnician") || "Please select a technician first");
       return;
     }
 
     const techExists = technicians.some(t => t.id === selectedTech);
     if (!techExists) {
       console.error("Selected technician not found:", { selectedTech, technicians });
-      Alert.alert("Error", "Selected technician not found. Please select a valid technician.");
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.addCustomer.invalidTechnician") || "Selected technician not found. Please select a valid technician.");
       return;
     }
 
-    if (!time.trim()) return Alert.alert("Error", "Please enter appointment time");
+    if (!time.trim()) return Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.addCustomer.noTime") || "Please enter appointment time");
     
     // 🚨 CRITICAL FIX: Require price for ALL service types
     if (!servicePrice || isNaN(servicePrice) || Number(servicePrice) <= 0) {
-      return Alert.alert("Invalid Price", "Please enter a valid service price (greater than 0).");
+      return Alert.alert(i18n.t("admin.schedule.servicePrice.title") || "Invalid Price", i18n.t("admin.schedule.servicePrice.invalid") || "Please enter a valid service price (greater than 0).");
+    }
+
+    // Check for decimal places (max 2)
+    const priceNumber = Number(servicePrice);
+    const decimalPlaces = (servicePrice.toString().split('.')[1] || '').length;
+    if (decimalPlaces > 2) {
+      return Alert.alert(
+        i18n.t("admin.schedule.servicePrice.title") || "Invalid Price",
+        i18n.t("admin.schedule.servicePrice.decimalLimit") || "Price can have maximum 2 decimal places (e.g., 16.23)"
+      );
     }
     
-    if (!serviceType) return Alert.alert("Error", "Please select a service type");
+    if (!serviceType) return Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.addCustomer.noServiceType") || "Please select a service type");
 
     if (serviceType === "myocide" && !complianceValidUntil) {
       Alert.alert(
-        "Missing compliance date",
-        "Compliance valid-until date is required for Myocide services."
+        i18n.t("admin.schedule.compliance.missing") || "Missing compliance date",
+        i18n.t("admin.schedule.compliance.requiredForMyocide") || "Compliance valid-until date is required for Myocide services."
       );
       return;
     }
 
     // IMPORTANT: For insecticide, we should use the insecticideDetails state
     if (serviceType === "insecticide" && !insecticideDetails.trim()) {
-      return Alert.alert("Required", "Please provide details about the insecticide treatment");
+      return Alert.alert(i18n.t("common.required"), i18n.t("admin.schedule.treatmentDetails.insecticideRequired") || "Please provide details about the insecticide treatment");
     }
     
     if (serviceType === "disinfection" && !disinfectionDetails.trim()) {
-      return Alert.alert("Required", "Please provide details about the disinfection treatment");
+      return Alert.alert(i18n.t("common.required"), i18n.t("admin.schedule.treatmentDetails.disinfectionRequired") || "Please provide details about the disinfection treatment");
     }
     
     if (serviceType === "special" && !specialServiceSubtype) {
-      return Alert.alert("Required", "Please select a specific service type for Special Service");
+      return Alert.alert(i18n.t("common.required"), i18n.t("admin.schedule.addCustomer.specialRequired") || "Please select a specific service type for Special Service");
     }
     
     if (serviceType === "special" && specialServiceSubtype === "other" && !otherPestName.trim()) {
-      return Alert.alert("Required", "Please type the name of the pest for 'Other' service");
+      return Alert.alert(i18n.t("common.required"), i18n.t("admin.schedule.addCustomer.otherPestRequired") || "Please type the name of the pest for 'Other' service");
     }
 
     if (!/^\d{2}:\d{2}$/.test(time.trim())) {
-      return Alert.alert("Invalid Format", "Please use HH:MM format (e.g., 09:30 or 14:00)");
+      return Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.addCustomer.invalidTimeFormat") || "Please use HH:MM format (e.g., 09:30 or 14:00)");
     }
 
     const [hours, minutes] = time.trim().split(':').map(Number);
     if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-      return Alert.alert("Invalid Time", "Hours must be 00-23, minutes must be 00-59");
+      return Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.addCustomer.invalidTimeRange") || "Hours must be 00-23, minutes must be 00-59");
     }
 
     const dayKey = selectedDate.toISOString().split("T")[0];
@@ -405,20 +354,13 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
 
     
     if (existingAppointment) {
-      return Alert.alert("Time Slot Unavailable", "This time slot is already booked for the selected technician");
+      return Alert.alert(i18n.t("admin.schedule.addCustomer.timeSlotUnavailable") || "Time Slot Unavailable", i18n.t("admin.schedule.addCustomer.timeSlotTaken") || "This time slot is already booked for the selected technician");
     }
 
     try {
       const dayKey = selectedDate.toISOString().split("T")[0];
 
       const isUuidCustomer = isUUID(customerId);
-
-      console.log("🔍 DEBUG 1 - Price check in AdminTechSchedule:", {
-        servicePrice: servicePrice,
-        priceType: typeof servicePrice,
-        isNumber: !isNaN(servicePrice),
-        isEmpty: !servicePrice || servicePrice.trim() === ''
-      });
 
       // Prepare the payload
       const payload = {
@@ -456,42 +398,17 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         }
       } else if (serviceType === "myocide") {
         // ✅ Also for myocide, set otherPestName
-        payload.otherPestName = "Myocide Service";
+        payload.otherPestName = i18n.t("admin.schedule.serviceType.myocide.label") || "Myocide Service";
       }
-
-
-      console.log("📤 Creating disinfection appointment with details:", {
-        disinfectionDetails: disinfectionDetails.trim(),
-        hasDetails: !!disinfectionDetails.trim(),
-        payload: payload
-      });
-
-      console.log("🔍 DEBUG - Creating appointment with price:", {
-        servicePrice: Number(servicePrice),
-        servicePriceType: typeof servicePrice,
-        servicePriceValue: servicePrice,
-        payload: payload
-      });
-
-      console.log("🔍 DEBUG 2 - Payload being sent:", JSON.stringify(payload, null, 2));
-
   
       const res = await apiService.createAppointment(payload);
-      
-      console.log("🔍 DEBUG 3 - Response from API:", res);
-
-      console.log("🔍 DEBUG - Appointment creation response:", {
-        success: res?.success,
-        appointmentId: res?.data?.id,
-        returnedPrice: res?.data?.service_price
-      });
 
       if (!res?.success) {
-        return Alert.alert("Error", res.error || "Failed to create appointment");
+        return Alert.alert(i18n.t("common.error"), res.error || i18n.t("admin.schedule.addCustomer.createFailed") || "Failed to create appointment");
       }
 
       await loadAppointments();
-      Alert.alert("Success", "Appointment created");
+      Alert.alert(i18n.t("common.success"), i18n.t("admin.schedule.addCustomer.createSuccess") || "Appointment created");
       
       // Reset all fields
       setTime("");
@@ -502,7 +419,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
       
     } catch (err) {
       console.error("Error creating appointment:", err);
-      Alert.alert("Error", err.message || "Failed to create appointment");
+      Alert.alert(i18n.t("common.error"), err.message || i18n.t("admin.schedule.addCustomer.createFailed") || "Failed to create appointment");
     }
   }
 
@@ -521,33 +438,32 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         })
       };
       
-      console.log("🔄 Updating appointment details:", { appointmentId, payload });
       
       const result = await apiService.updateAppointment(appointmentId, payload);
       
       if (result?.success) {
         await loadAppointments();
-        Alert.alert("Success", "Treatment details updated");
+        Alert.alert(i18n.t("common.success"), i18n.t("admin.schedule.editModal.updateSuccess") || "Treatment details updated");
         return true;
       } else {
-        Alert.alert("Error", result?.error || "Failed to update details");
+        Alert.alert(i18n.t("common.error"), result?.error || i18n.t("admin.schedule.editModal.updateFailed") || "Failed to update details");
         return false;
       }
     } catch (err) {
       console.error("Update details error:", err);
-      Alert.alert("Error", "Failed to update treatment details");
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.editModal.updateFailed") || "Failed to update treatment details");
       return false;
     }
   }
 
   async function removeCustomer(appointmentId) {
     Alert.alert(
-      "Remove Appointment",
-      "Are you sure you want to remove this appointment?",
+      i18n.t("admin.schedule.appointments.removeTitle") || "Remove Appointment",
+      i18n.t("admin.schedule.appointments.removeConfirm") || "Are you sure you want to remove this appointment?",
       [
-        { text: "Cancel", style: "cancel" },
+        { text: i18n.t("common.cancel"), style: "cancel" },
         {
-          text: "Remove",
+          text: i18n.t("common.delete") || "Remove",
           style: "destructive",
           onPress: async () => {
             try {
@@ -555,8 +471,8 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
               
               if (appointment && appointment.status === 'completed') {
                 Alert.alert(
-                  "Cannot Remove",
-                  "This appointment has already been completed and cannot be removed."
+                  i18n.t("admin.schedule.appointments.cannotRemove") || "Cannot Remove",
+                  i18n.t("admin.schedule.appointments.completedCannotRemove") || "This appointment has already been completed and cannot be removed."
                 );
                 return;
               }
@@ -571,13 +487,13 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                   onAppointmentChanged();
                 }
                 
-                Alert.alert("Success", "Appointment removed successfully");
+                Alert.alert(i18n.t("common.success"), i18n.t("admin.schedule.appointments.removeSuccess") || "Appointment removed successfully");
               } else {
-                Alert.alert("Error", result?.error || "Failed to delete appointment");
+                Alert.alert(i18n.t("common.error"), result?.error || i18n.t("admin.schedule.appointments.removeFailed") || "Failed to delete appointment");
               }
             } catch (err) {
               console.error("Delete appointment error:", err);
-              Alert.alert("Error", "Failed to delete appointment");
+              Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.appointments.removeFailed") || "Failed to delete appointment");
             }
           }
         }
@@ -587,12 +503,12 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
 
   async function cancelAppointment(appointmentId) {
     Alert.alert(
-      "Cancel Appointment",
-      "This appointment will be marked as cancelled but kept for records. Continue?",
+      i18n.t("admin.schedule.appointments.cancelTitle") || "Cancel Appointment",
+      i18n.t("admin.schedule.appointments.cancelConfirm") || "This appointment will be marked as cancelled but kept for records. Continue?",
       [
-        { text: "Keep", style: "cancel" },
+        { text: i18n.t("common.cancel"), style: "cancel" },
         {
-          text: "Cancel Appointment",
+          text: i18n.t("admin.schedule.appointments.cancelButton") || "Cancel Appointment",
           style: "destructive",
           onPress: async () => {
             try {
@@ -602,8 +518,8 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
 
               if (appointment.status === "completed") {
                 Alert.alert(
-                  "Not Allowed",
-                  "Completed appointments cannot be cancelled."
+                  i18n.t("admin.schedule.appointments.notAllowed") || "Not Allowed",
+                  i18n.t("admin.schedule.appointments.completedCannotCancel") || "Completed appointments cannot be cancelled."
                 );
                 return;
               }
@@ -611,7 +527,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
               const res = await apiService.cancelAppointment(appointmentId);
 
               if (!res?.success) {
-                return Alert.alert("Error", res?.error || "Failed to cancel appointment");
+                return Alert.alert(i18n.t("common.error"), res?.error || i18n.t("admin.schedule.appointments.cancelFailed") || "Failed to cancel appointment");
               }
 
               await loadAppointments();
@@ -621,10 +537,10 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 onAppointmentChanged();
               }
               
-              Alert.alert("Cancelled", "Appointment has been cancelled.");
+              Alert.alert(i18n.t("admin.schedule.appointments.cancelled") || "Cancelled", i18n.t("admin.schedule.appointments.cancelSuccess") || "Appointment has been cancelled.");
             } catch (err) {
               console.error("Cancel appointment error:", err);
-              Alert.alert("Error", "Failed to cancel appointment");
+              Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.appointments.cancelFailed") || "Failed to cancel appointment");
             }
           }
         }
@@ -633,16 +549,10 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   }
 
   function formatAppointmentTime(timeString) {
-    console.log("🔍 formatAppointmentTime called with:", {
-      timeString,
-      type: typeof timeString,
-      isString: typeof timeString === 'string',
-      isUndefined: timeString === undefined
-    });
     
     if (!timeString || typeof timeString !== 'string') {
       console.warn("⚠️ Invalid time string:", timeString);
-      return "No time";
+      return i18n.t("admin.schedule.appointments.noTime") || "No time";
     }
     
     // Extract just HH:MM from formats like "12:10:00" or "12:10:00.000Z"
@@ -652,7 +562,6 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
       const hours = match[1];
       const minutes = match[2];
       const formatted = `${hours}:${minutes}`; // Returns "09:10"
-      console.log("✅ Formatted time:", formatted);
       return formatted;
     }
     
@@ -661,24 +570,19 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   }
 
   function getDayAssignments() {
-    console.log("📋 Filtering appointments for technician:", selectedTech);
-    console.log("📋 Total appointments available:", appointments.length);
-    
     const filtered = appointments
       .filter(a => {
         const matches = a.technicianId === selectedTech;
-        console.log(`Appointment ${a.id}: tech=${a.technicianId}, matches=${matches}`);
         return matches;
       })
       .sort((a, b) => a.time.localeCompare(b.time));
       
-    console.log("✅ Found", filtered.length, "appointments for selected tech");
     return filtered;
   }
 
   function getServiceTypeLabel(typeId, subtypeId = null, otherPest = null) {
     const service = serviceTypes.find(s => s.id === typeId);
-    let label = service ? service.label : typeId || "Myocide";
+    let label = service ? service.label : typeId || i18n.t("serviceTypes.myocide");
     
     if (typeId === "special" && subtypeId) {
       const subtype = specialServiceSubtypes.find(s => s.id === subtypeId);
@@ -695,7 +599,6 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   }
 
   function handleEditAppointment(appointment) {
-    console.log("🔍 Editing appointment - FULL OBJECT:", JSON.stringify(appointment, null, 2));
     
     setEditingAppointment(appointment);
     
@@ -739,16 +642,12 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
     // Try all possible field names for technician ID
     if (appointment.technicianId) {
       technicianId = appointment.technicianId;
-      console.log("✅ Found technicianId from appointment.technicianId:", technicianId);
     } else if (appointment.technician_id) {
       technicianId = appointment.technician_id;
-      console.log("✅ Found technicianId from appointment.technician_id:", technicianId);
     } else if (appointment.technician) {
       technicianId = appointment.technician;
-      console.log("✅ Found technicianId from appointment.technician:", technicianId);
     } else if (appointment.technician_id) {
       technicianId = appointment.technician_id;
-      console.log("✅ Found technicianId from appointment.technician_id:", technicianId);
     }
     
     // If still null, try to find it from the appointments array
@@ -758,14 +657,9 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         if (fullAppointment.technicianId) technicianId = fullAppointment.technicianId;
         else if (fullAppointment.technician_id) technicianId = fullAppointment.technician_id;
         else if (fullAppointment.technician) technicianId = fullAppointment.technician;
-        
-        if (technicianId) {
-          console.log("✅ Found technicianId from appointments array:", technicianId);
-        }
       }
     }
-    
-    console.log("👨‍🔧 Final technician ID to set:", technicianId);
+
     setEditTechnicianId(technicianId);
     
     setShowEditModal(true);
@@ -780,7 +674,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
     
     if (!appointmentIdToUpdate) {
       console.error("❌ ERROR: No appointment ID to update!");
-      Alert.alert("Error", "Cannot update: Appointment ID is missing");
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.editModal.missingId") || "Cannot update: Appointment ID is missing");
       setProcessing(false);
       return;
     }
@@ -788,37 +682,49 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
     try {
       // Validate required fields
       if (!editServicePrice || isNaN(editServicePrice) || Number(editServicePrice) <= 0) {
-        Alert.alert("Invalid Price", "Please enter a valid service price (greater than 0).");
+        Alert.alert(i18n.t("admin.schedule.servicePrice.title") || "Invalid Price", i18n.t("admin.schedule.servicePrice.invalid") || "Please enter a valid service price (greater than 0).");
+        setProcessing(false);
+        return;
+      }
+
+      // Check for decimal places (max 2)
+      const priceNumber = Number(editServicePrice);
+      const decimalPlaces = (editServicePrice.toString().split('.')[1] || '').length;
+      if (decimalPlaces > 2) {
+        Alert.alert(
+          i18n.t("admin.schedule.servicePrice.title") || "Invalid Price",
+          i18n.t("admin.schedule.servicePrice.decimalLimit") || "Price can have maximum 2 decimal places (e.g., 16.23)"
+        );
         setProcessing(false);
         return;
       }
       
       if (!editTime.trim()) {
-        Alert.alert("Error", "Please select appointment time");
+        Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.editModal.noTime") || "Please select appointment time");
         setProcessing(false);
         return;
       }
       
       if (!editTechnicianId) {
-        Alert.alert("Error", "Please select a technician");
+        Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.editModal.noTechnician") || "Please select a technician");
         setProcessing(false);
         return;
       }
       
       if (editServiceType === "myocide" && !editComplianceValidUntil) {
-        Alert.alert("Missing compliance date", "Compliance valid-until date is required for Myocide services.");
+        Alert.alert(i18n.t("admin.schedule.compliance.missing") || "Missing compliance date", i18n.t("admin.schedule.compliance.requiredForMyocide") || "Compliance valid-until date is required for Myocide services.");
         setProcessing(false);
         return;
       }
       
       if (editServiceType === "special" && !editSpecialServiceSubtype) {
-        Alert.alert("Required", "Please select a specific service type for Special Service");
+        Alert.alert(i18n.t("common.required"), i18n.t("admin.schedule.editModal.specialRequired") || "Please select a specific service type for Special Service");
         setProcessing(false);
         return;
       }
       
       if (editServiceType === "special" && editSpecialServiceSubtype === "other" && !editOtherPestName.trim()) {
-        Alert.alert("Required", "Please type the name of the pest for 'Other' service");
+        Alert.alert(i18n.t("common.required"), i18n.t("admin.schedule.editModal.otherPestRequired") || "Please type the name of the pest for 'Other' service");
         setProcessing(false);
         return;
       }
@@ -848,25 +754,10 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
           ? editOtherPestName.trim() 
           : specialServiceSubtypes.find(s => s.id === editSpecialServiceSubtype)?.label || editSpecialServiceSubtype;
       } else if (editServiceType === "myocide") {
-        payload.otherPestName = "Myocide Service";
+        payload.otherPestName = i18n.t("admin.schedule.serviceType.myocide.label") || "Myocide Service";
       }
       
-      // DEBUG: Detailed log of what's being sent
-      console.log("📤 SENDING UPDATE PAYLOAD:", {
-        appointmentId: appointmentIdToUpdate,
-        payload: payload,
-        originalAppointment: {
-          id: editingAppointment.id,
-          technicianId: editingAppointment.technicianId,
-          technician_id: editingAppointment.technician_id
-        },
-        newTechnicianId: editTechnicianId,
-        technicians: technicians.map(t => ({ id: t.id, name: t.name }))
-      });
-      
       const result = await apiService.updateAppointment(appointmentIdToUpdate, payload);
-      
-      console.log("📥 UPDATE RESPONSE:", result);
       
       if (result?.success) {
         await loadAppointments();
@@ -879,23 +770,16 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         });
         
         const updatedAppointment = updatedAppointments.find(a => a.id === appointmentIdToUpdate);
-        console.log("✅ VERIFICATION - Updated appointment:", {
-          id: updatedAppointment?.id,
-          technicianId: updatedAppointment?.technicianId,
-          technician_id: updatedAppointment?.technician_id,
-          expectedTechnicianId: editTechnicianId,
-          match: updatedAppointment?.technicianId === editTechnicianId || updatedAppointment?.technician_id === editTechnicianId
-        });
         
-        Alert.alert("Success", "Appointment updated successfully");
+        Alert.alert(i18n.t("common.success"), i18n.t("admin.schedule.editModal.updateSuccess") || "Appointment updated successfully");
         closeEditModal();
       } else {
         console.error("❌ Update failed:", result?.error);
-        Alert.alert("Error", result?.error || "Failed to update appointment");
+        Alert.alert(i18n.t("common.error"), result?.error || i18n.t("admin.schedule.editModal.updateFailed") || "Failed to update appointment");
       }
     } catch (err) {
       console.error("Save error:", err);
-      Alert.alert("Error", "Failed to save changes");
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.schedule.editModal.updateFailed") || "Failed to save changes");
     } finally {
       setProcessing(false);
     }
@@ -950,9 +834,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
     const hours = selectedTime.getHours().toString().padStart(2, '0');
     const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
     const formattedTime = `${hours}:${minutes}`;
-    
-    console.log("🕒 Formatted time:", formattedTime, "from:", selectedTime);
-    
+  
     setTime(formattedTime);
     // REMOVE THESE LINES - we don't need selectedHour/selectedMinute anymore
     // setSelectedHour(hours);
@@ -1016,14 +898,14 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
 
 
   // Get selected technician name
-  const selectedTechnicianName = technicians.find(t => t.id === selectedTech)?.name || "Select Technician";
+  const selectedTechnicianName = technicians.find(t => t.id === selectedTech)?.name || i18n.t("admin.schedule.technician.select") || "Select Technician";
 
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1f9c8b" />
-          <Text style={styles.loadingText}>Loading Schedule...</Text>
+          <Text style={styles.loadingText}>{i18n.t("admin.schedule.loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -1044,7 +926,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
               <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.adminBadge}>
                 <MaterialIcons name="schedule" size={14} color="#fff" />
-                <Text style={styles.adminBadgeText}>SCHEDULE</Text>
+                <Text style={styles.adminBadgeText}>{i18n.t("admin.schedule.header.badge")}</Text>
               </View>
             </View>
             <TouchableOpacity 
@@ -1057,10 +939,10 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
           </View>
 
           <View style={styles.headerContent}>
-            <Text style={styles.welcomeText}>Schedule Management</Text>
-            <Text style={styles.title}>Plan Technician Visits</Text>
+            <Text style={styles.welcomeText}>{i18n.t("admin.schedule.header.welcome")}</Text>
+            <Text style={styles.title}>{i18n.t("admin.schedule.header.title")}</Text>
             <Text style={styles.subtitle}>
-              Assign and manage daily appointments for technicians
+              {i18n.t("admin.schedule.header.subtitle")}
             </Text>
           </View>
         </View>
@@ -1072,7 +954,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
               <MaterialIcons name="event" size={18} color="#1f9c8b" />
             </View>
             <Text style={styles.statNumber}>{stats.total}</Text>
-            <Text style={styles.statLabel}>Total Visits</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.schedule.stats.totalVisits")}</Text>
           </View>
 
           <View style={styles.statDivider} />
@@ -1082,7 +964,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
               <MaterialIcons name="check-circle" size={18} color="#1f9c8b" />
             </View>
             <Text style={styles.statNumber}>{stats.completed}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.schedule.stats.completed")}</Text>
           </View>
 
           <View style={styles.statDivider} />
@@ -1092,7 +974,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
               <MaterialIcons name="pending" size={18} color="#1f9c8b" />
             </View>
             <Text style={styles.statNumber}>{stats.scheduled}</Text>
-            <Text style={styles.statLabel}>Scheduled</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.schedule.stats.scheduled")}</Text>
           </View>
         </View>
 
@@ -1100,7 +982,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="engineering" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Select Technician</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("admin.schedule.technician.title")}</Text>
           </View>
           <TouchableOpacity
             style={styles.refreshButton}
@@ -1108,7 +990,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
             activeOpacity={0.7}
           >
             <MaterialIcons name="refresh" size={18} color="#1f9c8b" />
-            <Text style={styles.refreshButtonText}>Refresh</Text>
+            <Text style={styles.refreshButtonText}>{i18n.t("common.refresh")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -1117,53 +999,89 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
             <View style={styles.emptyIconContainer}>
               <MaterialIcons name="person-off" size={60} color="#ddd" />
             </View>
-            <Text style={styles.emptyStateTitle}>No Technicians</Text>
+            <Text style={styles.emptyStateTitle}>{i18n.t("admin.schedule.technician.noTechnicians")}</Text>
             <Text style={styles.emptyStateText}>
-              Add technicians first from the Admin Dashboard
+              {i18n.t("admin.schedule.technician.noTechniciansDesc")}
             </Text>
           </View>
         ) : (
-          <View style={styles.techGrid}>
-            {technicians.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={[
-                  styles.techCard,
-                  selectedTech === item.id && styles.techCardSelected
-                ]}
-                onPress={() => setSelectedTech(item.id)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.techCardHeader}>
-                  <View style={[
-                    styles.techAvatar,
-                    selectedTech === item.id && styles.techAvatarSelected
-                  ]}>
-                    <MaterialIcons name="person" size={22} color="#fff" />
-                  </View>
-                  {selectedTech === item.id && (
-                    <View style={styles.techSelectedBadge}>
-                      <MaterialIcons name="check-circle" size={14} color="#fff" />
-                    </View>
-                  )}
-                </View>
-                <Text style={[
-                  styles.techName,
-                  selectedTech === item.id && styles.techNameSelected
-                ]}>
-                  {item.name}
+          <>
+            {/* Technician Dropdown Button */}
+            <TouchableOpacity
+              style={[styles.customerDropdownButton, { marginBottom: 16 }]}
+              onPress={() => setShowTechnicianDropdown(!showTechnicianDropdown)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.dropdownContent}>
+                <MaterialIcons name="engineering" size={20} color="#666" />
+                <Text style={styles.dropdownText}>
+                  {selectedTechnicianName}
                 </Text>
-                <Text style={styles.techUsername}>@{item.username}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}  
+              </View>
+              <MaterialIcons 
+                name={showTechnicianDropdown ? "expand-less" : "expand-more"} 
+                size={24} 
+                color="#666" 
+              />
+            </TouchableOpacity>
+
+            {/* Technician Dropdown Options */}
+            {showTechnicianDropdown && (
+              <View style={[styles.customerDropdownOptions, { marginBottom: 24 }]}>
+                <ScrollView 
+                  style={styles.customerOptionList}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                >
+                  {technicians.map((item) => {
+                    const techId = item.id || item.technicianId;
+                    const techName = item.name || 
+                      `${item.firstName || item.first_name || ''} ${item.lastName || item.last_name || ''}`.trim() || 
+                      item.username || 
+                      i18n.t("admin.schedule.technician.unknown") || 
+                      'Unknown';
+                    const techUsername = item.username ? `@${item.username}` : '';
+                    
+                    return (
+                      <TouchableOpacity
+                        key={techId || techUsername || `tech-${Math.random()}`}
+                        style={[
+                          styles.customerOption,
+                          selectedTech === techId && styles.customerOptionSelected
+                        ]}
+                        onPress={() => {
+                          setSelectedTech(techId);
+                          setShowTechnicianDropdown(false);
+                        }}
+                      >
+                        <View style={styles.customerOptionContent}>
+                          <View style={[styles.customerOptionAvatar, { backgroundColor: '#1f9c8b' }]}>
+                            <MaterialIcons name="person" size={20} color="#fff" />
+                          </View>
+                          <View style={styles.customerOptionInfo}>
+                            <Text style={styles.customerOptionName}>{techName}</Text>
+                            {techUsername ? (
+                              <Text style={styles.customerOptionId}>{techUsername}</Text>
+                            ) : null}
+                          </View>
+                        </View>
+                        {selectedTech === techId && (
+                          <MaterialIcons name="check" size={20} color="#1f9c8b" />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+          </>
+        )}
 
         {/* COMPLIANCE VALIDITY DATE */}
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
               <MaterialIcons name="verified" size={20} color="#2c3e50" />
-              <Text style={styles.sectionTitle}>Compliance Validity</Text>
+              <Text style={styles.sectionTitle}>{i18n.t("admin.schedule.compliance.title")}</Text>
             </View>
             {complianceValidUntil ? (
               <Text style={styles.selectedDateText}>
@@ -1171,7 +1089,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
               </Text>
             ) : (
               <Text style={[styles.selectedDateText, { opacity: 0.5 }]}>
-                Required for Myocide
+                {i18n.t("admin.schedule.compliance.requiredForMyocide")}
               </Text>
             )}
           </View>
@@ -1187,9 +1105,9 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 <MaterialIcons name="event-available" size={20} color="#1f9c8b" />
               </View>
               <View style={styles.dateTimeTextContainer}>
-                <Text style={styles.dateTimeLabel}>Valid Until</Text>
+                <Text style={styles.dateTimeLabel}>{i18n.t("admin.schedule.compliance.validUntil")}</Text>
                 <Text style={styles.dateTimeValue}>
-                  {complianceValidUntil || "Select compliance date"}
+                  {complianceValidUntil || i18n.t("admin.schedule.compliance.selectDate")}
                 </Text>
               </View>
               <MaterialIcons name="calendar-today" size={20} color="#666" />
@@ -1223,7 +1141,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="calendar-today" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Date & Time</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("admin.schedule.dateTime.title")}</Text>
           </View>
           <Text style={styles.selectedDateText}>
             {selectedDate.toISOString().split("T")[0]}
@@ -1242,7 +1160,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 <MaterialIcons name="event" size={20} color="#1f9c8b" />
               </View>
               <View style={styles.dateTimeTextContainer}>
-                <Text style={styles.dateTimeLabel}>Selected Date</Text>
+                <Text style={styles.dateTimeLabel}>{i18n.t("admin.schedule.dateTime.selectedDate")}</Text>
                 <Text style={styles.dateTimeValue}>
                   {selectedDate.toISOString().split("T")[0]}
                 </Text>
@@ -1262,9 +1180,9 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 <MaterialIcons name="access-time" size={20} color="#1f9c8b" />
               </View>
               <View style={styles.dateTimeTextContainer}>
-                <Text style={styles.dateTimeLabel}>Appointment Time</Text>
+                <Text style={styles.dateTimeLabel}>{i18n.t("admin.schedule.dateTime.appointmentTime")}</Text>
                 <Text style={styles.dateTimeValue}>
-                  {time ? formatTime(time) : 'Select time'}
+                  {time ? formatTime(time) : i18n.t("admin.schedule.dateTime.selectTime")}
                 </Text>
               </View>
               <MaterialIcons name="schedule" size={20} color="#666" />
@@ -1302,7 +1220,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="category" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Service Type</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("admin.schedule.serviceType.title")}</Text>
           </View>
           <Text style={styles.serviceTypeBadge}>
             {selectedService.label}
@@ -1346,7 +1264,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 ]}>
                   {specialServiceSubtype 
                     ? specialServiceSubtypes.find(s => s.id === specialServiceSubtype)?.label
-                    : "Select specific service type"}
+                    : i18n.t("admin.schedule.specialSubtypes.selectType")}
                 </Text>
                 {specialServiceSubtype && (
                   <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
@@ -1358,10 +1276,10 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
             {/* Other Pest Name Input */}
             {specialServiceSubtype === "other" && (
               <View style={styles.otherPestContainer}>
-                <Text style={styles.otherPestLabel}>Specify Pest Name</Text>
+                <Text style={styles.otherPestLabel}>{i18n.t("admin.schedule.specialSubtypes.specifyPest")}</Text>
                 <TextInput
                   style={styles.otherPestInput}
-                  placeholder="e.g., Ants, Spiders, Cockroaches, etc."
+                  placeholder={i18n.t("admin.schedule.specialSubtypes.pestPlaceholder")}
                   placeholderTextColor="#999"
                   value={otherPestName}
                   onChangeText={setOtherPestName}
@@ -1375,10 +1293,10 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         {/* Service Details Inputs */}
         {serviceType === "insecticide" && (
           <View style={styles.detailsContainer}>
-            <Text style={styles.detailsLabel}>Treatment Details</Text>
+            <Text style={styles.detailsLabel}>{i18n.t("admin.schedule.treatmentDetails.title")}</Text>
             <TextInput
               style={styles.detailsInput}
-              placeholder="Describe the insecticide requirements..."
+              placeholder={i18n.t("admin.schedule.treatmentDetails.insecticidePlaceholder")}
               placeholderTextColor="#999"
               value={insecticideDetails}
               onChangeText={setInsecticideDetails}
@@ -1388,10 +1306,10 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
 
         {serviceType === "disinfection" && (
           <View style={styles.detailsContainer}>
-            <Text style={styles.detailsLabel}>Treatment Details</Text>
+            <Text style={styles.detailsLabel}>{i18n.t("admin.schedule.treatmentDetails.title")}</Text>
             <TextInput
               style={styles.detailsInput}
-              placeholder="Describe the disinfection requirements..."
+              placeholder={i18n.t("admin.schedule.treatmentDetails.disinfectionPlaceholder")}
               placeholderTextColor="#999"
               value={disinfectionDetails}
               onChangeText={setDisinfectionDetails}
@@ -1405,7 +1323,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="assignment" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Appointment Category</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("admin.schedule.appointmentCategory.title")}</Text>
           </View>
           <Text style={styles.serviceTypeBadge}>
             {appointmentCategories.find(c => c.id === appointmentCategory)?.label}
@@ -1422,7 +1340,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
               {appointmentCategories.find(c => c.id === appointmentCategory)?.label}
             </Text>
             <Text style={styles.serviceDescription}>
-              Defines billing and visit purpose
+              {i18n.t("admin.schedule.appointmentCategory.description")}
             </Text>
           </View>
           <MaterialIcons name="expand-more" size={24} color="#666" />
@@ -1432,16 +1350,16 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="euro" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Service Price</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("admin.schedule.servicePrice.title")}</Text>
           </View>
         </View>
 
         <View style={styles.detailsContainer}>
           <TextInput
             style={styles.detailsInput}
-            placeholder="Enter service price in Euro (e.g. 80)"
+            placeholder={i18n.t("admin.schedule.servicePrice.placeholder")}
             placeholderTextColor="#999"
-            keyboardType="numeric"
+            keyboardType="decimal-pad"
             value={servicePrice}
             onChangeText={setServicePrice}
           />
@@ -1452,11 +1370,11 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="schedule" size={20} color="#2c3e50" />
             <Text style={styles.sectionTitle}>
-              Appointments for {selectedDate.toISOString().split("T")[0]}
+              {i18n.t("admin.schedule.appointments.title", { date: selectedDate.toISOString().split("T")[0] })}
             </Text>
           </View>
           <Text style={styles.appointmentCount}>
-            {getDayAssignments().length} scheduled
+            {getDayAssignments().length} {i18n.t("admin.schedule.stats.scheduled").toLowerCase()}
           </Text>
         </View>
 
@@ -1465,9 +1383,9 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
             <View style={styles.emptyIconContainer}>
               <MaterialIcons name="event-busy" size={60} color="#ddd" />
             </View>
-            <Text style={styles.emptyStateTitle}>No Appointments</Text>
+            <Text style={styles.emptyStateTitle}>{i18n.t("admin.schedule.appointments.noAppointments")}</Text>
             <Text style={styles.emptyStateText}>
-              Add customers below to create appointments
+              {i18n.t("admin.schedule.appointments.noAppointmentsDesc")}
             </Text>
           </View>
         ) : (
@@ -1534,9 +1452,9 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                   <Text style={styles.appointmentCustomer}>
                     {customer?.customerName || 
                     item.customer_name || 
-                    (item.legacyCustomerKey ? `Customer ${item.legacyCustomerKey}` : 
-                      item.customerId ? `Customer ID: ${item.customerId}` : 
-                      'Unknown Customer')}
+                    (item.legacyCustomerKey ? `${i18n.t("admin.schedule.appointments.customerId", { id: item.legacyCustomerKey })}` : 
+                      item.customerId ? `${i18n.t("admin.schedule.appointments.customerId", { id: item.customerId })}` : 
+                      i18n.t("admin.schedule.appointments.unknownCustomer"))}
                   </Text>
                   
                   <View style={styles.serviceBadge}>
@@ -1553,13 +1471,13 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                   {item.status === 'completed' && (
                     <View style={styles.completedBadge}>
                       <MaterialIcons name="check-circle" size={12} color="#1f9c8b" />
-                      <Text style={styles.completedText}>Completed</Text>
+                      <Text style={styles.completedText}>{i18n.t("status.completed")}</Text>
                     </View>
                   )}
                   {item.status === "cancelled" && (
                     <View style={styles.cancelledBadge}>
                       <MaterialIcons name="cancel" size={12} color="#F44336" />
-                      <Text style={styles.cancelledText}>Cancelled</Text>
+                      <Text style={styles.cancelledText}>{i18n.t("status.cancelled")}</Text>
                     </View>
                   )}
                 </View>
@@ -1568,61 +1486,106 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
           </View>
         )}
 
-        {/* ADD CUSTOMER */}
+        {/* ADD CUSTOMER DROPDOWN */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="person-add" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Add Customer Appointment</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("admin.schedule.addCustomer.title")}</Text>
           </View>
           <Text style={styles.customersCount}>
-            {customers.length} available
+            {customers.length === 1
+              ? i18n.t("admin.schedule.addCustomer.available_one", { count: customers.length })
+              : i18n.t("admin.schedule.addCustomer.available_other", { count: customers.length })}
           </Text>
         </View>
 
-        {customers.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
-              <MaterialIcons name="people-outline" size={60} color="#ddd" />
-            </View>
-            <Text style={styles.emptyStateTitle}>No Customers</Text>
-            <Text style={styles.emptyStateText}>
-              Add customers first from the Admin Dashboard
+        {/* Customer Dropdown Button */}
+        <TouchableOpacity
+          style={styles.customerDropdownButton}
+          onPress={() => setShowCustomerDropdown(!showCustomerDropdown)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.dropdownContent}>
+            <MaterialIcons name="people" size={20} color="#666" />
+            <Text style={styles.dropdownText}>
+              {selectedCustomerForAdd 
+                ? customers.find(c => c.customerId === selectedCustomerForAdd)?.customerName 
+                : i18n.t("admin.schedule.addCustomer.dropdownPlaceholder")}
             </Text>
           </View>
-        ) : (
-          <View style={styles.customersGrid}>
-            {customers.slice(0, 6).map((item) => (
-              <TouchableOpacity
-                key={item.customerId} 
-                style={styles.customerCard}
-                onPress={() => addCustomerToSchedule(item.customerId)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.customerAvatar}>
-                  <Text style={styles.customerAvatarText}>
-                    {item.customerName.charAt(0).toUpperCase()}
-                  </Text>
+          <MaterialIcons 
+            name={showCustomerDropdown ? "expand-less" : "expand-more"} 
+            size={24} 
+            color="#666" 
+          />
+        </TouchableOpacity>
+
+        {/* Customer Dropdown Options */}
+        {showCustomerDropdown && (
+          <View style={styles.customerDropdownOptions}>
+            <ScrollView 
+              style={styles.customerOptionList}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              {customers.length === 0 ? (
+                <View style={styles.customerOptionEmpty}>
+                  <Text style={styles.customerOptionEmptyText}>{i18n.t("admin.schedule.addCustomer.noCustomers")}</Text>
                 </View>
-                <View style={styles.customerInfo}>
-                  <Text style={styles.customerName} numberOfLines={1}>
-                    {item.customerName}
-                  </Text>
-                  <Text style={styles.customerId}>ID: {item.customerId}</Text> 
-                </View>
-                <MaterialIcons name="add-circle" size={24} color="#1f9c8b" />
-              </TouchableOpacity>
-            ))}
+              ) : (
+                customers.map((item) => (
+                  <TouchableOpacity
+                    key={item.customerId}
+                    style={[
+                      styles.customerOption,
+                      selectedCustomerForAdd === item.customerId && styles.customerOptionSelected
+                    ]}
+                    onPress={() => {
+                      setSelectedCustomerForAdd(item.customerId);
+                      setShowCustomerDropdown(false);
+                    }}
+                  >
+                    <View style={styles.customerOptionContent}>
+                      <View style={styles.customerOptionAvatar}>
+                        <Text style={styles.customerOptionAvatarText}>
+                          {item.customerName.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.customerOptionInfo}>
+                        <Text style={styles.customerOptionName}>{item.customerName}</Text>
+                        <Text style={styles.customerOptionId}>{i18n.t("admin.schedule.addCustomer.id", { id: item.customerId })}</Text>
+                      </View>
+                    </View>
+                    {selectedCustomerForAdd === item.customerId && (
+                      <MaterialIcons name="check" size={20} color="#1f9c8b" />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
           </View>
+        )}
+
+        {/* Schedule Button */}
+        {selectedCustomerForAdd && (
+          <TouchableOpacity
+            style={styles.scheduleButton}
+            onPress={() => addCustomerToSchedule(selectedCustomerForAdd)}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="add-circle" size={20} color="#fff" />
+            <Text style={styles.scheduleButtonText}>{i18n.t("admin.schedule.addCustomer.scheduleButton")}</Text>
+          </TouchableOpacity>
         )}
 
         {/* FOOTER */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Technician's Schedule Management System</Text>
+          <Text style={styles.footerText}>{i18n.t("admin.schedule.footer.system")}</Text>
           <Text style={styles.footerSubtext}>
-              Version 1.0 • Last updated: {new Date().toLocaleDateString()}
+              {i18n.t("admin.schedule.footer.version", { date: new Date().toLocaleDateString() })}
           </Text>
           <Text style={styles.footerCopyright}>
-              © {new Date().getFullYear()} Pest-Free. All rights reserved.
+              {i18n.t("admin.schedule.footer.copyright", { year: new Date().getFullYear() })}
           </Text>
         </View>
       </ScrollView>
@@ -1642,7 +1605,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Service Type</Text>
+              <Text style={styles.modalTitle}>{i18n.t("admin.schedule.modals.selectService")}</Text>
               <TouchableOpacity 
                 onPress={() => setShowServiceDropdown(false)}
                 style={styles.modalCloseButton}
@@ -1717,7 +1680,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Service Type</Text>
+              <Text style={styles.modalTitle}>{i18n.t("admin.schedule.modals.selectSpecialType")}</Text>
               <TouchableOpacity 
                 onPress={() => setShowSpecialSubtypeDropdown(false)}
                 style={styles.modalCloseButton}
@@ -1784,7 +1747,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
         >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Appointment Category</Text>
+              <Text style={styles.modalTitle}>{i18n.t("admin.schedule.modals.selectCategory")}</Text>
               <TouchableOpacity onPress={() => setShowCategoryDropdown(false)}>
                 <MaterialIcons name="close" size={24} color="#666" />
               </TouchableOpacity>
@@ -1833,7 +1796,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                   style={styles.appointmentModalIcon}
                 />
                 <Text style={styles.appointmentModalTitle}>
-                  Edit Appointment
+                  {i18n.t("admin.schedule.editModal.title")}
                 </Text>
               </View>
               <TouchableOpacity 
@@ -1870,11 +1833,11 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                           c.customerId === editingAppointment.customerId || 
                           c.customerId === editingAppointment.legacyCustomerKey
                         );
-                        return customer?.customerName || editingAppointment.customer_name || 'Unknown Customer';
+                        return customer?.customerName || editingAppointment.customer_name || i18n.t("admin.schedule.appointments.unknownCustomer");
                       })()}
                     </Text>
                     <Text style={styles.customerRequestType}>
-                      Editing existing appointment
+                      {i18n.t("admin.schedule.editModal.customerInfo")}
                     </Text>
                   </View>
                 </View>
@@ -1882,7 +1845,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 {/* SERVICE PRICE */}
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>
-                    Service Price (€) <Text style={styles.requiredStar}>*</Text>
+                    {i18n.t("admin.schedule.editModal.servicePrice")} <Text style={styles.requiredStar}>*</Text>
                   </Text>
                   <View style={styles.inputWithIcon}>
                     <MaterialIcons name="euro" size={20} color="#666" style={styles.inputIcon} />
@@ -1900,7 +1863,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 {/* APPOINTMENT CATEGORY */}
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>
-                    Appointment Category <Text style={styles.requiredStar}>*</Text>
+                    {i18n.t("admin.schedule.editModal.appointmentCategory")} <Text style={styles.requiredStar}>*</Text>
                   </Text>
                   <TouchableOpacity
                     style={styles.formDropdown}
@@ -1910,7 +1873,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                     <View style={styles.dropdownContent}>
                       <MaterialIcons name="category" size={20} color="#666" />
                       <Text style={styles.dropdownText}>
-                        {appointmentCategories.find(c => c.id === editAppointmentCategory)?.label || 'Select Category'}
+                        {appointmentCategories.find(c => c.id === editAppointmentCategory)?.label || i18n.t("admin.schedule.modals.selectCategory")}
                       </Text>
                     </View>
                     <MaterialIcons 
@@ -1958,13 +1921,13 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 {/* COMPLIANCE - Required for Myocide, Optional for others */}
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>
-                    Compliance Valid Until {editServiceType === 'myocide' && <Text style={styles.requiredStar}>*</Text>}
+                    {i18n.t("admin.schedule.editModal.complianceValidUntil")} {editServiceType === 'myocide' && <Text style={styles.requiredStar}>*</Text>}
                   </Text>
                   <View style={styles.inputWithIcon}>
                     <MaterialIcons name="verified" size={20} color="#666" style={styles.inputIcon} />
                     <TextInput
                       style={styles.formInput}
-                      placeholder={editServiceType === 'myocide' ? "YYYY-MM-DD (Required)" : "YYYY-MM-DD (Optional)"}
+                      placeholder={editServiceType === 'myocide' ? i18n.t("admin.schedule.editModal.complianceRequired") : i18n.t("admin.schedule.editModal.complianceOptional")}
                       value={editComplianceValidUntil}
                       onChangeText={setEditComplianceValidUntil}
                       placeholderTextColor="#999"
@@ -1972,15 +1935,15 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                   </View>
                   <Text style={styles.helpText}>
                     {editServiceType === 'myocide' 
-                      ? 'Required for Myocide service compliance certificate' 
-                      : 'Optional: Only needed if this service affects compliance'}
+                      ? i18n.t("admin.schedule.compliance.requiredForMyocide")
+                      : i18n.t("admin.schedule.editModal.complianceOptional")}
                   </Text>
                 </View>
 
                 {/* TIME SELECTION - In Edit Appointment Modal */}
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>
-                    Time <Text style={styles.requiredStar}>*</Text>
+                    {i18n.t("admin.schedule.editModal.time")} <Text style={styles.requiredStar}>*</Text>
                   </Text>
                   <TouchableOpacity
                     style={styles.dateTimeButton}
@@ -1992,9 +1955,9 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                         <MaterialIcons name="access-time" size={20} color="#1f9c8b" />
                       </View>
                       <View style={styles.dateTimeTextContainer}>
-                        <Text style={styles.dateTimeLabel}>Appointment Time</Text>
+                        <Text style={styles.dateTimeLabel}>{i18n.t("admin.schedule.dateTime.appointmentTime")}</Text>
                         <Text style={styles.dateTimeValue}>
-                          {editTime ? formatTime(editTime) : 'Select time'}
+                          {editTime ? formatTime(editTime) : i18n.t("admin.schedule.dateTime.selectTime")}
                         </Text>
                       </View>
                       <MaterialIcons name="schedule" size={20} color="#666" />
@@ -2019,13 +1982,13 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 {/* TECHNICIAN SELECTION */}
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>
-                    Technician <Text style={styles.requiredStar}>*</Text>
+                    {i18n.t("admin.schedule.editModal.technician")} <Text style={styles.requiredStar}>*</Text>
                   </Text>
                   {technicians.length === 0 ? (
                     <View style={styles.noTechniciansContainer}>
                       <MaterialIcons name="warning" size={20} color="#F44336" />
                       <Text style={styles.noTechniciansText}>
-                        No technicians available.
+                        {i18n.t("admin.schedule.addCustomer.noTechnicians") || "No technicians available."}
                       </Text>
                     </View>
                   ) : (
@@ -2037,16 +2000,8 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                     >
                       {technicians.map((tech, index) => {
                         const techId = tech.id || tech.technicianId;
-                        const techName = `${tech.firstName || tech.first_name || ''} ${tech.lastName || tech.last_name || ''}`.trim() || tech.username || 'Unknown';
+                        const techName = `${tech.firstName || tech.first_name || ''} ${tech.lastName || tech.last_name || ''}`.trim() || tech.username || i18n.t("admin.schedule.technician.unknown") || 'Unknown';
                         
-                        // Debug log for each technician
-                        console.log("👨‍🔧 Tech option:", {
-                          index,
-                          techId,
-                          techName,
-                          editTechnicianId,
-                          matches: editTechnicianId === techId
-                        });
                         
                         return (
                           <TouchableOpacity
@@ -2057,7 +2012,6 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                               styles.technicianOptionSelected
                             ]}
                             onPress={() => {
-                              console.log("👨‍🔧 Selecting technician:", { techId, techName });
                               setEditTechnicianId(techId);
                             }}
                             activeOpacity={0.7}
@@ -2091,7 +2045,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
 
                 {/* SERVICE TYPE - Read Only */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Service Type</Text>
+                  <Text style={styles.formLabel}>{i18n.t("admin.schedule.editModal.serviceType")}</Text>
                   <View style={styles.readOnlyDisplay}>
                     <View style={[
                       styles.serviceIcon,
@@ -2108,7 +2062,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                         {serviceTypes.find(s => s.id === editServiceType)?.label || editServiceType}
                       </Text>
                       <Text style={styles.serviceDescription}>
-                        {serviceTypes.find(s => s.id === editServiceType)?.description || 'Service type cannot be changed'}
+                        {i18n.t("admin.schedule.editModal.serviceTypeUnchangeable")}
                       </Text>
                     </View>
                   </View>
@@ -2117,7 +2071,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 {/* SPECIAL SERVICE SUBTYPE */}
                 {editServiceType === 'special' && (
                   <View style={styles.formGroup}>
-                    <Text style={styles.formLabel}>Specific Service Type <Text style={styles.requiredStar}>*</Text></Text>
+                    <Text style={styles.formLabel}>{i18n.t("admin.schedule.editModal.specificServiceType")} <Text style={styles.requiredStar}>*</Text></Text>
                     <TouchableOpacity
                       style={styles.formDropdown}
                       onPress={() => setShowEditSpecialSubtypeDropdown(!showEditSpecialSubtypeDropdown)}
@@ -2128,7 +2082,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                         <Text style={styles.dropdownText}>
                           {editSpecialServiceSubtype 
                             ? specialServiceSubtypes.find(s => s.id === editSpecialServiceSubtype)?.label
-                            : 'Select specific service type'}
+                            : i18n.t("admin.schedule.specialSubtypes.selectType")}
                         </Text>
                       </View>
                       <MaterialIcons 
@@ -2184,11 +2138,11 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                     {editSpecialServiceSubtype === "other" && (
                       <View style={[styles.formGroup, { marginHorizontal: 0, marginTop: 12 }]}>
                         <View>
-                        <Text style={styles.formLabel}>Specify Pest Name <Text style={styles.requiredStar}>*</Text></Text>
+                        <Text style={styles.formLabel}>{i18n.t("admin.schedule.specialSubtypes.specifyPest")} <Text style={styles.requiredStar}>*</Text></Text>
                         <View style={styles.borderedInputContainer}>
                           <TextInput
                             style={styles.formInput}
-                            placeholder="e.g., Ants, Spiders, Cockroaches, etc."
+                            placeholder={i18n.t("admin.schedule.specialSubtypes.pestPlaceholder")}
                             placeholderTextColor="#999"
                             value={editOtherPestName}
                             onChangeText={setEditOtherPestName}
@@ -2205,10 +2159,10 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 {/* TREATMENT DETAILS - INSECTICIDE */}
                 {editServiceType === "insecticide" && (
                   <View style={styles.formGroup}>
-                    <Text style={styles.formLabel}>Treatment Details <Text style={styles.requiredStar}>*</Text></Text>
+                    <Text style={styles.formLabel}>{i18n.t("admin.schedule.editModal.treatmentDetails")} <Text style={styles.requiredStar}>*</Text></Text>
                     <TextInput
                       style={styles.formTextArea}
-                      placeholder="Describe the insecticide requirements..."
+                      placeholder={i18n.t("admin.schedule.treatmentDetails.insecticidePlaceholder")}
                       placeholderTextColor="#999"
                       value={editInsecticideDetails}
                       onChangeText={setEditInsecticideDetails}
@@ -2222,10 +2176,10 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 {/* TREATMENT DETAILS - DISINFECTION */}
                 {editServiceType === "disinfection" && (
                   <View style={styles.formGroup}>
-                    <Text style={styles.formLabel}>Treatment Details <Text style={styles.requiredStar}>*</Text></Text>
+                    <Text style={styles.formLabel}>{i18n.t("admin.schedule.editModal.treatmentDetails")} <Text style={styles.requiredStar}>*</Text></Text>
                     <TextInput
                       style={styles.formTextArea}
-                      placeholder="Describe the disinfection requirements..."
+                      placeholder={i18n.t("admin.schedule.treatmentDetails.disinfectionPlaceholder")}
                       placeholderTextColor="#999"
                       value={editDisinfectionDetails}
                       onChangeText={setEditDisinfectionDetails}
@@ -2240,25 +2194,25 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 <View style={styles.preferencesCard}>
                   <View style={styles.preferencesHeader}>
                     <MaterialIcons name="info" size={18} color="#1f9c8b" />
-                    <Text style={styles.preferencesTitle}>Current Appointment Details</Text>
+                    <Text style={styles.preferencesTitle}>{i18n.t("admin.schedule.editModal.currentDetails")}</Text>
                   </View>
                   <View style={styles.preferencesContent}>
                     <View style={styles.preferenceItem}>
                       <MaterialIcons name="event" size={16} color="#666" />
                       <Text style={styles.preferenceText}>
-                        Date: {editingAppointment.date || editingAppointment.appointment_date}
+                        {i18n.t("admin.schedule.editModal.date", { date: editingAppointment.date || editingAppointment.appointment_date })}
                       </Text>
                     </View>
                     <View style={styles.preferenceItem}>
                       <MaterialIcons name="schedule" size={16} color="#666" />
                       <Text style={styles.preferenceText}>
-                        Time: {formatAppointmentTime(editingAppointment.time || editingAppointment.appointment_time)}
+                        {i18n.t("admin.schedule.editModal.time_current", { time: formatAppointmentTime(editingAppointment.time || editingAppointment.appointment_time) })}
                       </Text>
                     </View>
                     <View style={styles.preferenceItem}>
                       <MaterialIcons name="engineering" size={16} color="#666" />
                       <Text style={styles.preferenceText}>
-                        Technician: {selectedTechnicianName}
+                        {i18n.t("admin.schedule.editModal.technician_current", { name: selectedTechnicianName })}
                       </Text>
                     </View>
                   </View>
@@ -2268,7 +2222,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
             ) : (
               <View style={styles.loadingModalContent}>
                 <ActivityIndicator size="large" color="#1f9c8b" />
-                <Text style={styles.loadingText}>Loading appointment details...</Text>
+                <Text style={styles.loadingText}>{i18n.t("admin.schedule.loading")}</Text>
               </View>
             )}
             
@@ -2278,7 +2232,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 onPress={closeEditModal}
                 activeOpacity={0.7}
               >
-                <Text style={styles.cancelActionButtonText}>Cancel</Text>
+                <Text style={styles.cancelActionButtonText}>{i18n.t("admin.schedule.editModal.cancel")}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -2296,7 +2250,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
                 ) : (
                   <>
                     <MaterialIcons name="save" size={18} color="#fff" />
-                    <Text style={styles.primaryActionButtonText}>Save Changes</Text>
+                    <Text style={styles.primaryActionButtonText}>{i18n.t("admin.schedule.editModal.saveChanges")}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -3607,4 +3561,119 @@ timePickerContainer: {
     alignSelf: 'stretch', 
     width: "100%",// Make it take full width
   },
+  customerDropdownButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  backgroundColor: '#fff',
+  marginHorizontal: 24,
+  marginBottom: 12,
+  borderRadius: 12,
+  padding: 16,
+  borderWidth: 1,
+  borderColor: '#e9ecef',
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.05,
+  shadowRadius: 8,
+  elevation: 3,
+},
+customerDropdownOptions: {
+  backgroundColor: '#fff',
+  marginHorizontal: 24,
+  marginBottom: 16,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#e9ecef',
+  maxHeight: 300,
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 0,
+    height: 4,
+  },
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+  elevation: 5,
+},
+customerOption: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: '#f0f0f0',
+},
+customerOptionSelected: {
+  backgroundColor: '#f0f9f8',
+},
+customerOptionContent: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  flex: 1,
+},
+customerOptionAvatar: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  backgroundColor: '#1f9c8b',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginRight: 12,
+},
+customerOptionAvatarText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#fff',
+},
+customerOptionInfo: {
+  flex: 1,
+},
+customerOptionName: {
+  fontSize: 15,
+  fontWeight: '500',
+  color: '#2c3e50',
+  marginBottom: 2,
+},
+customerOptionId: {
+  fontSize: 11,
+  color: '#666',
+},
+customerOptionList: {
+  borderRadius: 12,
+},
+customerOptionEmpty: {
+  padding: 20,
+  alignItems: 'center',
+},
+customerOptionEmptyText: {
+  fontSize: 14,
+  color: '#999',
+},
+scheduleButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#1f9c8b',
+  marginHorizontal: 24,
+  marginBottom: 24,
+  padding: 16,
+  borderRadius: 12,
+  gap: 8,
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
+},
+scheduleButtonText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#fff',
+},
 });

@@ -19,6 +19,7 @@ import {
   formatDateInGreece,
   debugTimeConversion 
 } from "../../utils/timeZoneUtils";
+import i18n from "../../services/i18n";
 
 
 export default function ReportScreen({ route, navigation, context, onBack }) { 
@@ -34,7 +35,13 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
 
   const visitId =
     routeParams.visitId ||
-    contextParams.visitId;
+    routeParams.visit_id ||
+    routeParams.log_id ||
+    routeParams.id ||
+    contextParams.visitId ||
+    contextParams.visit_id ||
+    contextParams.log_id ||
+    contextParams.id;
 
   const serviceType =
     routeParams.serviceType ||
@@ -57,103 +64,83 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
     routeParams.startTime ||
     contextParams.startTime;
 
-  
-  // Debug what we received
-  console.log("🔍 ReportScreen received:", {
-    routeParams: route?.params,
-    visitId,
-    serviceType,
-    customerName,
-    technicianName,
-    hasNavigation: !!navigation,
-    hasContext: !!context
-  });
-
   // Fetch report function
   const fetchReport = async (visitId) => {
-  console.log("📥 Fetching report for visitId:", visitId);
-
   setLoading(true);
   setError(null);
 
   try {
-    console.log("🔄 Using getServiceLogByVisitId API method...");
+    // ✅ Decide serviceType from the best available source
+    const st =
+      (route?.params?.serviceType ||
+        context?.serviceType ||
+        serviceType ||
+        "").toLowerCase();
+    // ✅ MYOCIDE -> VISIT REPORT endpoint (visits + station_logs)
+    if (st === "myocide") {
+      const res = await apiService.getVisitReport(visitId);
+
+      if (!res?.success || !res?.report) {
+        throw new Error(res?.error || i18n.t("technician.report.errors.reportUnavailable") || "Myocide report not found");
+      }
+
+      // visits.repo.getVisitReport already returns the correct structure
+      // { visitId, serviceType:'myocide', stationCounts, stations, baitsUsed, ... }
+      setReport({
+        ...res.report,
+        serviceType: "myocide",
+        visitId: res.report.visitId || visitId,
+        customerName: res.report.customerName || res.report.customer_name,
+        technicianName: res.report.technicianName || res.report.technician_name,
+      });
+
+      return;
+    }
+
+    // ✅ NON-MYOCIDE -> SERVICE LOG endpoint
     const res = await apiService.getServiceLogByVisitId(visitId);
-    
-    console.log("📥 Service log API response:", {
-      success: res?.success,
-      hasLog: !!res?.log,
-      logKeys: res?.log ? Object.keys(res.log) : []
-    });
 
     if (!res?.success) {
-      throw new Error(res?.error || "Report not found");
+      throw new Error(res?.error || i18n.t("technician.report.errors.reportUnavailable") || "Report not found");
     }
 
     const logData = res.log || res.report;
-    
-    if (!logData) {
-      throw new Error("No service log data found");
-    }
+    if (!logData) throw new Error(i18n.t("technician.report.errors.reportUnavailable") || "No service log data found");
 
-    // 🚨 DEBUG: Check if insecticide_details exists in ANY form
-    console.log("🔍 DEBUG - Checking ALL fields in logData:");
-    Object.keys(logData).forEach(key => {
-      if (key.toLowerCase().includes('insect') || 
-          key.toLowerCase().includes('detail') ||
-          key.toLowerCase().includes('pest') ||
-          key.toLowerCase().includes('treatment')) {
-        console.log(`  ${key}:`, logData[key]);
-      }
-    });
-
-    // Map the log data to report format
     const reportData = {
-      // Basic info
-      date: logData.created_at || new Date().toISOString().split('T')[0],
+      date: logData.created_at || new Date().toISOString().split("T")[0],
       duration: logData.duration || 0,
       customerName: logData.customer_name || logData.customerName,
       technicianName: logData.technician_name || logData.technicianName,
-      serviceType: logData.service_type || logData.serviceType,
+      serviceType: (logData.service_type || logData.serviceType || "").toLowerCase(),
       serviceSubtype: logData.service_subtype || logData.serviceSubtype,
-      notes: logData.notes || '',
+      notes: logData.notes || "",
       visitId: logData.visit_id || logData.visitId || visitId,
-      
-      // 🚨 CRITICAL: These fields are missing from the API response
-      // We need to get them from somewhere else
+
       insecticideDetails: logData.insecticide_details || logData.insecticideDetails,
       insecticide_details: logData.insecticide_details,
       disinfectionDetails: logData.disinfection_details || logData.disinfectionDetails,
       disinfection_details: logData.disinfection_details,
       otherPestName: logData.otherPestName || logData.other_pest_name,
       other_pest_name: logData.other_pest_name,
-      
-      // Arrays
+
       chemicalsUsed: logData.chemicals_used || logData.chemicalsUsed || [],
       treatedAreas: logData.treated_areas || logData.treatedAreas || [],
-      
-      // Timestamps
+      images: logData.images || [],
+
       start_time: logData.service_start_time || logData.serviceStartTime,
       end_time: logData.service_end_time || logData.serviceEndTime,
       updatedAt: logData.updated_at || logData.updatedAt,
-      
-      // Station data
+
       stations: logData.stations || [],
-      stationCounts: logData.stationCounts || { BS: 0, RM: 0, ST: 0, LT: 0 }
+      stationCounts: logData.stationCounts || { BS: 0, RM: 0, ST: 0, LT: 0, PT: 0 },
+      appointment: logData.appointment || null,
     };
 
-    console.log("✅ Final report data - insecticide fields:", {
-      hasInsecticideDetails: !!reportData.insecticideDetails,
-      insecticideDetails: reportData.insecticideDetails,
-      hasInsecticide_details: !!reportData.insecticide_details,
-      insecticide_details: reportData.insecticide_details
-    });
-
     setReport(reportData);
-
   } catch (err) {
     console.error("❌ Failed to load report:", err);
-    setError(err.message || "Failed to load report");
+    setError(err.message || i18n.t("technician.report.errors.reportUnavailable") || "Failed to load report");
     setReport(null);
   } finally {
     setLoading(false);
@@ -163,11 +150,17 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
   useEffect(() => {
     const visitIdFromSources =
       route?.params?.visitId ||
-      context?.visitId;
+      route?.params?.visit_id ||
+      route?.params?.log_id ||
+      route?.params?.id ||
+      context?.visitId ||
+      context?.visit_id ||
+      context?.log_id ||
+      context?.id;
 
     if (!visitIdFromSources) {
       console.error("❌ No visitId provided to ReportScreen");
-      setError("No visit ID provided");
+      setError(i18n.t("technician.report.errors.noVisitId") || "No visit ID provided");
       setLoading(false);
       return;
     }
@@ -207,6 +200,10 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       }
       return type === "LT" || type.toUpperCase() === "LT";
     }) || [],
+    PT: report?.stations?.filter(s => {
+      const type = s.station_type || s.type || "";
+      return type === "PT" || type.toUpperCase() === "PT";
+    }) || [],
   };
 
   // Sort function for myocide stations
@@ -244,16 +241,8 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
   const loadMaterials = async () => {
     setLoadingMaterials(true);
     try {
-      console.log("🔄 Loading bait types...");
-      
       // Load bait types - getBaitTypes now returns array directly
       const baitArray = await apiService.getBaitTypes();
-      
-      console.log("📊 Bait Types received:", {
-        isArray: Array.isArray(baitArray),
-        length: baitArray?.length || 0,
-        firstItem: baitArray?.[0]
-      });
       
       // Format bait types consistently
       const formattedBaitTypes = (Array.isArray(baitArray) ? baitArray : []).map(item => {
@@ -272,19 +261,11 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           antidote: item.antidote || item.antidote_info || null
         };
       });
-      
-      console.log(`✅ Formatted ${formattedBaitTypes.length} bait types`);
-      
+
       setBaitTypes(formattedBaitTypes);
 
       // Load chemicals
-      console.log("🔄 Loading chemicals...");
       const chemArray = await apiService.getChemicals();
-      
-      console.log("📊 Chemicals received:", {
-        isArray: Array.isArray(chemArray),
-        length: chemArray?.length || 0
-      });
       
       // Format chemicals consistently
       const formattedChemicals = (Array.isArray(chemArray) ? chemArray : []).map(item => {
@@ -302,9 +283,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           antidote: item.antidote || item.antidote_info || null
         };
       });
-      
-      console.log(`✅ Formatted ${formattedChemicals.length} chemicals`);
-      
+
       setChemicals(formattedChemicals);
       
     } catch (e) {
@@ -336,9 +315,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
   };
 
   const getServiceLineLabel = () => {
-  if (!report) return "Service";
-
-  console.log("🔍 getServiceLineLabel - serviceType:", report.serviceType);
+  if (!report) return i18n.t("technician.common.service") || "Service";
 
   if (report.serviceType === "special") {
     const label = formatSpecialSubtypeLabel(
@@ -346,51 +323,51 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       report
     );
     return label
-      ? `Special Service - ${label}`
-      : "Special Service";
+      ? `${i18n.t("serviceTypes.special")} - ${label}`
+      : i18n.t("serviceTypes.special");
   }
 
   if (report.serviceType === "disinfection") {
     const details = getServiceDetailsLabel(report);
-    console.log("🔍 Disinfection details found:", details);
     return details 
-      ? `Disinfection - ${details}`
-      : "Disinfection Service";
+      ? `${i18n.t("serviceTypes.disinfection")} - ${details}`
+      : i18n.t("technician.disinfection.title") || i18n.t("serviceTypes.disinfection");
   }
   
   if (report.serviceType === "insecticide") {
     const details = getServiceDetailsLabel(report);
-    console.log("🔍 Insecticide details found:", details);
     return details 
-      ? `Insecticide - ${details}`
-      : "Insecticide Service";
+      ? `${i18n.t("serviceTypes.insecticide")} - ${details}`
+      : i18n.t("technician.insecticide.title") || i18n.t("serviceTypes.insecticide");
   }
   
-  if (report.serviceType === "myocide") return "Myocide Service";
+  if (report.serviceType === "myocide") return i18n.t("serviceTypes.myocide") || "Myocide Service";
 
-  return report.serviceType || "Service";
+  return report.serviceType || i18n.t("technician.common.service") || "Service";
 };
 
   const formatDurationForDisplay = (report) => {
-  if (!report || report.duration === undefined || report.duration === null) {
-    return '00:00:00';
-  }
-  
-  // Get duration in seconds
-  let seconds = typeof report.duration === 'number' 
-    ? report.duration 
-    : parseFloat(report.duration) || 0;
-  
-  // Ensure it's a positive number
-  seconds = Math.max(0, Math.floor(seconds));
-  
-  // Format as HH:MM:SS
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-};
+    if (!report || report.duration === undefined || report.duration === null) {
+      return "00:00:00";
+    }
+
+    let seconds = Number(report.duration);
+
+    // If duration is in milliseconds convert to seconds
+    if (seconds > 1000) {
+      seconds = Math.floor(seconds / 1000);
+    }
+
+    seconds = Math.max(0, Math.floor(seconds));
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    const pad = (n) => String(n).padStart(2, "0");
+
+    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+  };
 
   // Helper to get insecticide details from all possible fields
   const getServiceDetailsLabel = (report) => {
@@ -398,12 +375,9 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
 
     const routeParams = route?.params || {};
     const contextParams = context || {};
-    
-    console.log("🔍 Checking for service details - Service Type:", report.serviceType);
 
     // Handle different service types
     if (report.serviceType === 'disinfection') {
-      console.log("🔍 Looking for DISINFECTION details...");
       
       // Check ALL possible sources for DISINFECTION details in order
       const disinfectionSources = [
@@ -432,8 +406,6 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
         // DO NOT include service notes here - they're separate
       ];
 
-      console.log("🔍 Disinfection sources:", disinfectionSources);
-
       for (let i = 0; i < disinfectionSources.length; i++) {
         if (disinfectionSources[i] && 
             String(disinfectionSources[i]).trim() !== '' && 
@@ -442,16 +414,13 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
             // Filter out service notes looking content
             !String(disinfectionSources[i]).toLowerCase().includes('service note') &&
             !String(disinfectionSources[i]).toLowerCase().includes('notes:')) {
-          console.log(`✅ Found DISINFECTION details in source ${i}:`, disinfectionSources[i]);
           return String(disinfectionSources[i]).trim();
         }
       }
       
-      console.log("❌ No disinfection details found");
       return null;
       
     } else if (report.serviceType === 'insecticide') {
-      console.log("🔍 Looking for INSECTICIDE details...");
       
       // Check ALL possible sources for INSECTICIDE details in order
       const insecticideSources = [
@@ -482,8 +451,6 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
         ...(report?.details && !report.details.includes('service') ? [report.details] : []),
       ];
 
-      console.log("🔍 Insecticide sources:", insecticideSources);
-
       for (let i = 0; i < insecticideSources.length; i++) {
         if (insecticideSources[i] && 
             String(insecticideSources[i]).trim() !== '' && 
@@ -492,16 +459,13 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
             // Filter out service notes looking content
             !String(insecticideSources[i]).toLowerCase().includes('service note') &&
             !String(insecticideSources[i]).toLowerCase().includes('notes:')) {
-          console.log(`✅ Found INSECTICIDE details in source ${i}:`, insecticideSources[i]);
           return String(insecticideSources[i]).trim();
         }
       }
       
-      console.log("❌ No insecticide details found");
       return null;
       
     } else if (report.serviceType === 'special' && report.serviceSubtype === 'other') {
-      console.log("🔍 Looking for SPECIAL SERVICE (other) details...");
       
       // For special service "other", look for pest name
       const otherPestSources = [
@@ -518,29 +482,28 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
             String(otherPestSources[i]).trim() !== '' && 
             String(otherPestSources[i]).trim() !== 'null' &&
             String(otherPestSources[i]).trim() !== 'undefined') {
-          console.log(`✅ Found other pest name in source ${i}:`, otherPestSources[i]);
           return String(otherPestSources[i]).trim();
         }
       }
       
-      return "Other";
+      return i18n.t("customer.specialSubtypes.other") || "Other";
     }
     
     return null;
   };
 
   const SPECIAL_SERVICE_LABELS = {
-    grass_cutworm: "Grass Cutworm",
-    fumigation: "Fumigation",
-    termites: "Termites",
-    exclusion: "Exclusion Service",
-    snake_repulsion: "Snake Repulsion",
-    bird_control: "Bird Control",
-    bed_bugs: "Bed Bugs",
-    fleas: "Fleas",
-    plant_protection: "Plant Protection",
-    palm_weevil: "Palm Weevil",
-    other: "Other",
+    grass_cutworm: i18n.t("customer.specialSubtypes.grass_cutworm"),
+    fumigation: i18n.t("customer.specialSubtypes.fumigation"),
+    termites: i18n.t("customer.specialSubtypes.termites"),
+    exclusion: i18n.t("customer.specialSubtypes.exclusion"),
+    snake_repulsion: i18n.t("customer.specialSubtypes.snake_repulsion"),
+    bird_control: i18n.t("customer.specialSubtypes.bird_control"),
+    bed_bugs: i18n.t("customer.specialSubtypes.bed_bugs"),
+    fleas: i18n.t("customer.specialSubtypes.fleas"),
+    plant_protection: i18n.t("customer.specialSubtypes.plant_protection"),
+    palm_weevil: i18n.t("customer.specialSubtypes.palm_weevil"),
+    other: i18n.t("customer.specialSubtypes.other"),
   };
 
   const renderValue = (value, options = {}) => {
@@ -559,11 +522,24 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
         report.otherPestName ||
         report.other_pest_name ||
         report.appointment?.otherPestName ||
-        "Other"
+        i18n.t("customer.specialSubtypes.other") || "Other"
       );
     }
 
     return SPECIAL_SERVICE_LABELS[subtype] || subtype;
+  };
+
+  const translateToggleValue = (value) => {
+    if (!value) return "—";
+
+    const map = {
+      Yes: i18n.t("components.stationForms.common.yes"),
+      No: i18n.t("components.stationForms.common.no"),
+      Functional: i18n.t("components.stationForms.common.functional"),
+      Damaged: i18n.t("components.stationForms.common.damaged"),
+    };
+
+    return map[value] || value;
   };
 
   const renderServiceNotes = () => {
@@ -573,7 +549,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <MaterialIcons name="notes" size={20} color="#2c3e50" />
-          <Text style={styles.sectionTitle}>Service Notes</Text>
+          <Text style={styles.sectionTitle}>{i18n.t("technician.report.serviceNotes.title")}</Text>
         </View>
         <View style={styles.notesCard}>
           <Text style={styles.notesText}>{report.notes}</Text>
@@ -582,52 +558,68 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
     );
   };
 
-  const getServiceTypeLabel = () => {
-    if (!report) return "Service Type";
+    const renderTreatmentPhotos = () => {
+    if (!report?.images || report.images.length === 0) return null;
 
-    if (report.serviceType === "special") return "Special Service";
-    if (report.serviceType === "disinfection") return "Disinfection Service";
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <MaterialIcons name="photo-camera" size={20} color="#2c3e50" />
+          <Text style={styles.sectionTitle}>{i18n.t("technician.report.treatmentPhotos.title")}</Text>
+          <Text style={styles.badge}>{report.images.length}</Text>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {report.images.map((img, index) => {
+            const imageUrl =
+              typeof img === "string" ? buildImageUrl(img) : img?.uri;
+
+            if (!imageUrl) return null;
+
+            return (
+              <View key={index} style={{ marginRight: 12 }}>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={{
+                    width: 160,
+                    height: 160,
+                    borderRadius: 12,
+                    backgroundColor: "#f0f0f0"
+                  }}
+                  resizeMode="cover"
+                  onError={(e) =>
+                    console.log("❌ ReportScreen image load error:", imageUrl, e.nativeEvent?.error)
+                  }
+                />
+              </View>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const getServiceTypeLabel = () => {
+    if (!report) return i18n.t("technician.common.service") || "Service Type";
+
+    if (report.serviceType === "special") return i18n.t("serviceTypes.special") || "Special Service";
+    if (report.serviceType === "disinfection") return i18n.t("serviceTypes.disinfection") || "Disinfection Service";
     
     if (report.serviceType === "insecticide") {
       const details = getServiceDetailsLabel(report);
       return details 
-        ? `Insecticide - ${details}`
-        : "Insecticide Service";
+        ? `${i18n.t("serviceTypes.insecticide")} - ${details}`
+        : i18n.t("serviceTypes.insecticide") || "Insecticide Service";
     }
     
-    if (report.serviceType === "myocide") return "Myocide Service";
+    if (report.serviceType === "myocide") return i18n.t("serviceTypes.myocide") || "Myocide Service";
 
-    return report.serviceType || "N/A";
+    return report.serviceType || i18n.t("technician.common.na") || "N/A";
   };
 
   // Helper to render service details section
   const renderServiceDetails = () => {
   if (!report || report.serviceType === 'myocide') return null;
-  
-  // Debug what we have
-  console.log("🔍 RENDERING - Full report object:", {
-    serviceType: report.serviceType,
-    // Check every possible field
-    insecticide_details: report.insecticide_details,
-    insecticideDetails: report.insecticideDetails,
-    otherPestName: report.otherPestName,
-    other_pest_name: report.other_pest_name,
-    disinfection_details: report.disinfection_details,
-    disinfectionDetails: report.disinfectionDetails,
-    // Check appointment
-    appointment: report.appointment,
-    // Check if there's any unexpected field
-    allKeys: Object.keys(report).filter(key => 
-      key.includes('insect') || 
-      key.includes('Insect') || 
-      key.includes('disinf') ||
-      key.includes('Disinf') ||
-      key.includes('detail') ||
-      key.includes('Detail') ||
-      key.includes('pest') ||
-      key.includes('Pest')
-    )
-  });
   
   const serviceDetails = getServiceDetailsLabel(report);
   
@@ -636,7 +628,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <MaterialIcons name="info" size={20} color="#2c3e50" />
-          <Text style={styles.sectionTitle}>Service Details</Text>
+          <Text style={styles.sectionTitle}>{i18n.t("technician.report.serviceDetails.title")}</Text>
           {/* Debug indicator */}
           {!serviceDetails && report.serviceType === 'insecticide' && (
             <View style={styles.debugBadge}>
@@ -647,7 +639,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
         <View style={styles.detailsCard}>
           <View style={styles.detailRow}>
             <MaterialIcons name="category" size={16} color="#666" />
-            <Text style={styles.detailLabel}>Service Type:</Text>
+            <Text style={styles.detailLabel}>{i18n.t("technician.report.serviceDetails.serviceType")}</Text>
             <Text style={styles.detailValue}>
               {getServiceTypeLabel()}
             </Text>
@@ -657,7 +649,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           {report.serviceType === 'special' && (
             <View style={styles.detailRow}>
               <MaterialIcons name="tune" size={16} color="#666" />
-              <Text style={styles.detailLabel}>Subtype:</Text>
+              <Text style={styles.detailLabel}>{i18n.t("technician.report.serviceDetails.subtype")}</Text>
               <Text style={styles.detailValue}>
                 {formatSpecialSubtypeLabel(report.serviceSubtype, report)}
               </Text>
@@ -668,7 +660,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
             report.serviceType === 'disinfection') && (
             <View style={styles.detailRow}>
               <MaterialIcons name="description" size={16} color="#666" />
-              <Text style={styles.detailLabel}>Details:</Text>
+              <Text style={styles.detailLabel}>{i18n.t("technician.report.serviceDetails.details")}</Text>
               <Text style={styles.detailValue}>
                 {serviceDetails || '—'}
               </Text>
@@ -687,12 +679,12 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <MaterialIcons name="science" size={20} color="#2c3e50" />
-              <Text style={styles.sectionTitle}>Chemicals Used</Text>
+              <Text style={styles.sectionTitle}>{i18n.t("technician.report.chemicalsUsed.title")}</Text>
               <Text style={styles.badge}>{report.chemicalsUsed.length}</Text>
             </View>
             <View style={styles.chemicalsGrid}>
               {report.chemicalsUsed.map((chemical, index) => {
-                const chemicalName = typeof chemical === 'string' ? chemical : (chemical.name || chemical.chemicalName || `Chemical ${index + 1}`);
+                const chemicalName = typeof chemical === 'string' ? chemical : (chemical.name || chemical.chemicalName || `${i18n.t("technician.report.chemicalsUsed.title")} ${index + 1}`);
                 const concentration =
                   chemical.concentration ||
                   chemical.concentration_percent ||
@@ -743,17 +735,17 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <MaterialIcons name="map" size={20} color="#2c3e50" />
-              <Text style={styles.sectionTitle}>Treated Areas</Text>
+              <Text style={styles.sectionTitle}>{i18n.t("technician.report.treatedAreas.title")}</Text>
               <Text style={styles.badge}>{report.treatedAreas.length}</Text>
             </View>
             <View style={styles.areasTable}>
               {/* Table Header - FIXED */}
               <View style={styles.tableHeader}>
-                <Text style={[styles.tableHeaderCell, { flex: 2 }]}>Area</Text>
-                <Text style={[styles.tableHeaderCell, styles.centerCell]}>Conc.</Text>
-                <Text style={[styles.tableHeaderCell, styles.centerCell]}>Volume</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Chemical</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Notes</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 2 }]}>{i18n.t("technician.report.treatedAreas.area")}</Text>
+                <Text style={[styles.tableHeaderCell, styles.centerCell]}>{i18n.t("technician.report.treatedAreas.concentration")}</Text>
+                <Text style={[styles.tableHeaderCell, styles.centerCell]}>{i18n.t("technician.report.treatedAreas.volume")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>{i18n.t("technician.report.treatedAreas.chemical")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>{i18n.t("technician.report.treatedAreas.notes")}</Text>
               </View>
               
               {/* Table Rows - FIXED */}
@@ -764,7 +756,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   return (
                     <View key={`area-${areaIndex}-0`} style={styles.tableRow}>
                       <Text style={[styles.tableCell, { flex: 2 }]}>
-                        {area.name || `Area ${areaIndex + 1}`}
+                        {area.name || `${i18n.t("technician.report.treatedAreas.area")} ${areaIndex + 1}`}
                       </Text>
                       
                       <View style={[styles.tableCellContainer, styles.centerCell]}>
@@ -795,7 +787,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                     {/* Area Name - only show on first chemical row */}
                     {chemIndex === 0 ? (
                       <Text style={[styles.tableCell, { flex: 2 }]}>
-                        {area.name || `Area ${areaIndex + 1}`}
+                        {area.name || `${i18n.t("technician.report.treatedAreas.area")} ${areaIndex + 1}`}
                       </Text>
                     ) : (
                       <View style={{ flex: 2 }} />
@@ -844,18 +836,20 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
     // BS
     if (type === "BS") {
       switch (s.consumption) {
-        case "0%": return "Inactive";
-        case "25%": return "Low Activity";
-        case "50%": return "Active";
-        case "75%": return "High Activity";
-        case "100%": return "Very Active";
+        case "0%": return i18n.t("technician.report.stationStatus.inactive") || "Inactive";
+        case "25%": return i18n.t("technician.report.stationStatus.lowActivity") || "Low Activity";
+        case "50%": return i18n.t("technician.report.stationStatus.active") || "Active";
+        case "75%": return i18n.t("technician.report.stationStatus.highActivity") || "High Activity";
+        case "100%": return i18n.t("technician.report.stationStatus.veryActive") || "Very Active";
         default: return "—";
       }
     }
 
     // RM & ST
     if (type === "RM" || type === "ST") {
-      return Number(s.rodents_captured) > 0 ? "Active" : "Inactive";
+      return Number(s.rodents_captured) > 0 
+        ? i18n.t("technician.report.stationStatus.active") || "Active"
+        : i18n.t("technician.report.stationStatus.inactive") || "Inactive";
     }
 
     // LT
@@ -865,10 +859,10 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       const f = Number(s.flies || 0);
       const m = Number(s.mosquitoes || 0);
 
-      if (d > 80 || l > 7 || f > 7 || m > 7) return "High Activity";
-      if (d > 50 || l > 5 || f > 5 || m > 5) return "Active";
-      if (d > 15 || l > 2 || f > 2 || m > 2) return "Low Activity";
-      return "Inactive";
+      if (d > 80 || l > 7 || f > 7 || m > 7) return i18n.t("technician.report.stationStatus.highActivity") || "High Activity";
+      if (d > 50 || l > 5 || f > 5 || m > 5) return i18n.t("technician.report.stationStatus.active") || "Active";
+      if (d > 15 || l > 2 || f > 2 || m > 2) return i18n.t("technician.report.stationStatus.lowActivity") || "Low Activity";
+      return i18n.t("technician.report.stationStatus.inactive") || "Inactive";
     }
 
     return "—";
@@ -898,7 +892,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MaterialIcons name="summarize" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Station Summary</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("technician.report.stationSummary.title")}</Text>
           </View>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
@@ -906,34 +900,41 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                 <MaterialIcons name="pest-control-rodent" size={20} color="#1f9c8b" />
               </View>
               <Text style={styles.statNumber}>{report.stationCounts?.BS || 0}</Text>
-              <Text style={styles.statLabel}>Bait Stations</Text>
+              <Text style={styles.statLabel}>{i18n.t("technician.report.stationSummary.baitStations")}</Text>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                 <MaterialIcons name="pest-control" size={20} color="#1f9c8b" />
               </View>
               <Text style={styles.statNumber}>{report.stationCounts?.RM || 0}</Text>
-              <Text style={styles.statLabel}>Multicatch</Text>
+              <Text style={styles.statLabel}>{i18n.t("technician.report.stationSummary.multicatch")}</Text>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                 <MaterialIcons name="gps-fixed" size={20} color="#1f9c8b"/>
               </View>
               <Text style={styles.statNumber}>{report.stationCounts?.ST || 0}</Text>
-              <Text style={styles.statLabel}>Snap Traps</Text>
+              <Text style={styles.statLabel}>{i18n.t("technician.report.stationSummary.snapTraps")}</Text>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                 <MaterialIcons name="lightbulb" size={20} color="#1f9c8b" />
               </View>
               <Text style={styles.statNumber}>{report.stationCounts?.LT || 0}</Text>
-              <Text style={styles.statLabel}>Light Traps</Text>
+              <Text style={styles.statLabel}>{i18n.t("technician.report.stationSummary.lightTraps")}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <View style={[styles.statIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
+                <MaterialIcons name="bug-report" size={20} color="#1f9c8b" />
+              </View>
+              <Text style={styles.statNumber}>{report.stationCounts?.PT || 0}</Text>
+              <Text style={styles.statLabel}>{i18n.t("technician.report.stationSummary.pheromoneTraps")}</Text>
             </View>
           </View>
           <View style={styles.totalStations}>
             <MaterialIcons name="dashboard" size={16} color="#1f9c8b" />
             <Text style={styles.totalStationsText}>
-              Total Stations: {report.stations?.length || 0}
+              {i18n.t("technician.report.stationSummary.totalStations", { count: report.stations?.length || 0 })}
             </Text>
           </View>
         </View>
@@ -943,7 +944,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <MaterialIcons name="pest-control-rodent" size={20} color="#2c3e50" />
-              <Text style={styles.sectionTitle}>Bait Stations (BS)</Text>
+              <Text style={styles.sectionTitle}>{i18n.t("technician.report.stationTables.baitStations")}</Text>
               <Text style={styles.badge}>{stationsByType.BS.length}</Text>
             </View>
             <View style={styles.stationTable}>
@@ -953,7 +954,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Device
+                  {i18n.t("technician.report.stationTables.device")}
                 </Text>
 
                 <Text
@@ -961,7 +962,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Consumption
+                  {i18n.t("technician.report.stationTables.consumption")}
                 </Text>
 
                 <Text
@@ -969,7 +970,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Bait Type
+                  {i18n.t("technician.report.stationTables.baitType")}
                 </Text>
 
                 <Text
@@ -977,7 +978,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Dosage (g)
+                  {i18n.t("technician.report.stationTables.dosage")}
                 </Text>
 
                 <Text
@@ -985,7 +986,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Condition
+                  {i18n.t("technician.report.stationTables.condition")}
                 </Text>
 
                 <Text
@@ -993,7 +994,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Access
+                  {i18n.t("technician.report.stationTables.access")}
                 </Text>
 
                 <Text
@@ -1001,7 +1002,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Status
+                  {i18n.t("technician.report.stationTables.status")}
                 </Text>
 
 
@@ -1031,13 +1032,13 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
 
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1 }]}>
                     <Text style={[styles.tableCell]}>
-                      {renderValue(s.condition)}
+                      {translateToggleValue(s.condition)}
                     </Text>
                   </View>
                   
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1 }]}>
                     <Text style={styles.tableCellText}>
-                      {renderValue(s.access)}
+                      {translateToggleValue(s.access)}
                     </Text>
                   </View>
 
@@ -1058,7 +1059,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <MaterialIcons name="pest-control" size={20} color="#2c3e50" />
-              <Text style={styles.sectionTitle}>Multicatch (RM)</Text>
+              <Text style={styles.sectionTitle}>{i18n.t("technician.report.stationTables.multicatch")}</Text>
               <Text style={styles.badge}>{stationsByType.RM.length}</Text>
             </View>
             <View style={styles.stationTable}>
@@ -1068,7 +1069,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Device
+                  {i18n.t("technician.report.stationTables.device")}
                 </Text>
 
                 <Text
@@ -1076,7 +1077,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Capture
+                  {i18n.t("technician.report.stationTables.capture")}
                 </Text>
 
                 <Text
@@ -1084,7 +1085,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Rodents
+                  {i18n.t("technician.report.stationTables.rodents")}
                 </Text>
 
                 <Text
@@ -1092,7 +1093,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Replaced
+                  {i18n.t("technician.report.stationTables.replaced")}
                 </Text>
 
                 <Text
@@ -1100,7 +1101,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Condition
+                  {i18n.t("technician.report.stationTables.condition")}
                 </Text>
 
                 <Text
@@ -1108,7 +1109,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Access
+                  {i18n.t("technician.report.stationTables.access")}
                 </Text>
 
                 <Text
@@ -1116,7 +1117,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Status
+                  {i18n.t("technician.report.stationTables.status")}
                 </Text>
 
               </View>
@@ -1127,7 +1128,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   </Text>
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1 }]}>
                     <Text style={styles.tableCellText}>
-                      {renderValue(s.capture)}
+                      {translateToggleValue(s.capture)}
                     </Text>
                   </View>
 
@@ -1139,19 +1140,19 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
 
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1 }]}>
                     <Text style={styles.tableCellText}>
-                      {renderValue(s.replaced_surface)}
+                      {translateToggleValue(s.replaced_surface)}
                     </Text>
                   </View>
 
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1 }]}>
                     <Text style={styles.tableCellText}>
-                      {renderValue(s.condition)}
+                      {translateToggleValue(s.condition)}
                     </Text>
                   </View>
 
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1 }]}>
                     <Text style={[styles.tableCell, styles.centerCell]}>
-                      {renderValue(s.access)}
+                      {translateToggleValue(s.access)}
                     </Text>
                   </View>
 
@@ -1171,7 +1172,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <MaterialIcons name="gps-fixed" size={20} color="#2c3e50" />
-              <Text style={styles.sectionTitle}>Snap Traps (ST)</Text>
+              <Text style={styles.sectionTitle}>{i18n.t("technician.report.stationTables.snapTraps")}</Text>
               <Text style={styles.badge}>{stationsByType.ST.length}</Text>
             </View>
             <View style={styles.stationTable}>
@@ -1181,7 +1182,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Device
+                  {i18n.t("technician.report.stationTables.device")}
                 </Text>
 
                 <Text
@@ -1189,7 +1190,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Capture
+                  {i18n.t("technician.report.stationTables.capture")}
                 </Text>
 
                 <Text
@@ -1197,7 +1198,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Rodents
+                  {i18n.t("technician.report.stationTables.rodents")}
                 </Text>
 
                 <Text
@@ -1205,7 +1206,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Triggered
+                  {i18n.t("technician.report.stationTables.triggered")}
                 </Text>
 
                 <Text
@@ -1213,7 +1214,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Condition
+                  {i18n.t("technician.report.stationTables.condition")}
                 </Text>
 
                 <Text
@@ -1221,7 +1222,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Access
+                  {i18n.t("technician.report.stationTables.access")}
                 </Text>
 
                 <Text
@@ -1229,7 +1230,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   numberOfLines={1}
                   ellipsizeMode="clip"
                 >
-                  Status
+                  {i18n.t("technician.report.stationTables.status")}
                 </Text>
               </View>
               {stationsByType.ST.map((s, i) => (
@@ -1239,7 +1240,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   </Text>
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1 }]}>
                     <Text style={styles.tableCellText}>
-                      {renderValue(s.capture)}
+                      {translateToggleValue(s.capture)}
                     </Text>
                   </View>
 
@@ -1251,19 +1252,19 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
 
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1 }]}>
                     <Text style={styles.tableCellText}>
-                      {renderValue(s.triggered)}
+                      {translateToggleValue(s.triggered)}
                     </Text>
                   </View>
 
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1}]}>
                     <Text style={styles.tableCellText}>
-                      {renderValue(s.condition)}
+                      {translateToggleValue(s.condition)}
                     </Text>
                   </View>
 
                   <View style={[styles.tableCellContainer, styles.centerCell, { flex: 1 }]}>
                     <Text style={styles.tableCellText}>
-                      {renderValue(s.access)}
+                      {translateToggleValue(s.access)}
                     </Text>
                   </View>
 
@@ -1283,21 +1284,21 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <MaterialIcons name="lightbulb" size={20} color="#2c3e50" />
-              <Text style={styles.sectionTitle}>Light Traps (LT)</Text>
+              <Text style={styles.sectionTitle}>{i18n.t("technician.report.stationTables.lightTraps")}</Text>
               <Text style={styles.badge}>{stationsByType.LT.length}</Text>
             </View>
             <View style={styles.stationTable}>
               <View style={styles.tableHeader}>
-                <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Device</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Mosq</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Lep</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Dro</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Flies</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Others</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Bulb</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Cond</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Access</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>Status</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>{i18n.t("technician.report.stationTables.device")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>{i18n.t("technician.report.stationTables.mosquitoes")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>{i18n.t("technician.report.stationTables.lepidoptera")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>{i18n.t("technician.report.stationTables.drosophila")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>{i18n.t("technician.report.stationTables.flies")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>{i18n.t("technician.report.stationTables.others")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>{i18n.t("technician.report.stationTables.bulb")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>{i18n.t("technician.report.stationTables.condition")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>{i18n.t("technician.report.stationTables.access")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 0.8 }]}>{i18n.t("technician.report.stationTables.status")}</Text>
               </View>
               {stationsByType.LT.map((s, i) => (
                 <View key={i} style={styles.tableRow}>
@@ -1323,10 +1324,60 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           </View>
         )}
 
+        {/* PHEROMONE TRAPS */}
+        {stationsByType.PT.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="bug-report" size={20} color="#2c3e50" />
+              <Text style={styles.sectionTitle}>{i18n.t("technician.report.stationTables.pheromoneTraps")}</Text>
+              <Text style={styles.badge}>{stationsByType.PT.length}</Text>
+            </View>
+
+            <View style={styles.stationTable}>
+              <View style={styles.tableHeader}>
+                <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>{i18n.t("technician.report.stationTables.device")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>{i18n.t("technician.report.stationTables.pheromone")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>{i18n.t("technician.report.stationTables.replacedPheromone")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 2 }]}>{i18n.t("technician.report.stationTables.insects")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>{i18n.t("technician.report.stationTables.damaged")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>{i18n.t("technician.report.stationTables.access")}</Text>
+              </View>
+
+              {stationsByType.PT.map((s, i) => (
+                <View key={i} style={styles.tableRow}>
+                  <Text style={[styles.tableCell, { flex: 1.2, fontWeight: "600" }]}>
+                    PT{s.station_id || s.station_number}
+                  </Text>
+
+                  <Text style={[styles.tableCell, { flex: 1.5 }]}>
+                    {renderValue(s.pheromone_type)}
+                  </Text>
+
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    {translateToggleValue(s.replaced_pheromone)}
+                  </Text>
+
+                  <Text style={[styles.tableCell, { flex: 2 }]}>
+                    {renderValue(s.insects_captured)}
+                  </Text>
+
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    {translateToggleValue(s.damaged)}
+                  </Text>
+
+                  <Text style={[styles.tableCell, { flex: 1 }]}>
+                    {translateToggleValue(s.access)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {(!report.stations || report.stations.length === 0) && (
           <View style={styles.emptyDataCard}>
             <MaterialIcons name="info" size={40} color="#ddd" />
-            <Text style={styles.emptyDataText}>No station data found for this visit</Text>
+            <Text style={styles.emptyDataText}>{i18n.t("technician.report.noData.noStationData")}</Text>
           </View>
         )}
       </>
@@ -1336,19 +1387,19 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
   // Helper to get report title
   const getReportTitle = () => {
     if (!report) {
-      return context?.serviceTypeName || "Service Report";
+      return context?.serviceTypeName || i18n.t("technician.report.title") || "Service Report";
     }
     
     if (report.serviceType === 'disinfection') {
-      return "Disinfection Report";
+      return i18n.t("technician.disinfection.title") || "Disinfection Report";
     } else if (report.serviceType === 'insecticide') {
-      return "Insecticide Report";
+      return i18n.t("technician.insecticide.title") || "Insecticide Report";
     } else if (report.serviceType === 'special') {
-      return "Special Service Report";
+      return i18n.t("technician.specialServices.title") || "Special Service Report";
     } else if (report.serviceType === 'myocide') {
-      return "Myocide Report";
+      return i18n.t("serviceTypes.myocide") || "Myocide Report";
     } else {
-      return "Service Report";
+      return i18n.t("technician.report.title") || "Service Report";
     }
   };
 
@@ -1388,7 +1439,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <MaterialIcons name="health-and-safety" size={20} color="#2c3e50" />
-          <Text style={styles.sectionTitle}>Health & Safety</Text>
+          <Text style={styles.sectionTitle}>{i18n.t("technician.report.healthSafety.title")}</Text>
           <Text style={styles.badge}>{materialsWithSafety.length}</Text>
         </View>
 
@@ -1396,14 +1447,14 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           <View style={styles.healthSafetyHeader}>
             <MaterialIcons name="warning" size={16} color="#1f9c8b" />
             <Text style={styles.healthSafetyTitle}>
-              Materials Used – Safety Information
+              {i18n.t("technician.report.healthSafety.materialsUsed")}
             </Text>
           </View>
 
           <Text style={styles.healthSafetySubtitle}>
             {report.serviceType === 'myocide'
-              ? 'Bait types used in this service:'
-              : 'Chemicals used in this service:'}
+              ? i18n.t("technician.report.healthSafety.baitsUsed")
+              : i18n.t("technician.report.healthSafety.chemicalsUsed")}
           </Text>
 
           {materialsWithSafety.map((material, index) => (
@@ -1425,17 +1476,17 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
               <View style={styles.safetyDetails}>
                 <View style={styles.safetyRow}>
                   <MaterialIcons name="science" size={14} color="#1f9c8b" />
-                  <Text style={styles.safetyLabel}>Active Ingredient:</Text>
+                  <Text style={styles.safetyLabel}>{i18n.t("technician.report.healthSafety.activeIngredient")}</Text>
                   <Text style={styles.safetyValue}>
-                    {material.active_ingredient || 'Not specified'}
+                    {material.active_ingredient || i18n.t("technician.report.healthSafety.notSpecified")}
                   </Text>
                 </View>
 
                 <View style={styles.safetyRow}>
                   <MaterialIcons name="medical-services" size={14} color="#1f9c8b" />
-                  <Text style={styles.safetyLabel}>First Aid / Antidote:</Text>
+                  <Text style={styles.safetyLabel}>{i18n.t("technician.report.healthSafety.firstAid")}</Text>
                   <Text style={styles.safetyValue}>
-                    {material.antidote || 'Not specified'}
+                    {material.antidote || i18n.t("technician.report.healthSafety.notSpecified")}
                   </Text>
                 </View>
               </View>
@@ -1446,7 +1497,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
             <View style={styles.loadingSafetyInfo}>
               <ActivityIndicator size="small" color="#1f9c8b" />
               <Text style={styles.loadingSafetyText}>
-                Loading safety information…
+                {i18n.t("technician.report.healthSafety.loading")}
               </Text>
             </View>
           )}
@@ -1455,11 +1506,41 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
     );
   };
 
+    const buildImageUrl = (img) => {
+    if (!img) return null;
+
+    let value = String(img).trim();
+
+    // Remove wrapping postgres junk if present
+    value = value.replace(/[{}"]/g, "");
+
+    // If multiple absolute URLs got concatenated, keep only the last useful part
+    if (value.includes("http://") || value.includes("https://")) {
+      const matches = value.match(/https?:\/\/[^ ]+/g);
+      if (matches && matches.length > 0) {
+        value = matches[matches.length - 1];
+      }
+    }
+
+    // If it's already a full URL, extract only the filename
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+      value = value.split("?")[0];
+      value = value.substring(value.lastIndexOf("/") + 1);
+    }
+
+    // If it contains /uploads/, keep only the filename
+    if (value.includes("/uploads/")) {
+      value = value.substring(value.lastIndexOf("/") + 1);
+    }
+
+    return `${apiService.API_BASE_URL.replace("/api", "")}/uploads/${value}`;
+  };
+
 
   // Format date nicely
   const formatReportDate = (dateString) => {
     if (!dateString || dateString === 'N/A' || dateString === 'Not recorded') {
-      return 'Not recorded';
+      return i18n.t("technician.report.visitOverview.notRecorded") || 'Not recorded';
     }
     
     try {
@@ -1468,7 +1549,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       // Check if date is valid
       if (isNaN(date.getTime())) {
         console.warn("⚠️ Invalid date string:", dateString);
-        return 'Invalid date';
+        return i18n.t("technician.report.visitOverview.invalidDate") || 'Invalid date';
       }
       
       return date.toLocaleDateString('en-US', { 
@@ -1479,7 +1560,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       });
     } catch (error) {
       console.error("❌ Error formatting date:", error);
-      return dateString || 'Not recorded';
+      return dateString || i18n.t("technician.report.visitOverview.notRecorded") || 'Not recorded';
     }
   };
 
@@ -1488,7 +1569,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1f9c8b" />
-          <Text style={styles.loadingText}>Loading Report...</Text>
+          <Text style={styles.loadingText}>{i18n.t("technician.report.loading") || "Loading Report..."}</Text>
         </View>
       </SafeAreaView>
     );
@@ -1509,7 +1590,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
             <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
             <View style={styles.adminBadge}>
               <MaterialIcons name="description" size={14} color="#fff" />
-              <Text style={styles.adminBadgeText}>REPORT</Text>
+              <Text style={styles.adminBadgeText}>{i18n.t("technician.report.badge")}</Text>
             </View>
           </View>
         </View>
@@ -1517,25 +1598,33 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           <View style={styles.errorIcon}>
             <MaterialIcons name="error-outline" size={60} color="#F44336" />
           </View>
-          <Text style={styles.errorTitle}>Report Unavailable</Text>
+          <Text style={styles.errorTitle}>{i18n.t("technician.report.errors.reportUnavailable")}</Text>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity 
             style={styles.primaryButton} 
             onPress={() => {
-              const visitIdFromSources = route?.params?.visitId || context?.visitId;
+              const visitIdFromSources =
+                route?.params?.visitId ||
+                route?.params?.visit_id ||
+                route?.params?.log_id ||
+                route?.params?.id ||
+                context?.visitId ||
+                context?.visit_id ||
+                context?.log_id ||
+                context?.id;
               if (visitIdFromSources) fetchReport(visitIdFromSources);
             }}
             activeOpacity={0.7}
           >
             <MaterialIcons name="refresh" size={18} color="#fff" />
-            <Text style={styles.primaryButtonText}>Retry</Text>
+            <Text style={styles.primaryButtonText}>{i18n.t("technician.report.errors.retry")}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.secondaryButton} 
             onPress={onBack || (() => navigation.goBack())}
             activeOpacity={0.7}
           >
-            <Text style={styles.secondaryButtonText}>Go Back</Text>
+            <Text style={styles.secondaryButtonText}>{i18n.t("technician.report.errors.goBack")}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -1556,7 +1645,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
               <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.adminBadge}>
                 <MaterialIcons name="description" size={14} color="#fff" />
-                <Text style={styles.adminBadgeText}>REPORT</Text>
+                <Text style={styles.adminBadgeText}>{i18n.t("technician.report.badge")}</Text>
               </View>
             </View>
             <TouchableOpacity 
@@ -1572,10 +1661,10 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
             <View style={styles.reportIconContainer}>
               <MaterialIcons name={getServiceIcon()} size={28} color="#fff" />
             </View>
-            <Text style={styles.welcomeText}>Service Report</Text>
+            <Text style={styles.welcomeText}>{i18n.t("technician.report.title")}</Text>
             <Text style={styles.title}>{getReportTitle()}</Text>
             <Text style={styles.subtitle}>
-              Detailed service completion report
+              {i18n.t("technician.report.subtitle")}
             </Text>
           </View>
         </View>
@@ -1585,15 +1674,15 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           <View style={styles.overviewHeader}>
             <View style={styles.overviewTitleContainer}>
               <MaterialIcons name="list-alt" size={20} color="#2c3e50" />
-              <Text style={styles.overviewTitle}>Visit Overview</Text>
+              <Text style={styles.overviewTitle}>{i18n.t("technician.report.visitOverview.title")}</Text>
             </View>
             <View style={styles.overviewBadge}>
               <Text style={styles.overviewBadgeText}>
-                {report?.serviceType === 'myocide' ? 'Myocide' : 
-                report?.serviceType === 'insecticide' ? 'Insecticide' :
-                report?.serviceType === 'disinfection' ? 'Disinfection' :
-                report?.serviceType === 'special' ? 'Special' : 
-                report?.serviceType || 'Service'}
+                {report?.serviceType === 'myocide' ? i18n.t("serviceTypes.myocide") : 
+                report?.serviceType === 'insecticide' ? i18n.t("serviceTypes.insecticide") :
+                report?.serviceType === 'disinfection' ? i18n.t("serviceTypes.disinfection") :
+                report?.serviceType === 'special' ? i18n.t("serviceTypes.special") : 
+                report?.serviceType || i18n.t("technician.common.service")}
               </Text>
             </View>
           </View>
@@ -1603,18 +1692,18 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
               {/* DATE - using Greece timezone */}
               <View style={styles.overviewItem}>
                 <MaterialIcons name="calendar-today" size={18} color="#666" />
-                <Text style={styles.overviewLabel}>Date</Text>
+                <Text style={styles.overviewLabel}>{i18n.t("technician.report.visitOverview.date")}</Text>
                 <Text style={styles.overviewValue}>
                   {report.date && report.date !== 'N/A' 
                     ? formatDateInGreece(report.date) 
-                    : 'Not recorded'}
+                    : i18n.t("technician.report.visitOverview.notRecorded") || 'Not recorded'}
                 </Text>
               </View>
               
               {/* DURATION - Restored! */}
               <View style={styles.overviewItem}>
                 <MaterialIcons name="access-time" size={18} color="#666" />
-                <Text style={styles.overviewLabel}>Duration</Text>
+                <Text style={styles.overviewLabel}>{i18n.t("technician.report.visitOverview.duration")}</Text>
                 <Text style={styles.overviewValue}>
                   {formatDurationForDisplay(report)}
                 </Text>
@@ -1623,18 +1712,18 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
               {/* CUSTOMER */}
               <View style={styles.overviewItem}>
                 <MaterialIcons name="person" size={18} color="#666" />
-                <Text style={styles.overviewLabel}>Customer</Text>
+                <Text style={styles.overviewLabel}>{i18n.t("technician.report.visitOverview.customer")}</Text>
                 <Text style={styles.overviewValue} numberOfLines={1}>
-                  {report.customerName || 'Not recorded'}
+                  {report.customerName || i18n.t("technician.report.visitOverview.notRecorded") || 'Not recorded'}
                 </Text>
               </View>
               
               {/* TECHNICIAN */}
               <View style={styles.overviewItem}>
                 <MaterialIcons name="engineering" size={18} color="#666" />
-                <Text style={styles.overviewLabel}>Technician</Text>
+                <Text style={styles.overviewLabel}>{i18n.t("technician.report.visitOverview.technician")}</Text>
                 <Text style={styles.overviewValue} numberOfLines={1}>
-                  {report.technicianName || 'Not recorded'}
+                  {report.technicianName || i18n.t("technician.report.visitOverview.notRecorded") || 'Not recorded'}
                 </Text>
               </View>
             </View>
@@ -1642,9 +1731,9 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
 
           <View style={styles.serviceTypeRow}>
             <MaterialIcons name="category" size={18} color="#1f9c8b" />
-            <Text style={styles.serviceTypeLabel}>Service Type:</Text>
+            <Text style={styles.serviceTypeLabel}>{i18n.t("technician.report.visitOverview.serviceType")}</Text>
             <Text style={styles.serviceTypeValue}>
-              {report ? getServiceLineLabel() : 'Loading...'}
+              {report ? getServiceLineLabel() : i18n.t("technician.common.loading") || 'Loading...'}
             </Text>
           </View>
         </View>
@@ -1656,22 +1745,25 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
         {report.serviceType === 'myocide' 
           ? renderMyocideReport()
           : renderServiceDetails()}
+        
+        
+        {renderTreatmentPhotos()}  
       
         {renderServiceNotes()}
 
         {/* FOOTER */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-              Technician's Report 
+              {i18n.t("technician.report.footer.system")}
           </Text>
           <Text style={styles.footerSubtext}>
-            ID: {report.visitId || 'N/A'}
+            {i18n.t("technician.report.footer.id", { id: report.visitId || 'N/A' })}
           </Text>
           <Text style={styles.footerSubtext}>
-            Version 1.0 • Last updated: {new Date().toLocaleDateString()}
+            {i18n.t("technician.report.footer.version", { date: new Date().toLocaleDateString() })}
           </Text>
           <Text style={styles.footerCopyright}>
-            © {new Date().getFullYear()} Pest-Free. All rights reserved.
+            {i18n.t("technician.report.footer.copyright", { year: new Date().getFullYear() })}
           </Text>
         </View>
       </ScrollView>

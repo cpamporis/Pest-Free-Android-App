@@ -7,14 +7,15 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
-  SafeAreaView,
   Image
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; 
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import apiService from "../../services/apiService";
 import ReportScreen from "../Technician/ReportScreen";
-import SwipeableVisitRow from '../../components/SwipeableVisitRow.android.js';
+import SwipeableVisitRow from '../../components/SwipeableVisitRow';
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
+import i18n from "../../services/i18n";
 
 export default function CustomerProfile({ customer, onClose, onOpenReport }) {
   const customerId = customer.customerId;
@@ -58,16 +59,12 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
       let customerVisits = [];
       try {
         // DIRECT APPROACH: Get appointments and resolve their visits
-        console.log("🔍 Fetching customer appointments...");
         const appointmentsRes = await apiService.request(
           "GET", 
           `/appointments/customer/${customerId}`
         );
         
-        console.log("📥 Appointments response:", appointmentsRes);
-        
         if (appointmentsRes?.success && Array.isArray(appointmentsRes.visits)) {
-          console.log(`📊 Found ${appointmentsRes.visits.length} appointments`);
           
           // Resolve each appointment to a visit/report
           for (const appointment of appointmentsRes.visits) {
@@ -75,7 +72,6 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
               const visitId = appointment.visitId || appointment.id;
               
               if (visitId) {
-                console.log(`🔍 Looking for report for visit: ${visitId}`);
                 
                 // Try to get visit report
                 const reportRes = await apiService.request(
@@ -84,7 +80,6 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                 );
                 
                 if (reportRes?.success && reportRes.report) {
-                  console.log(`✅ Found report for ${visitId}`);
                   customerVisits.push({
                     visitId: reportRes.report.visitId || visitId,
                     appointmentId: appointment.id || visitId,
@@ -96,29 +91,13 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                     duration: reportRes.report.duration,
                     source: 'report'
                   });
-                } else {
-                  // Fallback: use appointment data
-                  console.log(`⚠️ No report for ${visitId}, using appointment data`);
-                  customerVisits.push({
-                    visitId: visitId,
-                    appointmentId: appointment.id,
-                    serviceType: appointment.service_type || 'myocide',
-                    startTime: appointment.appointment_date,
-                    appointmentDate: appointment.appointment_date,
-                    technicianName: "Technician not recorded",
-                    status: appointment.status || 'completed',
-                    duration: 0,
-                    source: 'appointment'
-                  });
-                }
+                } 
               }
             } catch (visitErr) {
               console.warn(`⚠️ Error processing appointment ${appointment.id}:`, visitErr.message);
             }
           }
         }
-        
-        console.log(`✅ Loaded ${customerVisits.length} visits from appointments`);
         
       } catch (err) {
         console.error("❌ Failed to load customer visits:", err.message);
@@ -137,16 +116,12 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
         const dateB = new Date(b.appointmentDate || b.startTime || 0);
         return dateB - dateA;
       });
-
-      console.log(`✅ Final: ${sortedVisits.length} visits for customer`);
-      console.log("📊 Service types:", sortedVisits.map(v => v.serviceType));
       
       setVisits(sortedVisits);
 
       try {
         const revenue = await apiService.getRevenueByCustomer(customerId);
         setCustomerRevenue(revenue);
-        console.log("💰 Customer revenue loaded:", revenue);
       } catch (err) {
         console.error("❌ Failed to load customer revenue:", err);
       }
@@ -159,7 +134,6 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
   }
 
   const handleVisitPress = (visit) => {
-    console.log("📄 Opening report from CustomerProfile:", visit);
     
     setReportData({
       visitId: visit.visitId,
@@ -177,7 +151,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1f9c8b" />
-          <Text style={styles.loadingText}>Loading customer profile...</Text>
+          <Text style={styles.loadingText}>{i18n.t("admin.customerProfile.loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -207,7 +181,6 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                 appointmentId: reportData.appointmentId
               }}
               onBack={() => {
-                console.log("🔙 Going back to CustomerProfile");
                 setShowReport(false);
                 setReportData(null);
               }}
@@ -231,16 +204,16 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                   <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
                   <View style={styles.adminBadge}>
                     <MaterialIcons name="person" size={14} color="#fff" />
-                    <Text style={styles.adminBadgeText}>CUSTOMER PROFILE</Text>
+                    <Text style={styles.adminBadgeText}>{i18n.t("admin.customerProfile.header.badge")}</Text>
                   </View>
                 </View>
               </View>
 
               <View style={styles.headerContent}>
-                <Text style={styles.welcomeText}>Customer Details</Text>
+                <Text style={styles.welcomeText}>{i18n.t("admin.customerProfile.header.welcome")}</Text>
                 <Text style={styles.title}>{profileCustomer?.customerName || "Customer"}</Text>
                 <Text style={styles.subtitle}>
-                  View complete customer information and service history
+                  {i18n.t("admin.customerProfile.header.subtitle")}
                 </Text>
               </View>
             </View>
@@ -252,7 +225,11 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                   <MaterialIcons name="map" size={18} color="#1f9c8b" />
                 </View>
                 <Text style={styles.statNumber}>{maps.length}</Text>
-                <Text style={styles.statLabel}>Maps</Text>
+                <Text style={styles.statLabel}>
+                  {maps.length === 1 
+                    ? i18n.t("admin.customerProfile.stats.maps_one")
+                    : i18n.t("admin.customerProfile.stats.maps_other")}
+                </Text>
               </View>
 
               <View style={styles.statDivider} />
@@ -262,7 +239,11 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                   <MaterialIcons name="location-pin" size={18} color="#1f9c8b" />
                 </View>
                 <Text style={styles.statNumber}>{stations.length}</Text>
-                <Text style={styles.statLabel}>Stations</Text>
+                <Text style={styles.statLabel}>
+                  {stations.length === 1
+                    ? i18n.t("admin.customerProfile.stats.stations_one")
+                    : i18n.t("admin.customerProfile.stats.stations_other")}
+                </Text>
               </View>
 
               <View style={styles.statDivider} />
@@ -272,7 +253,11 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                   <MaterialIcons name="history" size={18} color="#1f9c8b" />
                 </View>
                 <Text style={styles.statNumber}>{visits.length}</Text>
-                <Text style={styles.statLabel}>Services</Text>
+                <Text style={styles.statLabel}>
+                  {visits.length === 1
+                    ? i18n.t("admin.customerProfile.stats.services_one")
+                    : i18n.t("admin.customerProfile.stats.services_other")}
+                </Text>
               </View>
             </View>
 
@@ -281,7 +266,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleContainer}>
                   <MaterialIcons name="euro" size={20} color="#2c3e50" />
-                  <Text style={styles.sectionTitle}>Customer Revenue</Text>
+                  <Text style={styles.sectionTitle}>{i18n.t("admin.customerProfile.revenue.title")}</Text>
                 </View>
               </View>
             )}
@@ -295,7 +280,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                     <Text style={styles.revenueValue}>
                       €{parseFloat(customerRevenue.total_revenue || 0).toFixed(2)}
                     </Text>
-                    <Text style={styles.revenueLabel}>Total Revenue</Text>
+                    <Text style={styles.revenueLabel}>{i18n.t("admin.customerProfile.revenue.totalRevenue")}</Text>
                   </View>
 
                   <View style={styles.revenueCard}>
@@ -303,7 +288,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                     <Text style={styles.revenueValue}>
                       {customerRevenue.appointment_count || 0}
                     </Text>
-                    <Text style={styles.revenueLabel}>Completed Services</Text>
+                    <Text style={styles.revenueLabel}>{i18n.t("admin.customerProfile.revenue.completedServices")}</Text>
                   </View>
 
                 </View>
@@ -314,7 +299,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <MaterialIcons name="info" size={20} color="#2c3e50" />
-                <Text style={styles.sectionTitle}>Customer Information</Text>
+                <Text style={styles.sectionTitle}>{i18n.t("admin.customerProfile.customerInfo.title")}</Text>
               </View>
             </View>
 
@@ -328,7 +313,9 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                   <View style={styles.customerMeta}>
                     <View style={styles.customerMetaItem}>
                       <MaterialIcons name="fingerprint" size={12} color="#666" />
-                      <Text style={styles.customerMetaText}>ID: {profileCustomer.customerId}</Text>
+                      <Text style={styles.customerMetaText}>
+                        {i18n.t("admin.customerProfile.customerInfo.id", { id: profileCustomer.customerId })}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -360,7 +347,11 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <MaterialIcons name="map" size={20} color="#2c3e50" />
-                <Text style={styles.sectionTitle}>Location Maps ({maps.length})</Text>
+                <Text style={styles.sectionTitle}>
+                  {maps.length === 1
+                    ? i18n.t("admin.customerProfile.maps.title_one", { count: maps.length })
+                    : i18n.t("admin.customerProfile.maps.title_other", { count: maps.length })}
+                </Text>
               </View>
             </View>
 
@@ -369,7 +360,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                 <View style={styles.emptyIconContainer}>
                   <MaterialIcons name="map" size={40} color="#ddd" />
                 </View>
-                <Text style={styles.emptyStateText}>No maps uploaded</Text>
+                <Text style={styles.emptyStateText}>{i18n.t("admin.customerProfile.maps.noMaps")}</Text>
               </View>
             ) : (
               <View style={styles.listContainer}>
@@ -385,7 +376,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                           <View style={styles.customerMetaItem}>
                             <MaterialIcons name="location-pin" size={12} color="#666" />
                             <Text style={styles.customerMetaText}>
-                              Stations: {Array.isArray(map.stations) ? map.stations.length : 0}
+                              {i18n.t("admin.customerProfile.maps.stations", { count: Array.isArray(map.stations) ? map.stations.length : 0 })}
                             </Text>
                           </View>
                         </View>
@@ -400,7 +391,11 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <MaterialIcons name="location-pin" size={20} color="#2c3e50" />
-                <Text style={styles.sectionTitle}>Stations Summary ({stations.length})</Text>
+                <Text style={styles.sectionTitle}>
+                  {stations.length === 1
+                    ? i18n.t("admin.customerProfile.stations.title_one", { count: stations.length })
+                    : i18n.t("admin.customerProfile.stations.title_other", { count: stations.length })}
+                </Text>
               </View>
             </View>
 
@@ -409,7 +404,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                 <View style={styles.emptyIconContainer}>
                   <MaterialIcons name="location-off" size={40} color="#ddd" />
                 </View>
-                <Text style={styles.emptyStateText}>No stations recorded</Text>
+                <Text style={styles.emptyStateText}>{i18n.t("admin.customerProfile.stations.noStations")}</Text>
               </View>
             ) : (
               <View style={styles.card}>
@@ -421,10 +416,10 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                         <Text style={styles.stationType}>{type}</Text>
                         <Text style={styles.stationCount}>{count}</Text>
                         <Text style={styles.stationLabel}>
-                          {type === 'BS' ? 'Bait Station' : 
-                           type === 'RM' ? 'Rodent Monitor' : 
-                           type === 'ST' ? 'Sticky Trap' : 
-                           'Light Trap'}
+                          {type === 'BS' ? i18n.t("admin.customerProfile.stations.baitStation") : 
+                           type === 'RM' ? i18n.t("admin.customerProfile.stations.rodentMonitor") : 
+                           type === 'ST' ? i18n.t("admin.customerProfile.stations.stickyTrap") : 
+                           i18n.t("admin.customerProfile.stations.lightTrap")}
                         </Text>
                       </View>
                     );
@@ -442,7 +437,11 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
               >
                 <View style={styles.sectionTitleContainer}>
                   <MaterialIcons name="history" size={20} color="#2c3e50" />
-                  <Text style={styles.sectionTitle}>Service History ({visits.length})</Text>
+                  <Text style={styles.sectionTitle}>
+                    {visits.length === 1
+                      ? i18n.t("admin.customerProfile.serviceHistory.title_one", { count: visits.length })
+                      : i18n.t("admin.customerProfile.serviceHistory.title_other", { count: visits.length })}
+                  </Text>
                 </View>
                 <View style={styles.dropdownIconContainer}>
                   <MaterialIcons 
@@ -453,7 +452,9 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                 </View>
               </TouchableOpacity>
               <Text style={styles.countBadge}>
-                {visits.length} service{visits.length !== 1 ? 's' : ''}
+                {visits.length === 1
+                  ? i18n.t("admin.customerProfile.serviceHistory.service_one", { count: visits.length })
+                  : i18n.t("admin.customerProfile.serviceHistory.service_other", { count: visits.length })}
               </Text>
             </View>
 
@@ -464,17 +465,17 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                     <View style={styles.emptyIconContainer}>
                       <MaterialIcons name="assignment" size={40} color="#ddd" />
                     </View>
-                    <Text style={styles.emptyStateText}>No services recorded</Text>
+                    <Text style={styles.emptyStateText}>{i18n.t("admin.customerProfile.serviceHistory.noServices")}</Text>
                   </View>
                 ) : (
                   <View style={styles.dropdownListContainer}>
                     <ScrollView 
                       style={styles.dropdownScrollView}
                       showsVerticalScrollIndicator={true}
-                      keyboardShouldPersistTaps="handled"
                       nestedScrollEnabled={true}
                     >
                       {visits.map(visit => (
+                        // UPDATED: Pass appointmentId as a prop
                         <SwipeableVisitRow
                           key={visit.visitId}
                           visit={visit}
@@ -491,12 +492,12 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
 
             {/* FOOTER */}
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Customer Profile Display</Text>
+              <Text style={styles.footerText}>{i18n.t("admin.customerProfile.footer.system")}</Text>
               <Text style={styles.footerSubtext}>
-                  Version 1.0 • Last updated: {new Date().toLocaleDateString()}
+                {i18n.t("admin.customerProfile.footer.version", { date: new Date().toLocaleDateString() })}
               </Text>
               <Text style={styles.footerCopyright}>
-                  © {new Date().getFullYear()} Pest-Free. All rights reserved.
+                {i18n.t("admin.customerProfile.footer.copyright", { year: new Date().getFullYear() })}
               </Text>
           </View>
           </>

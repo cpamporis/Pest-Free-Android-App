@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import apiService from "../../services/apiService";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
+import i18n from "../../services/i18n";
 
 // Technician Modal Component
 const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loading }) => {
@@ -54,8 +55,8 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
   }, [technician, isEdit]);
 
   const handleSubmit = () => {
-    if (!formData.firstName || !formData.lastName || !formData.username || (!isEdit && !formData.password)) {
-      Alert.alert("Error", "Please fill all required fields (*)");
+    if (!formData.firstName || !formData.lastName || !formData.username || !formData.email || (!isEdit && !formData.password)) {
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.technicians.addModal.requiredFields") || "Please fill all required fields (*)");
       return;
     }
 
@@ -90,10 +91,10 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
                   />
                 </View>
                 <Text style={styles.modalTitle}>
-                  {isEdit ? "Edit Technician" : "Add New Technician"}
+                  {isEdit ? i18n.t("admin.technicians.editModal.title") : i18n.t("admin.technicians.addModal.title")}
                 </Text>
                 <Text style={styles.modalSubtitle}>
-                  {isEdit ? "Update technician details" : "Fill in the details below"}
+                  {isEdit ? i18n.t("admin.technicians.editModal.subtitle") : i18n.t("admin.technicians.addModal.subtitle")}
                 </Text>
               </View>
 
@@ -101,11 +102,11 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
                 <View style={styles.inputRow}>
                   <View style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}>
                     <Text style={styles.inputLabel}>
-                      First Name <Text style={styles.requiredStar}>*</Text>
+                      {i18n.t("admin.technicians.addModal.firstName")} <Text style={styles.requiredStar}>*</Text>
                     </Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter first name"
+                      placeholder={i18n.t("admin.technicians.addModal.firstNamePlaceholder") || "Enter first name"}
                       placeholderTextColor="#999"
                       value={formData.firstName}
                       onChangeText={(text) => updateField('firstName', text)}
@@ -115,11 +116,11 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
 
                   <View style={[styles.inputContainer, { flex: 1 }]}>
                     <Text style={styles.inputLabel}>
-                      Last Name <Text style={styles.requiredStar}>*</Text>
+                      {i18n.t("admin.technicians.addModal.lastName")} <Text style={styles.requiredStar}>*</Text>
                     </Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter last name"
+                      placeholder={i18n.t("admin.technicians.addModal.lastNamePlaceholder") || "Enter last name"}
                       placeholderTextColor="#999"
                       value={formData.lastName}
                       onChangeText={(text) => updateField('lastName', text)}
@@ -129,10 +130,10 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Age</Text>
+                  <Text style={styles.inputLabel}>{i18n.t("admin.technicians.addModal.age")}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter age (optional)"
+                    placeholder={i18n.t("admin.technicians.addModal.agePlaceholder") || "Enter age (optional)"}
                     placeholderTextColor="#999"
                     keyboardType="numeric"
                     value={formData.age}
@@ -143,11 +144,11 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
 
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>
-                    Username <Text style={styles.requiredStar}>*</Text>
+                    {i18n.t("admin.technicians.addModal.username")} <Text style={styles.requiredStar}>*</Text>
                   </Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter username"
+                    placeholder={i18n.t("admin.technicians.addModal.usernamePlaceholder") || "Enter username"}
                     placeholderTextColor="#999"
                     autoCapitalize="none"
                     value={formData.username}
@@ -157,10 +158,12 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Email Address</Text>
+                  <Text style={styles.inputLabel}>
+                    {i18n.t("admin.technicians.addModal.email")} <Text style={styles.requiredStar}>*</Text>
+                  </Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="username@pest-free.gr"
+                    placeholder={i18n.t("admin.technicians.addModal.emailPlaceholder") || "Enter email address"}
                     placeholderTextColor="#999"
                     autoCapitalize="none"
                     keyboardType="email-address"
@@ -168,18 +171,17 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
                     onChangeText={(text) => updateField('email', text)}
                     editable={!loading}
                   />
-                  <Text style={styles.inputHint}>
-                    Leave blank to auto-generate: username@pest-free.gr
-                  </Text>
                 </View>
 
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>
-                    {isEdit ? "New Password (optional)" : "Password *"}
+                    {isEdit ? i18n.t("admin.technicians.editModal.newPassword") : `${i18n.t("admin.technicians.addModal.password")} *`}
                   </Text>
                   <TextInput
                     style={styles.input}
-                    placeholder={isEdit ? "Enter new password" : "Enter password"}
+                    placeholder={isEdit 
+                      ? i18n.t("admin.technicians.editModal.newPasswordPlaceholder") || "Enter new password"
+                      : i18n.t("admin.technicians.addModal.passwordPlaceholder") || "Enter password"}
                     placeholderTextColor="#999"
                     secureTextEntry
                     value={formData.password}
@@ -188,7 +190,7 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
                   />
                   {isEdit && (
                     <Text style={styles.inputHint}>
-                      Leave blank to keep current password
+                      {i18n.t("admin.technicians.editModal.passwordHint")}
                     </Text>
                   )}
                 </View>
@@ -200,7 +202,7 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
                   onPress={onClose}
                   disabled={loading}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={styles.cancelButtonText}>{i18n.t("common.cancel")}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -214,7 +216,7 @@ const TechnicianModal = ({ isEdit, visible, onClose, onSubmit, technician, loadi
                     <>
                       <MaterialIcons name={isEdit ? "check-circle" : "save"} size={18} color="#fff" />
                       <Text style={styles.saveButtonText}>
-                        {isEdit ? "Update Technician" : "Save Technician"}
+                        {isEdit ? i18n.t("admin.technicians.editModal.update") : i18n.t("admin.technicians.addModal.save")}
                       </Text>
                     </>
                   )}
@@ -246,23 +248,16 @@ export default function TechniciansScreen({ onClose }) {
   const loadTechnicians = async () => {
     setLoading(true);
     try {
-      console.log("=== LOADING TECHNICIANS ===");
-
       const result = await apiService.getTechnicians();
-
-      console.log("Technicians API Result:", result);
-
       if (Array.isArray(result)) {
-        console.log(`✅ Found ${result.length} technicians`);
         setTechnicians(result);
       } else {
-        console.log("❌ Invalid response format");
         setTechnicians([]);
       }
 
     } catch (error) {
       console.error("Failed to load technicians:", error);
-      Alert.alert("Error", "Failed to load technicians. Check backend connection.");
+      Alert.alert(i18n.t("common.error"), i18n.t("admin.technicians.loadingError") || "Failed to load technicians. Check backend connection.");
       setTechnicians([]);
     } finally {
       setLoading(false);
@@ -275,21 +270,20 @@ export default function TechniciansScreen({ onClose }) {
       const newTech = {
         ...formData,
         age: formData.age ? parseInt(formData.age) : null,
-        // Auto-generate email if not provided
-        email: formData.email || `${formData.username}@pest-free.gr`
+        // Email is now manually entered and required
       };
 
       const result = await apiService.createTechnician(newTech);
       
       if (result && result.success) {
-        Alert.alert("Success", "Technician added successfully");
+        Alert.alert(i18n.t("common.success"), i18n.t("admin.technicians.addModal.success") || "Technician added successfully");
         setShowAddModal(false);
         loadTechnicians();
       } else {
-        Alert.alert("Error", result?.error || "Failed to add technician");
+        Alert.alert(i18n.t("common.error"), result?.error || i18n.t("admin.technicians.addModal.failed") || "Failed to add technician");
       }
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to add technician");
+      Alert.alert(i18n.t("common.error"), error.message || i18n.t("admin.technicians.addModal.failed") || "Failed to add technician");
     } finally {
       setSaveLoading(false);
     }
@@ -304,7 +298,7 @@ export default function TechniciansScreen({ onClose }) {
         lastName: formData.lastName,
         age: formData.age ? parseInt(formData.age) : null,
         username: formData.username,
-        email: formData.email || `${formData.username}@pest-free.gr`,
+        email: formData.email, // Now manually entered
         // Only update password if provided
         ...(formData.password ? { password: formData.password } : {})
       };
@@ -312,15 +306,15 @@ export default function TechniciansScreen({ onClose }) {
       const result = await apiService.updateTechnician(selectedTechnician.technicianId, updatedTech);
       
       if (result && result.success) {
-        Alert.alert("Success", "Technician updated successfully");
+        Alert.alert(i18n.t("common.success"), i18n.t("admin.technicians.editModal.success") || "Technician updated successfully");
         setShowEditModal(false);
         setSelectedTechnician(null);
         loadTechnicians();
       } else {
-        Alert.alert("Error", result?.error || "Failed to update technician");
+        Alert.alert(i18n.t("common.error"), result?.error || i18n.t("admin.technicians.editModal.failed") || "Failed to update technician");
       }
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to update technician");
+      Alert.alert(i18n.t("common.error"), error.message || i18n.t("admin.technicians.editModal.failed") || "Failed to update technician");
     } finally {
       setSaveLoading(false);
     }
@@ -341,13 +335,13 @@ export default function TechniciansScreen({ onClose }) {
       const result = await apiService.deleteTechnician(technicianToDelete);
       
       if (result && result.success) {
-        Alert.alert("Success", "Technician deleted successfully");
+        Alert.alert(i18n.t("common.success"), i18n.t("admin.technicians.deleteModal.success") || "Technician deleted successfully");
         loadTechnicians();
       } else {
-        Alert.alert("Error", result?.error || "Failed to delete technician");
+        Alert.alert(i18n.t("common.error"), result?.error || i18n.t("admin.technicians.deleteModal.failed") || "Failed to delete technician");
       }
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to delete technician");
+      Alert.alert(i18n.t("common.error"), error.message || i18n.t("admin.technicians.deleteModal.failed") || "Failed to delete technician");
     } finally {
       setDeleteConfirm(false);
       setTechnicianToDelete(null);
@@ -364,7 +358,7 @@ export default function TechniciansScreen({ onClose }) {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1f9c8b" />
-          <Text style={styles.loadingText}>Loading Technicians...</Text>
+          <Text style={styles.loadingText}>{i18n.t("admin.technicians.loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -380,7 +374,7 @@ export default function TechniciansScreen({ onClose }) {
               <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.adminBadge}>
                 <MaterialIcons name="engineering" size={14} color="#fff" />
-                <Text style={styles.adminBadgeText}>TECHNICIANS</Text>
+                <Text style={styles.adminBadgeText}>{i18n.t("admin.technicians.header.badge")}</Text>
               </View>
             </View>
             <TouchableOpacity 
@@ -393,10 +387,10 @@ export default function TechniciansScreen({ onClose }) {
           </View>
 
           <View style={styles.headerContent}>
-            <Text style={styles.welcomeText}>Technician Management</Text>
-            <Text style={styles.title}>Manage Technician Profiles</Text>
+            <Text style={styles.welcomeText}>{i18n.t("admin.technicians.header.welcome")}</Text>
+            <Text style={styles.title}>{i18n.t("admin.technicians.header.title")}</Text>
             <Text style={styles.subtitle}>
-              Add, edit, or remove technicians from the system
+              {i18n.t("admin.technicians.header.subtitle")}
             </Text>
           </View>
         </View>
@@ -408,7 +402,7 @@ export default function TechniciansScreen({ onClose }) {
               <MaterialIcons name="engineering" size={18} color="#1f9c8b" />
             </View>
             <Text style={styles.statNumber}>{activeTechs.length}</Text>
-            <Text style={styles.statLabel}>Total Technicians</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.technicians.stats.totalTechnicians")}</Text>
           </View>
 
           <View style={styles.statDivider} />
@@ -418,7 +412,7 @@ export default function TechniciansScreen({ onClose }) {
               <MaterialIcons name="check-circle" size={18} color="#1f9c8b" />
             </View>
             <Text style={styles.statNumber}>{activeTechs.length}</Text>
-            <Text style={styles.statLabel}>Active</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.technicians.stats.active")}</Text>
           </View>
 
           <View style={styles.statDivider} />
@@ -440,7 +434,7 @@ export default function TechniciansScreen({ onClose }) {
                 }
               }).length}
             </Text>
-            <Text style={styles.statLabel}>New This Month</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.technicians.stats.newThisMonth")}</Text>
           </View>
         </View>
 
@@ -448,7 +442,7 @@ export default function TechniciansScreen({ onClose }) {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="list-alt" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Technician List</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("admin.technicians.list.title")}</Text>
           </View>
           <TouchableOpacity
             style={styles.addButton}
@@ -456,7 +450,7 @@ export default function TechniciansScreen({ onClose }) {
             activeOpacity={0.7}
           >
             <MaterialIcons name="person-add" size={18} color="#fff" />
-            <Text style={styles.addButtonText}>Add Technician</Text>
+            <Text style={styles.addButtonText}>{i18n.t("admin.technicians.list.addButton")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -466,9 +460,9 @@ export default function TechniciansScreen({ onClose }) {
             <View style={styles.emptyIconContainer}>
               <MaterialIcons name="engineering" size={60} color="#ddd" />
             </View>
-            <Text style={styles.emptyStateTitle}>No Technicians Found</Text>
+            <Text style={styles.emptyStateTitle}>{i18n.t("admin.technicians.list.emptyTitle")}</Text>
             <Text style={styles.emptyStateText}>
-              Start by adding your first technician to the system
+              {i18n.t("admin.technicians.list.emptyText")}
             </Text>
             <TouchableOpacity
               style={styles.emptyStateButton}
@@ -476,7 +470,7 @@ export default function TechniciansScreen({ onClose }) {
               activeOpacity={0.7}
             >
               <MaterialIcons name="person-add" size={18} color="#fff" />
-              <Text style={styles.emptyStateButtonText}>Add First Technician</Text>
+              <Text style={styles.emptyStateButtonText}>{i18n.t("admin.technicians.list.addFirst")}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -515,7 +509,7 @@ export default function TechniciansScreen({ onClose }) {
                       {tech.age !== null && (
                         <View style={styles.techMetaItem}>
                           <MaterialIcons name="cake" size={12} color="#666" />
-                          <Text style={styles.techMetaText}>{tech.age} years</Text>
+                          <Text style={styles.techMetaText}>{tech.age} {i18n.t("admin.technicians.list.years")}</Text>
                         </View>
                       )}
                     </View>
@@ -523,9 +517,9 @@ export default function TechniciansScreen({ onClose }) {
 
                   <View style={styles.techIdBadge}>
                     <Text style={styles.techIdText}>
-                      ID: {tech.technicianId.length > 10 
+                      {i18n.t("admin.technicians.list.id", { id: tech.technicianId.length > 10 
                         ? `${tech.technicianId.substring(0, 8)}...` 
-                        : tech.technicianId}
+                        : tech.technicianId })}
                     </Text>
                   </View>
                 </View>
@@ -538,7 +532,7 @@ export default function TechniciansScreen({ onClose }) {
                   >
                     <MaterialIcons name="edit" size={16} color="#1f9c8b" />
                     <Text style={[styles.actionButtonText, { color: "#1f9c8b" }]}>
-                      Edit
+                      {i18n.t("admin.technicians.actions.edit")}
                     </Text>
                   </TouchableOpacity>
 
@@ -549,7 +543,7 @@ export default function TechniciansScreen({ onClose }) {
                   >
                     <MaterialIcons name="delete" size={16} color="#F44336" />
                     <Text style={[styles.actionButtonText, { color: "#F44336" }]}>
-                      Delete
+                      {i18n.t("admin.technicians.actions.delete")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -560,12 +554,12 @@ export default function TechniciansScreen({ onClose }) {
 
         {/* FOOTER */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Technician Management System</Text>
+          <Text style={styles.footerText}>{i18n.t("admin.technicians.footer.system")}</Text>
           <Text style={styles.footerSubtext}>
-            Version 1.0 • Last updated: {new Date().toLocaleDateString()}
+            {i18n.t("admin.technicians.footer.version", { date: new Date().toLocaleDateString() })}
           </Text>
           <Text style={styles.footerCopyright}>
-            © {new Date().getFullYear()} Pest-Free. All rights reserved.
+            {i18n.t("admin.technicians.footer.copyright", { year: new Date().getFullYear() })}
           </Text>
         </View>
 
@@ -597,12 +591,12 @@ export default function TechniciansScreen({ onClose }) {
               <View style={styles.confirmIconContainer}>
                 <MaterialIcons name="warning" size={40} color="#F44336" />
               </View>
-              <Text style={styles.confirmTitle}>Delete Technician</Text>
+              <Text style={styles.confirmTitle}>{i18n.t("admin.technicians.deleteModal.title")}</Text>
               <Text style={styles.confirmText}>
-                Are you sure you want to delete this technician? This action cannot be undone.
+                {i18n.t("admin.technicians.deleteModal.message")}
               </Text>
               <Text style={styles.confirmWarning}>
-                All assigned visits and history will be permanently removed.
+                {i18n.t("admin.technicians.deleteModal.warning")}
               </Text>
               
               <View style={styles.confirmButtons}>
@@ -614,7 +608,7 @@ export default function TechniciansScreen({ onClose }) {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.confirmCancelButtonText}>Cancel</Text>
+                  <Text style={styles.confirmCancelButtonText}>{i18n.t("common.cancel")}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
@@ -623,7 +617,7 @@ export default function TechniciansScreen({ onClose }) {
                   activeOpacity={0.7}
                 >
                   <MaterialIcons name="delete" size={18} color="#fff" />
-                  <Text style={styles.confirmDeleteButtonText}>Delete</Text>
+                  <Text style={styles.confirmDeleteButtonText}>{i18n.t("admin.technicians.deleteModal.delete")}</Text>
                 </TouchableOpacity>
               </View>
             </View>

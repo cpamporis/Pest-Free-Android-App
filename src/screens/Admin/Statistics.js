@@ -15,6 +15,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import apiService from "../../services/apiService";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from "../../services/i18n";
 
 const { width } = Dimensions.get('window');
 
@@ -46,8 +47,8 @@ export default function Statistics({ onClose }) {
     visitFrequency: 0
   });
   const [newCustomersThisMonth, setNewCustomersThisMonth] = useState(0);
-  const [bestTechnician, setBestTechnician] = useState("N/A");
-  const [topService, setTopService] = useState("N/A");
+  const [bestTechnician, setBestTechnician] = useState(i18n.t("admin.statistics.insights.notAvailable") || "N/A");
+  const [topService, setTopService] = useState(i18n.t("admin.statistics.insights.notAvailable") || "N/A");
   
   // CHART INTERACTIVITY STATES
   const [timePeriod, setTimePeriod] = useState('6months'); // '3months', '6months', '1year', 'all'
@@ -71,7 +72,6 @@ export default function Statistics({ onClose }) {
           // It's a new day, reset the counter
           await AsyncStorage.setItem(lastResetKey, today);
           await saveTodayRequestsToStorage(0);
-          console.log('🔄 Reset Today\'s Requests counter for new day');
         }
       } catch (error) {
         console.error('Error resetting daily counter:', error);
@@ -91,11 +91,6 @@ export default function Statistics({ onClose }) {
 
     try {
       const today = new Date().toISOString().split("T")[0];
-      console.log(`📅 Today's date: ${today}`);
-
-      // ====== TODAY'S REQUESTS - FIXED APPROACH ======
-      console.log("🔍 Loading today's TOTAL requests for Statistics...");
-      
       // TRY MULTIPLE APPROACHES TO GET TODAY'S TOTAL COUNT
       
       // APPROACH 1: Try to get total count from existing endpoint first
@@ -105,40 +100,27 @@ export default function Statistics({ onClose }) {
         // First, try the regular endpoint which might return all requests
         const allRequestsResult = await apiService.getCustomerRequests();
         
-        console.log("🔍 getCustomerRequests() response:", {
-          success: allRequestsResult?.success,
-          hasRequests: !!allRequestsResult?.requests,
-          isArray: Array.isArray(allRequestsResult?.requests),
-          length: allRequestsResult?.requests?.length || 0,
-          rawKeys: Object.keys(allRequestsResult || {})
-        });
-        
         // Handle different response formats
         let requestsArray = [];
         
         if (Array.isArray(allRequestsResult)) {
           // Response is directly an array
           requestsArray = allRequestsResult;
-          console.log("✅ Response is direct array");
         } else if (allRequestsResult?.requests && Array.isArray(allRequestsResult.requests)) {
           // Response has .requests property
           requestsArray = allRequestsResult.requests;
-          console.log("✅ Response has .requests array");
         } else if (allRequestsResult?.success && Array.isArray(allRequestsResult.data)) {
           // Response has .data array
           requestsArray = allRequestsResult.data;
-          console.log("✅ Response has .data array");
         } else if (allRequestsResult?.success && allRequestsResult.data?.requests && Array.isArray(allRequestsResult.data.requests)) {
           // Nested .data.requests
           requestsArray = allRequestsResult.data.requests;
-          console.log("✅ Response has .data.requests array");
         }
         
         if (requestsArray.length > 0) {
           // Filter for requests created today (regardless of status)
           todayTotalCount = requestsArray.filter(request => {
             if (!request.created_at) {
-              console.log("⚠️ Request missing created_at:", request.id);
               return false;
             }
             
@@ -160,24 +142,12 @@ export default function Statistics({ onClose }) {
               
               const isToday = requestDate === today;
               
-              if (isToday) {
-                console.log(`✅ Found today's request: ${request.id}, created_at: ${request.created_at}, date: ${requestDate}`);
-              }
-              
               return isToday;
             } catch (error) {
               console.error("❌ Error parsing date:", error, "for request:", request.id, "created_at:", request.created_at);
               return false;
             }
           }).length;
-          
-          console.log(`📊 Approach 1: Found ${todayTotalCount} TOTAL requests created today`);
-          
-          // Debug: Show all requests with dates
-          console.log("🔍 All requests with dates:");
-          requestsArray.slice(0, 5).forEach((request, index) => {
-            console.log(`  ${index + 1}. ID: ${request.id}, Status: ${request.status}, Created: ${request.created_at}`);
-          });
           
         } else {
           console.warn("⚠️ No requests array found in response");
@@ -190,12 +160,10 @@ export default function Statistics({ onClose }) {
       // APPROACH 2: If Approach 1 failed or returned 0, try the today-count endpoint
       if (todayTotalCount === 0) {
         try {
-          console.log("🔄 Trying today-count endpoint as fallback...");
           const todayCountResult = await apiService.getTodayCustomerRequestsCount();
           
           if (todayCountResult?.success) {
             todayTotalCount = todayCountResult.count || 0;
-            console.log(`📊 Approach 2 (pending-only): Today's count = ${todayTotalCount}`);
           }
         } catch (todayCountError) {
           console.error("❌ Approach 2 failed:", todayCountError);
@@ -205,19 +173,16 @@ export default function Statistics({ onClose }) {
       // APPROACH 3: Try the total-today-count endpoint if it exists
       if (todayTotalCount === 0) {
         try {
-          console.log("🔄 Trying total-today-count endpoint...");
           // Check if this method exists in apiService
           if (apiService.getTodayTotalCustomerRequestsCount) {
             const totalTodayResult = await apiService.getTodayTotalCustomerRequestsCount();
             if (totalTodayResult?.success) {
               todayTotalCount = totalTodayResult.count || 0;
-              console.log(`📊 Approach 3 (total): Today's count = ${todayTotalCount}`);
             }
           } else if (apiService.getTotalRequestsCreatedToday) {
             const totalTodayResult = await apiService.getTotalRequestsCreatedToday();
             if (totalTodayResult?.success) {
               todayTotalCount = totalTodayResult.count || 0;
-              console.log(`📊 Approach 3 (total): Today's count = ${todayTotalCount}`);
             }
           }
         } catch (totalTodayError) {
@@ -227,19 +192,14 @@ export default function Statistics({ onClose }) {
       
       // Load stored count for comparison
       const storedCount = await loadTodayRequestsFromStorage();
-      console.log(`📊 Statistics: Stored count: ${storedCount}`);
       
       // SPECIAL CASE: If we're getting 0 but stored count > 0, increment based on manual check
       if (todayTotalCount === 0 && storedCount > 0) {
-        console.log(`⚠️ API returned 0 but stored count is ${storedCount}. Keeping stored value.`);
         todayTotalCount = storedCount;
       }
       
       // Use the maximum of: Today's total count OR stored count
       const finalCount = Math.max(todayTotalCount, storedCount);
-      
-      console.log(`📊 Statistics: Final TODAY'S REQUESTS count: ${finalCount} (today total: ${todayTotalCount}, stored: ${storedCount})`);
-      
       // Save the count to storage for backup
       await saveTodayRequestsToStorage(finalCount);
       
@@ -247,8 +207,6 @@ export default function Statistics({ onClose }) {
       setTodayRequests(finalCount);
 
       // ====== LOAD ALL OTHER STATISTICS ======
-      console.log("📦 Loading other statistics...");
-      
       const [
         customersRes,
         techniciansRes,
@@ -275,12 +233,6 @@ export default function Statistics({ onClose }) {
         apiService.getTopPerformance()
       ]);
 
-      console.log("📦 Debug - Appointments response:", {
-        type: typeof appointmentsRes,
-        isArray: Array.isArray(appointmentsRes),
-        raw: appointmentsRes
-      });
-
       // Process appointments data
       let appointmentsArray = [];
       
@@ -293,9 +245,6 @@ export default function Statistics({ onClose }) {
       } else if (appointmentsRes?.success && Array.isArray(appointmentsRes.data)) {
         appointmentsArray = appointmentsRes.data;
       }
-
-      console.log(`✅ Processed ${appointmentsArray.length} appointments`);
-
       // Transform appointments to visits for display
       const transformedVisits = appointmentsArray.map(appointment => {
         const customerId = appointment.customerId || appointment.customer_id || appointment.customer?.id;
@@ -312,16 +261,12 @@ export default function Statistics({ onClose }) {
           start_time: startTime,
           end_time: appointment.endTime || appointment.end_time || null,
           duration: appointment.duration || 0,
-          technician_name: appointment.technicianName || appointment.technician_name || 'Unknown',
+          technician_name: appointment.technicianName || appointment.technician_name || i18n.t("admin.statistics.unknown") || 'Unknown',
           technician_id: appointment.technicianId || appointment.technician_id
         };
       }).filter(visit => visit.start_time);
-
-      console.log(`✅ Created ${transformedVisits.length} transformed visits`);
-
       // Set the database-calculated KPIs
       if (enhancedKPIRes?.success && enhancedKPIRes.kpiData) {
-        console.log("📊 Received KPI data (frontend):", enhancedKPIRes.kpiData);
         
         setKpiData({
           revenueGrowth: enhancedKPIRes.kpiData.revenueGrowth || 0,
@@ -335,8 +280,8 @@ export default function Statistics({ onClose }) {
 
       // Set top performance from database
       if (topPerformanceRes?.success && topPerformanceRes.performanceData) {
-        setBestTechnician(topPerformanceRes.performanceData.bestTechnician || "N/A");
-        setTopService(topPerformanceRes.performanceData.topService || "N/A");
+        setBestTechnician(topPerformanceRes.performanceData.bestTechnician || i18n.t("admin.statistics.insights.notAvailable") || "N/A");
+        setTopService(topPerformanceRes.performanceData.topService || i18n.t("admin.statistics.insights.notAvailable") || "N/A");
       }
 
       // Calculate new customers this month from local data as fallback
@@ -364,9 +309,6 @@ export default function Statistics({ onClose }) {
       setTopCustomers(topCustomersRes?.data || []);
       setYearRevenue(yearRevenueRes?.total || 0);
       setTechnicianRevenue(technicianRevenueRes?.data || []);
-
-      console.log("✅ All state set successfully");
-
     } catch (error) {
       console.error("❌ Failed to load statistics:", error);
     } finally {
@@ -395,7 +337,6 @@ export default function Statistics({ onClose }) {
     try {
       const key = getTodayRequestsKey();
       await AsyncStorage.setItem(key, count.toString());
-      console.log(`✅ Saved ${count} requests for today`);
     } catch (error) {
       console.error("Error saving to storage:", error);
     }
@@ -413,7 +354,7 @@ export default function Statistics({ onClose }) {
     if (!acc[visit.technician_id]) {
       acc[visit.technician_id] = {
         technicianId: visit.technician_id,
-        technicianName: visit.technician_name || "Unknown",
+        technicianName: visit.technician_name || i18n.t("admin.statistics.unknown") || "Unknown",
         totalDuration: 0,
         visits: 0,
         services: {}
@@ -489,7 +430,6 @@ export default function Statistics({ onClose }) {
       const newCount = current + 1;
       await saveTodayRequestsToStorage(newCount);
       setTodayRequests(newCount);
-      console.log(`➕ Incremented today's requests to ${newCount}`);
     } catch (error) {
       console.error("Error incrementing today's requests:", error);
     }
@@ -614,7 +554,7 @@ export default function Statistics({ onClose }) {
       const topTech = technicianRevenueData.reduce((max, tech) => 
         parseFloat(tech.total || 0) > parseFloat(max.total || 0) ? tech : max
       );
-      setBestTechnician(topTech.technician_name?.split(' ')[0] || 'N/A');
+      setBestTechnician(topTech.technician_name?.split(' ')[0] || i18n.t("admin.statistics.insights.notAvailable") || 'N/A');
     }
     
     // Set top service
@@ -622,7 +562,7 @@ export default function Statistics({ onClose }) {
       const topServiceData = revenueByServiceData.reduce((max, service) => 
         parseFloat(service.total_revenue || 0) > parseFloat(max.total_revenue || 0) ? service : max
       );
-      setTopService(topServiceData.service_type || 'N/A');
+      setTopService(topServiceData.service_type || i18n.t("admin.statistics.insights.notAvailable") || 'N/A');
     }
     
     setKpiData({
@@ -682,7 +622,7 @@ export default function Statistics({ onClose }) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1f9c8b" />
-        <Text style={styles.loadingText}>Loading Statistics...</Text>
+        <Text style={styles.loadingText}>{i18n.t("admin.statistics.loading")}</Text>
       </SafeAreaView>
     );
   }
@@ -713,61 +653,61 @@ export default function Statistics({ onClose }) {
               <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.adminBadge}>
                 <MaterialIcons name="analytics" size={14} color="#fff" />
-                <Text style={styles.adminBadgeText}>ANALYTICS DASHBOARD</Text>
+                <Text style={styles.adminBadgeText}>{i18n.t("admin.statistics.header.badge")}</Text>
               </View>
             </View>
           </View>
 
           <View style={styles.headerContent}>
-            <Text style={styles.welcomeText}>Business Analytics</Text>
-            <Text style={styles.title}>Performance Dashboard</Text>
+            <Text style={styles.welcomeText}>{i18n.t("admin.statistics.header.welcome")}</Text>
+            <Text style={styles.title}>{i18n.t("admin.statistics.header.title")}</Text>
             <Text style={styles.subtitle}>
-              Real-time business insights and performance metrics
+              {i18n.t("admin.statistics.header.subtitle")}
             </Text>
           </View>
         </View>
 
         {/* ENHANCED KPI SECTION */}
         <View style={styles.enhancedKpiSection}>
-          <Text style={styles.enhancedKpiTitle}>Business Performance Dashboard</Text>
+          <Text style={styles.enhancedKpiTitle}>{i18n.t("admin.statistics.kpi.title")}</Text>
           
           {/* REVENUE & GROWTH ROW */}
           <View style={styles.kpiRow}>
             <KPICard 
-              title="Monthly Revenue"
+              title={i18n.t("admin.statistics.kpi.monthlyRevenue")}
               value={`€${parseFloat(monthlyRevenue[0]?.revenue || 0).toFixed(0)}`}
               change={kpiData.revenueGrowth || 0}
               icon="euro"
               isCurrency={true}
-              subtitle="vs last month"
+              subtitle={i18n.t("admin.statistics.kpi.vsLastMonth")}
             />
             
             <KPICard 
-              title="Customer Growth"
+              title={i18n.t("admin.statistics.kpi.customerGrowth")}
               value={`+${newCustomersThisMonth || 0}`}
               change={kpiData.customerGrowth || 0}
               icon="people"
-              subtitle="new customers"
+              subtitle={i18n.t("admin.statistics.kpi.newCustomers")}
             />
           </View>
           
           {/* EFFICIENCY ROW */}
           <View style={styles.kpiRow}>
             <KPICard 
-              title="Efficiency Score"
+              title={i18n.t("admin.statistics.kpi.efficiencyScore")}
               value={`${(kpiData.efficiencyScore || 0).toFixed(0)}%`}
               icon="speed"
               showProgress={true}
               progress={(kpiData.efficiencyScore || 0) / 100}
-              subtitle="based on visit duration"
+              subtitle={i18n.t("admin.statistics.kpi.efficiencyDesc")}
               color="#1f9c8b"
             />
             
             <KPICard 
-              title="Retention Rate"
+              title={i18n.t("admin.statistics.kpi.retentionRate")}
               value={`${(kpiData.retentionRate || 0).toFixed(1)}%`}
               icon="loyalty"
-              subtitle="customer loyalty"
+              subtitle={i18n.t("admin.statistics.kpi.retentionDesc")}
               color="#1f9c8b"
             />
           </View>
@@ -775,35 +715,35 @@ export default function Statistics({ onClose }) {
           {/* OPERATIONAL ROW */}
           <View style={styles.kpiRow}>
             <KPICard 
-              title="Avg Ticket Size"
+              title={i18n.t("admin.statistics.kpi.avgTicketSize")}
               value={`€${(kpiData.avgTicketSize || 0).toFixed(2)}`}
               icon="receipt"
-              subtitle="per service"
+              subtitle={i18n.t("admin.statistics.kpi.ticketDesc")}
               color="#1f9c8b"
             />
             
             <KPICard 
-              title="Visit Frequency"
-              value={`${kpiData.visitFrequency || 30} days`}
+              title={i18n.t("admin.statistics.kpi.visitFrequency")}
+              value={`${kpiData.visitFrequency || 30} ${i18n.t("common.days_other")}`}
               icon="update"
-              subtitle="between services"
+              subtitle={i18n.t("admin.statistics.kpi.frequencyDesc")}
               color="#1f9c8b"
             />
           </View>
           
           {/* QUICK INSIGHTS */}
           <View style={styles.insightsContainer}>
-            <Text style={styles.insightsTitle}>Quick Insights</Text>
+            <Text style={styles.insightsTitle}>{i18n.t("admin.statistics.insights.title")}</Text>
             <View style={styles.insightsGrid}>
               <InsightCard 
                 icon="emoji-events"
-                title="Best Performing"
+                title={i18n.t("admin.statistics.insights.bestPerforming")}
                 value={bestTechnician}
                 color="#1f9c8b"
               />
               <InsightCard 
                 icon="star"
-                title="Top Service"
+                title={i18n.t("admin.statistics.insights.topService")}
                 value={topService}
                 color="#1f9c8b"
               />
@@ -813,25 +753,25 @@ export default function Statistics({ onClose }) {
 
         {/* REVENUE SUMMARY SECTION */}
         {revenueStats && (
-          <Section title="Revenue Summary">
+          <Section title={i18n.t("admin.statistics.revenue.summary")}>
             <View style={styles.revenueGrid}>
               <RevenueCard 
-                title="Total Revenue" 
+                title={i18n.t("admin.statistics.revenue.totalRevenue")} 
                 value={`€${parseFloat(revenueStats.total_revenue || 0).toFixed(2)}`}
                 icon="euro"
               />
               <RevenueCard 
-                title="This Year" 
+                title={i18n.t("admin.statistics.revenue.thisYear")} 
                 value={`€${parseFloat(yearRevenue).toFixed(2)}`}
                 icon="calendar-today"
               />
               <RevenueCard 
-                title="Avg Price" 
+                title={i18n.t("admin.statistics.revenue.avgPrice")} 
                 value={`€${parseFloat(revenueStats.avg_price || 0).toFixed(2)}`}
                 icon="trending-up"
               />
               <RevenueCard 
-                title="Completed" 
+                title={i18n.t("admin.statistics.revenue.completed")} 
                 value={revenueStats.completed_appointments || 0}
                 icon="check-circle"
               />
@@ -840,10 +780,10 @@ export default function Statistics({ onClose }) {
         )}
 
         {/* REVENUE TRENDS CHART */}
-        <Section title="Revenue Trends">
+        <Section title={i18n.t("admin.statistics.revenueTrends.title")}>
           <View style={styles.chartContainer}>
             <View style={styles.chartHeader}>
-              <Text style={styles.chartMainTitle}>Monthly Revenue Performance</Text>
+              <Text style={styles.chartMainTitle}>{i18n.t("admin.statistics.revenueTrends.monthlyPerformance")}</Text>
             </View>
             
             <View style={styles.chartCard}>
@@ -851,13 +791,13 @@ export default function Statistics({ onClose }) {
               <View style={styles.chartTopBar}>
                 <View style={styles.chartStatsHeader}>
                   <View style={styles.chartStatItem}>
-                    <Text style={styles.chartStatLabel}>Current Month</Text>
+                    <Text style={styles.chartStatLabel}>{i18n.t("admin.statistics.revenueTrends.currentMonth")}</Text>
                     <Text style={styles.chartStatValue}>
                       €{parseFloat(monthlyRevenue[0]?.revenue || 0).toFixed(0)}
                     </Text>
                   </View>
                   <View style={styles.chartStatItem}>
-                    <Text style={styles.chartStatLabel}>Growth</Text>
+                    <Text style={styles.chartStatLabel}>{i18n.t("admin.statistics.revenueTrends.growth")}</Text>
                     <View style={styles.growthContainer}>
                       <MaterialIcons 
                         name={kpiData.revenueGrowth > 0 ? "trending-up" : "trending-down"} 
@@ -885,9 +825,9 @@ export default function Statistics({ onClose }) {
                     activeOpacity={0.7}
                   >
                     <Text style={styles.timeFilterText}>
-                      {timePeriod === '3months' ? 'Last 3 Months' : 
-                      timePeriod === '6months' ? 'Last 6 Months' :
-                      timePeriod === '1year' ? 'Last 12 Months' : 'All Time'}
+                      {timePeriod === '3months' ? i18n.t("admin.statistics.revenueTrends.last3Months") : 
+                      timePeriod === '6months' ? i18n.t("admin.statistics.revenueTrends.last6Months") :
+                      timePeriod === '1year' ? i18n.t("admin.statistics.revenueTrends.last12Months") : i18n.t("admin.statistics.revenueTrends.allTime")}
                     </Text>
                     <MaterialIcons 
                       name={showTimeFilter ? "arrow-drop-up" : "arrow-drop-down"} 
@@ -913,7 +853,7 @@ export default function Statistics({ onClose }) {
                           styles.dropdownItemText,
                           timePeriod === '3months' && styles.dropdownItemTextActive
                         ]}>
-                          Last 3 Months
+                          {i18n.t("admin.statistics.revenueTrends.last3Months")}
                         </Text>
                       </TouchableOpacity>
                       
@@ -931,7 +871,7 @@ export default function Statistics({ onClose }) {
                           styles.dropdownItemText,
                           timePeriod === '6months' && styles.dropdownItemTextActive
                         ]}>
-                          Last 6 Months
+                          {i18n.t("admin.statistics.revenueTrends.last6Months")}
                         </Text>
                       </TouchableOpacity>
                       
@@ -949,7 +889,7 @@ export default function Statistics({ onClose }) {
                           styles.dropdownItemText,
                           timePeriod === '1year' && styles.dropdownItemTextActive
                         ]}>
-                          Last 12 Months
+                          {i18n.t("admin.statistics.revenueTrends.last12Months")}
                         </Text>
                       </TouchableOpacity>
                       
@@ -967,7 +907,7 @@ export default function Statistics({ onClose }) {
                           styles.dropdownItemText,
                           timePeriod === 'all' && styles.dropdownItemTextActive
                         ]}>
-                          All Time
+                          {i18n.t("admin.statistics.revenueTrends.allTime")}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -1007,7 +947,12 @@ export default function Statistics({ onClose }) {
                         ((parseFloat(month.revenue || 0) - prevRevenue) / prevRevenue * 100).toFixed(1) : 0;
                       
                       // Format month name
-                      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                      const monthNames = [
+                        i18n.t("months.jan"), i18n.t("months.feb"), i18n.t("months.mar"), 
+                        i18n.t("months.apr"), i18n.t("months.may"), i18n.t("months.jun"),
+                        i18n.t("months.jul"), i18n.t("months.aug"), i18n.t("months.sep"),
+                        i18n.t("months.oct"), i18n.t("months.nov"), i18n.t("months.dec")
+                      ];
                       const [year, monthNum] = month.month.split('-');
                       const monthName = monthNames[parseInt(monthNum) - 1];
                       const displayYear = year !== new Date().getFullYear().toString() ? ` '${year.slice(2)}` : '';
@@ -1089,8 +1034,8 @@ export default function Statistics({ onClose }) {
               ) : (
                 <View style={styles.noChartData}>
                   <MaterialIcons name="show-chart" size={50} color="#ddd" />
-                  <Text style={styles.noChartDataText}>No revenue data available</Text>
-                  <Text style={styles.noChartDataSubtext}>Revenue data will appear here as services are completed</Text>
+                  <Text style={styles.noChartDataText}>{i18n.t("admin.statistics.revenueTrends.noData")}</Text>
+                  <Text style={styles.noChartDataSubtext}>{i18n.t("admin.statistics.revenueTrends.noDataDesc")}</Text>
                 </View>
               )}
               
@@ -1099,11 +1044,11 @@ export default function Statistics({ onClose }) {
                 <View style={styles.legendContainer}>
                   <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: '#1f9c8b' }]} />
-                    <Text style={styles.legendText}>Current Month</Text>
+                    <Text style={styles.legendText}>{i18n.t("admin.statistics.revenueTrends.currentMonthLabel")}</Text>
                   </View>
                   <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: '#babdbf' }]} />
-                    <Text style={styles.legendText}>Previous Months</Text>
+                    <Text style={styles.legendText}>{i18n.t("admin.statistics.revenueTrends.previousMonthsLabel")}</Text>
                   </View>
                 </View>
               </View>
@@ -1112,61 +1057,61 @@ export default function Statistics({ onClose }) {
         </Section>
 
         {/* OVERVIEW - ENHANCED DESIGN */}
-        <Section title="Business Overview">
+        <Section title={i18n.t("admin.statistics.overview.title")}>
           <View style={styles.overviewGrid}>
             <OverviewCard 
               icon="people"
-              title="Customers"
+              title={i18n.t("admin.statistics.overview.customers")}
               value={customers.length}
               color="#1f9c8b"
-              subtitle="Active accounts"
+              subtitle={i18n.t("admin.statistics.overview.activeAccounts")}
             />
             
             <OverviewCard 
               icon="engineering"
-              title="Technicians"
+              title={i18n.t("admin.statistics.overview.technicians")}
               value={technicians.length}
               color="#1f9c8b"
-              subtitle="Team members"
+              subtitle={i18n.t("admin.statistics.overview.teamMembers")}
             />
             
             <OverviewCard 
               icon="event"
-              title="Appointments"
+              title={i18n.t("admin.statistics.overview.appointments")}
               value={appointments.length}
               color="#1f9c8b"
-              subtitle="Total scheduled"
+              subtitle={i18n.t("admin.statistics.overview.totalScheduled")}
             />
             
             <OverviewCard 
               icon="today"
-              title="Today's Visits"
+              title={i18n.t("admin.statistics.overview.todayVisits")}
               value={todayAppointments.length}
               color="#1f9c8b"
-              subtitle="Services today"
+              subtitle={i18n.t("admin.statistics.overview.servicesToday")}
             />
             
             <OverviewCard 
               icon="request-quote"
-              title="Today's Requests"
+              title={i18n.t("admin.statistics.overview.todayRequests")}
               value={todayRequests}
               color="#1f9c8b"
-              subtitle="New inquiries"
+              subtitle={i18n.t("admin.statistics.overview.newInquiries")}
             />
             
             <OverviewCard 
               icon="check-circle"
-              title="Completion Rate"
+              title={i18n.t("admin.statistics.overview.completionRate")}
               value={`${visits.length > 0 ? Math.round((completedAppointments.length / visits.length) * 100) : 0}%`}
               color="#1f9c8b"
-              subtitle="Services completed"
+              subtitle={i18n.t("admin.statistics.overview.servicesCompleted")}
             />
           </View>
         </Section>
 
         {/* REVENUE BY SERVICE TYPE - ENHANCED */}
         <EnhancedSection 
-          title="Revenue by Service Type" 
+          title={i18n.t("admin.statistics.serviceRevenue.title")} 
           icon="category"
         >
           <View style={styles.serviceTypeGrid}>
@@ -1177,7 +1122,7 @@ export default function Statistics({ onClose }) {
               return (
                 <ServiceTypeCard
                   key={service.service_type}
-                  name={service.service_type || "Unknown"}
+                  name={service.service_type || i18n.t("admin.statistics.unknown")}
                   revenue={parseFloat(service.total_revenue || 0)}
                   appointments={service.appointment_count || 0}
                   percentage={percentage}
@@ -1191,7 +1136,7 @@ export default function Statistics({ onClose }) {
 
         {/* TOP TECHNICIANS BY REVENUE - ENHANCED */}
         <EnhancedSection 
-          title="Top Technicians" 
+          title={i18n.t("admin.statistics.topTechnicians.title")} 
           icon="engineering"
         >
           <View style={styles.techniciansList}>
@@ -1199,7 +1144,7 @@ export default function Statistics({ onClose }) {
               <TechnicianCard
                 key={tech.technician_id}
                 rank={index + 1}
-                name={tech.technician_name || "Unknown"}
+                name={tech.technician_name || i18n.t("admin.statistics.unknown")}
                 revenue={parseFloat(tech.total || 0)}
                 index={index}
               />
@@ -1209,7 +1154,7 @@ export default function Statistics({ onClose }) {
 
         {/* TOP CUSTOMERS - ENHANCED */}
         <EnhancedSection 
-          title="Top Customers" 
+          title={i18n.t("admin.statistics.topCustomers.title")} 
           icon="star"
         >
           <View style={styles.customersList}>
@@ -1217,7 +1162,7 @@ export default function Statistics({ onClose }) {
               <CustomerCard
                 key={customer.customer_id}
                 rank={index + 1}
-                name={customer.customer_name || "Unknown"}
+                name={customer.customer_name || i18n.t("admin.statistics.unknown")}
                 revenue={parseFloat(customer.total_spent || 0)}
                 visits={customer.appointment_count || 0}
                 index={index}
@@ -1228,7 +1173,7 @@ export default function Statistics({ onClose }) {
 
         {/* APPOINTMENTS BY STATUS - ENHANCED */}
         <EnhancedSection 
-          title="Appointment Status" 
+          title={i18n.t("admin.statistics.appointmentStatus.title")} 
           icon="pie-chart"
         >
           <View style={styles.statusContainer}>
@@ -1238,7 +1183,7 @@ export default function Statistics({ onClose }) {
                 {Object.entries(appointmentsByStatus).map(([status, count], index) => {
                   const total = Object.values(appointmentsByStatus).reduce((a, b) => a + b, 0);
                   const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
-                  const colors = ['#1f9c8b', '#95a5a6', '#b9cd63'];
+                  const colors = ['#b9cd63', '#1f9c8b', '#95a5a6', ];
                   
                   return (
                     <View 
@@ -1257,7 +1202,7 @@ export default function Statistics({ onClose }) {
               
               <View style={styles.statusStats}>
                 <Text style={styles.statusTotal}>{appointments.length}</Text>
-                <Text style={styles.statusLabel}>Total Appointments</Text>
+                <Text style={styles.statusLabel}>{i18n.t("admin.statistics.appointmentStatus.totalAppointments")}</Text>
               </View>
             </View>
             
@@ -1265,7 +1210,7 @@ export default function Statistics({ onClose }) {
               {Object.entries(appointmentsByStatus).map(([status, count], index) => {
                 const total = Object.values(appointmentsByStatus).reduce((a, b) => a + b, 0);
                 const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
-                const colors = ['#1f9c8b', '#95a5a6', '#b9cd63'];
+                const colors = ['#b9cd63', '#1f9c8b', '#95a5a6', ];
                 
                 return (
                   <StatusItem
@@ -1283,7 +1228,7 @@ export default function Statistics({ onClose }) {
 
         {/* APPOINTMENTS BY SERVICE TYPE - ENHANCED */}
         <EnhancedSection 
-          title="Service Distribution" 
+          title={i18n.t("admin.statistics.serviceDistribution.title")} 
           icon="business-center"
         >
           <View style={styles.serviceDistribution}>
@@ -1308,12 +1253,12 @@ export default function Statistics({ onClose }) {
 
         {/* PROFESSIONAL FOOTER */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Business Analytics Dashboard</Text>
+          <Text style={styles.footerText}>{i18n.t("admin.statistics.footer.system")}</Text>
           <Text style={styles.footerSubtext}>
-            Version 1.0 • Data updated: {new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            {i18n.t("admin.statistics.footer.version", { date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) })}
           </Text>
           <Text style={styles.footerCopyright}>
-            © {new Date().getFullYear()} Pest-Free. All rights reserved.
+            {i18n.t("admin.statistics.footer.copyright", { year: new Date().getFullYear() })}
           </Text>
         </View>
       </ScrollView>
@@ -1324,7 +1269,7 @@ export default function Statistics({ onClose }) {
           <View style={styles.modalContainer}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Revenue Details</Text>
+              <Text style={styles.modalTitle}>{i18n.t("admin.statistics.revenueDetails.title")}</Text>
               <TouchableOpacity 
                 onPress={() => {
                   setShowRevenueDetails(false);
@@ -1352,13 +1297,13 @@ export default function Statistics({ onClose }) {
                 
                 <View style={styles.monthStats}>
                   <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>Services Completed</Text>
+                    <Text style={styles.statLabel}>{i18n.t("admin.statistics.revenueDetails.servicesCompleted")}</Text>
                     <Text style={styles.statValue}>
                       {monthlyRevenue[selectedBarIndex].appointments || 0}
                     </Text>
                   </View>
                   <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>Avg. Revenue/Service</Text>
+                    <Text style={styles.statLabel}>{i18n.t("admin.statistics.revenueDetails.avgRevenuePerService")}</Text>
                     <Text style={styles.statValue}>
                       €{revenueStats?.avg_price ? parseFloat(revenueStats.avg_price).toFixed(2) : '0.00'}
                     </Text>
@@ -1370,10 +1315,10 @@ export default function Statistics({ onClose }) {
             {/* Full Revenue Table */}
             <ScrollView style={styles.revenueTable}>
               <View style={styles.tableHeader}>
-                <Text style={[styles.tableHeaderCell, { flex: 2, textAlign: 'center' }]}>Month</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'center' }]}>Revenue</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'center' }]}>Services</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'center' }]}>Growth</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 2, textAlign: 'center' }]}>{i18n.t("admin.statistics.revenueDetails.month")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'center' }]}>{i18n.t("admin.statistics.revenueDetails.revenue")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'center' }]}>{i18n.t("admin.statistics.revenueDetails.services")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'center' }]}>{i18n.t("admin.statistics.revenueDetails.growth")}</Text>
               </View>
               
               {monthlyRevenue.map((month, index) => {
@@ -1424,7 +1369,7 @@ export default function Statistics({ onClose }) {
                   setSelectedBarIndex(null);
                 }}
               >
-                <Text style={styles.closeModalText}>Close</Text>
+                <Text style={styles.closeModalText}>{i18n.t("admin.statistics.revenueDetails.close")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1501,7 +1446,7 @@ function KPICard({ title, value, change, icon, subtitle, showProgress = false, p
             />
           </View>
           <Text style={styles.progressText}>
-            {(progress || 0) < 0.5 ? 'Needs improvement' : (progress || 0) < 0.8 ? 'Good' : 'Excellent'}
+            {(progress || 0) < 0.5 ? i18n.t("admin.statistics.kpi.needsImprovement") : (progress || 0) < 0.8 ? i18n.t("admin.statistics.kpi.good") : i18n.t("admin.statistics.kpi.excellent")}
           </Text>
         </View>
       )}
@@ -1607,25 +1552,21 @@ function EnhancedSection({ title, children, icon, action }) {
 }
 
 function formatMonth(monthString) {
-  if (!monthString) return "Unknown";
+  if (!monthString) return i18n.t("admin.statistics.unknown") || "Unknown";
   const [year, month] = monthString.split('-');
   const date = new Date(year, month - 1);
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
 function formatServiceType(serviceType) {
-  if (!serviceType) return "Unknown";
+  if (!serviceType) return i18n.t("admin.statistics.unknown") || "Unknown";
   
   // Define custom mappings for specific service types
   const serviceMappings = {
-    'myocide': 'Myocide',
-    'rodenticide': 'Rodenticide',
-    'fumigation': 'Fumigation',
-    'disinfection': 'Disinfection',
-    'sanitization': 'Sanitization',
-    'inspection': 'Inspection',
-    'maintenance': 'Maintenance',
-    'consultation': 'Consultation',
+    'myocide': i18n.t("serviceTypes.myocide"),
+    'disinfection': i18n.t("serviceTypes.disinfection"),
+    'insecticide': i18n.t("serviceTypes.insecticide"),
+    'special': i18n.t("serviceTypes.special"),
   };
   
   // Check if we have a custom mapping
@@ -1660,7 +1601,7 @@ function ServiceTypeCard({ name, revenue, appointments, percentage, index }) {
         </View>
         <View style={styles.serviceTypeInfo}>
           <Text style={styles.serviceTypeName}>{formattedName}</Text> 
-          <Text style={styles.serviceTypeMeta}>{appointments} services</Text>
+          <Text style={styles.serviceTypeMeta}>{appointments} {appointments === 1 ? i18n.t("admin.statistics.serviceRevenue.services_one") : i18n.t("admin.statistics.serviceRevenue.services_other")}</Text>
         </View>
       </View>
       
@@ -1697,7 +1638,6 @@ export const incrementTodayRequests = async () => {
     const currentCount = current ? parseInt(current) : 0;
     const newCount = currentCount + 1;
     await AsyncStorage.setItem(key, newCount.toString());
-    console.log(`➕ Incremented today's requests to ${newCount}`);
     return newCount;
   } catch (error) {
     console.error("Error incrementing today's requests:", error);
@@ -1719,7 +1659,7 @@ function TechnicianCard({ rank, name, revenue, index }) {
       
       <View style={styles.technicianInfo}>
         <Text style={styles.technicianName}>{name}</Text>
-        <Text style={styles.technicianRole}>Senior Technician</Text>
+        <Text style={styles.technicianRole}>{i18n.t("admin.statistics.topTechnicians.senior")}</Text>
       </View>
       
       <View style={styles.technicianRevenue}>
@@ -1747,7 +1687,7 @@ function CustomerCard({ rank, name, revenue, visits, index }) {
         <Text style={styles.customerName} numberOfLines={1}>{name}</Text>
         <View style={styles.customerMeta}>
           <MaterialIcons name="event" size={12} color="#95a5a6" />
-          <Text style={styles.customerMetaText}>{visits} visits</Text>
+          <Text style={styles.customerMetaText}>{visits} {visits === 1 ? i18n.t("admin.statistics.topCustomers.visits_one") : i18n.t("admin.statistics.topCustomers.visits_other")}</Text>
         </View>
       </View>
       
@@ -1756,7 +1696,7 @@ function CustomerCard({ rank, name, revenue, visits, index }) {
           €{revenue.toLocaleString()}
         </Text>
         <View style={styles.revenueBadge}>
-          <Text style={styles.revenueBadgeText}>Top {rank}</Text>
+          <Text style={styles.revenueBadgeText}>{i18n.t("admin.statistics.topCustomers.topRank", { rank })}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -1772,16 +1712,27 @@ function StatusItem({ status, count, percentage, color }) {
     'pending': 'pending'
   };
   
+  const getStatusLabel = (status) => {
+    switch(status?.toLowerCase()) {
+      case 'completed': return i18n.t("status.completed");
+      case 'scheduled': return i18n.t("status.scheduled");
+      case 'cancelled': return i18n.t("status.cancelled");
+      case 'pending': return i18n.t("status.pending");
+      case 'in-progress': return i18n.t("status.inProgress");
+      default: return status?.charAt(0).toUpperCase() + status?.slice(1) || i18n.t("admin.statistics.unknown");
+    }
+  };
+  
   return (
     <View style={styles.statusItem}>
       <View style={styles.statusLeft}>
         <View style={[styles.statusDot, { backgroundColor: color }]} />
         <MaterialIcons 
-          name={statusIcons[status.toLowerCase()] || 'help-outline'} 
+          name={statusIcons[status?.toLowerCase()] || 'help-outline'} 
           size={16} 
           color={color} 
         />
-        <Text style={styles.statusName}>{status.charAt(0).toUpperCase() + status.slice(1)}</Text>
+        <Text style={styles.statusName}>{getStatusLabel(status)}</Text>
       </View>
       
       <View style={styles.statusRight}>
@@ -1793,7 +1744,7 @@ function StatusItem({ status, count, percentage, color }) {
 }
 
 function ServiceDistributionItem({ type, count, percentage, color, index }) {
-  const icons = ['pest-control-rodent', 'clean-hands', 'bug-report', 'star', 'build',];
+  const icons = ['pest-control-rodent', 'clean-hands', 'bug-report', 'star', 'build'];
   
   // Format the service type name
   const formattedType = formatServiceType(type);

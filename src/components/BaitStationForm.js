@@ -14,6 +14,7 @@ import { formatTime } from "../utils/timeUtils";
 import apiService from "../services/apiService";
 import { StyleSheet } from "react-native";
 import { Dimensions } from "react-native";
+import i18n from "../services/i18n";
 
 
 function BaitStationForm({ stationId, onClose, customerId, technician, timerData, onStationLogged, onValidationError, existingStationData }) {
@@ -46,24 +47,16 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
 
     const loadBaitTypes = async () => {
       try {
-        console.log("🔄 Loading bait types for dropdown...");
         
         // Get bait types - apiService.getBaitTypes() now returns array directly
         const baitArray = await apiService.getBaitTypes();
         
-        console.log("📥 Bait types received in form:", {
-          isArray: Array.isArray(baitArray),
-          length: baitArray?.length || 0,
-          firstItem: baitArray?.[0],
-          fullArray: baitArray
-        });
+
         
         if (isMounted) {
           if (Array.isArray(baitArray) && baitArray.length > 0) {
             setBaitTypes(baitArray);
-            console.log(`✅ Loaded ${baitArray.length} bait types for dropdown`);
           } else {
-            console.warn("⚠️ No bait types received or empty array");
             setBaitTypes([]);
           }
         }
@@ -102,30 +95,42 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
 
     // VALIDATION (top → bottom)
     if (!consumption) {
-      Alert.alert("Incomplete Form", "You need to log Bait Consumption % before saving");
+      Alert.alert(
+        i18n.t("components.stationForms.common.incompleteForm"), 
+        i18n.t("components.stationForms.baitStation.error.consumptionRequired")
+      );
       return;
     }
 
     if (!baitType) {
-      Alert.alert("Incomplete Form", "You need to log Bait Type before saving");
+      Alert.alert(
+        i18n.t("components.stationForms.common.incompleteForm"), 
+        i18n.t("components.stationForms.baitStation.error.baitTypeRequired")
+      );
       return;
     }
 
     if (!dosageG) {
       Alert.alert(
-        "Incomplete Form",
-        "You need to log Dosage (g) before saving"
+        i18n.t("components.stationForms.common.incompleteForm"),
+        i18n.t("components.stationForms.baitStation.error.dosageRequired")
       );
       return;
     }
 
     if (!condition) {
-      Alert.alert("Incomplete Form", "You need to log Condition before saving");
+      Alert.alert(
+        i18n.t("components.stationForms.common.incompleteForm"), 
+        i18n.t("components.stationForms.baitStation.error.conditionRequired")
+      );
       return;
     }
 
     if (!access) {
-      Alert.alert("Incomplete Form", "You need to log Access before saving");
+      Alert.alert(
+        i18n.t("components.stationForms.common.incompleteForm"), 
+        i18n.t("components.stationForms.baitStation.error.accessRequired")
+      );
       return;
     }
 
@@ -145,8 +150,6 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
       timestamp: new Date().toISOString(),
       customerId: customerId
     };
-
-    console.log("💾 Saving station locally (will save to backend later):", stationData);
     
     // Call the parent's onStationLogged to save locally
     if (onStationLogged) {
@@ -157,7 +160,6 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
 
   React.useEffect(() => {
     if (access === "No") {
-      console.log("🔄 Resetting BS form because access is 'No'");
       setConsumption("");
       setBaitType("");
       setCondition(null);
@@ -174,12 +176,16 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
     >
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.title}>Station {stationId}</Text>
+          <Text style={styles.title}>
+            {i18n.t("components.stationForms.baitStation.title", { id: stationId })}
+          </Text>
 
           {timerData && (
             <View style={styles.timerInfo}>
               <Text style={styles.timerInfoText}>
-                Time spent: {formatTime(timerData.elapsedTime)}
+                {i18n.t("components.stationForms.common.timeSpent", { 
+                  time: formatTime(timerData.elapsedTime) 
+                })}
               </Text>
             </View>
           )}
@@ -190,11 +196,13 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
           >
             {/* Bait Consumption */}
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Bait Consumption %</Text>
+              <Text style={styles.inputLabel}>
+                {i18n.t("components.stationForms.baitStation.baitConsumption")}
+              </Text>
               <TouchableOpacity
                 style={[
                   styles.dropdown, 
-                  access === "No" && styles.disabledDropdown // Use different style name
+                  access === "No" && styles.disabledDropdown
                 ]}
                 onPress={() => {
                   if (access !== "No") setShowConsumptionDropdown(prev => !prev);
@@ -206,7 +214,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
                   !consumption && { color: "#999" },
                   access === "No" && styles.disabledText
                 ]}>
-                  {consumption || "Select consumption"}
+                  {consumption || i18n.t("components.stationForms.baitStation.selectConsumption")}
                 </Text>
               </TouchableOpacity>
 
@@ -229,137 +237,143 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
             </View>
 
             {/* Bait Type */}
-              <View style={styles.inputContainer}>
-                <Text style={[
-                  styles.inputLabel,
-                  access === "No" && styles.disabledText  // Add this line
-                ]}>
-                  Bait Type
+            <View style={styles.inputContainer}>
+              <Text style={[
+                styles.inputLabel,
+                access === "No" && styles.disabledText
+              ]}>
+                {i18n.t("components.stationForms.baitStation.baitType")}
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.dropdown,
+                  access === "No" && styles.disabledDropdown
+                ]}
+                onPress={() => {
+                  if (access !== "No") {
+                    setShowBaitTypeDropdown(prev => !prev);
+                  }
+                }}
+                disabled={access === "No"}
+              >
+                <Text
+                  style={[
+                    styles.dropdownText,
+                    !baitType && { color: "#999" },
+                    access === "No" && styles.disabledText
+                  ]}
+                >
+                  {baitType || i18n.t("components.stationForms.baitStation.selectBaitType")}
                 </Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[
-                    styles.dropdown,
-                    access === "No" && styles.disabledDropdown  // Add this line
-                  ]}
-                  onPress={() => {
-                    if (access !== "No") {  // Add this condition
-                      setShowBaitTypeDropdown(prev => !prev);
-                    }
-                  }}
-                  disabled={access === "No"}  // Add this line
-                >
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      !baitType && { color: "#999" },
-                      access === "No" && styles.disabledText  // Add this line
-                    ]}
-                  >
-                    {baitType || "Select bait type"}
-                  </Text>
-                </TouchableOpacity>
+              {showBaitTypeDropdown && access !== "No" && (
+                <View style={styles.dropdownMenu}>
+                  {baitTypes.length === 0 && (
+                    <Text style={styles.dropdownEmpty}>
+                      {i18n.t("components.stationForms.baitStation.noBaitTypes")}
+                    </Text>
+                  )}
 
-                {showBaitTypeDropdown && access !== "No" && (  // Add access condition
-                  <View style={styles.dropdownMenu}>
-                    {baitTypes.length === 0 && (
-                      <Text style={styles.dropdownEmpty}>No bait types available</Text>
-                    )}
-
-                    {baitTypes.map((type, index) => {
-                      // Extract name if it's an object
-                      const typeName = typeof type === 'string' ? type : (type.name || String(type));
-                      
-                      return (
-                        <TouchableOpacity
-                          key={`bait-${index}-${typeName}`}
-                          style={styles.dropdownItem}
-                          onPress={() => {
-                            setBaitType(typeName);  // Set the string name
-                            setShowBaitTypeDropdown(false);
-                          }}
-                        >
-                          <Text style={styles.dropdownItemText}>{typeName}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
-              </View>
-
-              {/* Dosage (g) */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Dosage (g)</Text>
-
-                <TouchableOpacity
-                  style={[
-                    styles.dropdown,
-                    access === "No" && styles.disabledDropdown
-                  ]}
-                  onPress={() => {
-                    if (access !== "No") {
-                      setShowDosageDropdown(prev => !prev);
-                    }
-                  }}
-                  disabled={access === "No"}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      !dosageG && { color: "#999" },
-                      access === "No" && styles.disabledText
-                    ]}
-                  >
-                    {dosageG ? `${dosageG}g` : "Select dosage"}
-                  </Text>
-                </TouchableOpacity>
-
-                {showDosageDropdown && access !== "No" && (
-                  <View style={styles.dropdownMenu}>
-                    {DOSAGE_OPTIONS.map(value => (
+                  {baitTypes.map((type, index) => {
+                    // Extract name if it's an object
+                    const typeName = typeof type === 'string' ? type : (type.name || String(type));
+                    
+                    return (
                       <TouchableOpacity
-                        key={value}
+                        key={`bait-${index}-${typeName}`}
                         style={styles.dropdownItem}
                         onPress={() => {
-                          setDosageG(value);
-                          setShowDosageDropdown(false);
+                          setBaitType(typeName);
+                          setShowBaitTypeDropdown(false);
                         }}
                       >
-                        <Text style={styles.dropdownItemText}>
-                          {value}g
-                        </Text>
+                        <Text style={styles.dropdownItemText}>{typeName}</Text>
                       </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
+            {/* Dosage (g) */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>
+                {i18n.t("components.stationForms.baitStation.dosage")}
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.dropdown,
+                  access === "No" && styles.disabledDropdown
+                ]}
+                onPress={() => {
+                  if (access !== "No") {
+                    setShowDosageDropdown(prev => !prev);
+                  }
+                }}
+                disabled={access === "No"}
+              >
+                <Text
+                  style={[
+                    styles.dropdownText,
+                    !dosageG && { color: "#999" },
+                    access === "No" && styles.disabledText
+                  ]}
+                >
+                  {dosageG ? `${dosageG}g` : i18n.t("components.stationForms.baitStation.selectDosage")}
+                </Text>
+              </TouchableOpacity>
+
+              {showDosageDropdown && access !== "No" && (
+                <View style={styles.dropdownMenu}>
+                  {DOSAGE_OPTIONS.map(value => (
+                    <TouchableOpacity
+                      key={value}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setDosageG(value);
+                        setShowDosageDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>
+                        {value}g
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
             {/* Condition */}
             <View style={styles.toggleContainer}>
               <Text style={[
                 styles.toggleLabel,
-                access === "No" && styles.disabledText  // Add this line
-              ]}>Condition</Text>
+                access === "No" && styles.disabledText
+              ]}>
+                {i18n.t("components.stationForms.common.condition")}
+              </Text>
               <View style={styles.toggleButtonsContainer}>
                 <TouchableOpacity
                   style={[
                     styles.toggleButton,
                     condition === "Functional" && styles.toggleActive,
-                    access === "No" && styles.disabledToggle  // Add this line
+                    access === "No" && styles.disabledToggle
                   ]}
                   onPress={() => {
-                    if (access !== "No") setCondition("Functional");  // Add this condition
+                    if (access !== "No") setCondition("Functional");
                   }}
-                  disabled={access === "No"}  // Add this line
+                  disabled={access === "No"}
                 >
                   <Text
                     style={[
                       styles.toggleText,
                       condition === "Functional" && styles.toggleTextActive,
-                      access === "No" && styles.disabledText  // Add this line
+                      access === "No" && styles.disabledText
                     ]}
                   >
-                    Functional
+                    {i18n.t("components.stationForms.common.functional")}
                   </Text>
                 </TouchableOpacity>
 
@@ -367,21 +381,21 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
                   style={[
                     styles.toggleButton,
                     condition === "Damaged" && styles.toggleActive,
-                    access === "No" && styles.disabledToggle  // Add this line
+                    access === "No" && styles.disabledToggle
                   ]}
                   onPress={() => {
-                    if (access !== "No") setCondition("Damaged");  // Add this condition
+                    if (access !== "No") setCondition("Damaged");
                   }}
-                  disabled={access === "No"}  // Add this line
+                  disabled={access === "No"}
                 >
                   <Text
                     style={[
                       styles.toggleText,
                       condition === "Damaged" && styles.toggleTextActive,
-                      access === "No" && styles.disabledText  // Add this line
+                      access === "No" && styles.disabledText
                     ]}
                   >
-                    Damaged
+                    {i18n.t("components.stationForms.common.damaged")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -389,7 +403,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
 
             {/* Access */}
             <View style={styles.toggleContainer}>
-              <Text style={styles.toggleLabel}>Access</Text>
+              <Text style={styles.toggleLabel}>{i18n.t("components.stationForms.common.access")}</Text>
               <View style={styles.toggleButtonsContainer}>
                 <TouchableOpacity
                   style={[
@@ -404,7 +418,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
                       access === "Yes" && styles.toggleTextActive,
                     ]}
                   >
-                    Yes
+                    {i18n.t("components.stationForms.common.yes")}
                   </Text>
                 </TouchableOpacity>
 
@@ -421,7 +435,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
                       access === "No" && styles.toggleTextActive,
                     ]}
                   >
-                    No
+                    {i18n.t("components.stationForms.common.no")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -438,7 +452,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={styles.saveButtonText}>{i18n.t("components.stationForms.common.save")}</Text>
               )}
             </TouchableOpacity>
 
@@ -447,7 +461,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{i18n.t("components.stationForms.common.cancel")}</Text>
             </TouchableOpacity>
           </View>
         </View>

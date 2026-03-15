@@ -2,6 +2,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiService from "../../services/apiService";
 import { Alert } from "react-native";
+import i18n from "../../services/i18n";
 
 // Storage keys
 export const NOTIFICATIONS_STORAGE_KEY = "@PestFree_CustomerNotifications";
@@ -13,87 +14,98 @@ export const notificationTypes = {
     type: "appointment_created",
     icon: "event-available",
     color: "#1f9c8b",
-    title: "New Appointment Scheduled",
-    description: "An appointment has been scheduled for you",
+    getTitle: () => i18n.t("customer.notificationTypes.appointment_created.title"),
+    getDescription: () => i18n.t("customer.notificationTypes.appointment_created.description"),
   },
   APPOINTMENT_UPDATED: {
     type: "appointment_updated",
     icon: "edit-calendar",
     color: "#1f9c8b",
-    title: "Appointment Updated",
-    description: "Your appointment details have been updated",
+    getTitle: () => i18n.t("customer.notificationTypes.appointment_updated.title"),
+    getDescription: () => i18n.t("customer.notificationTypes.appointment_updated.description"),
   },
   APPOINTMENT_DELETED: {
     type: "appointment_deleted",
     icon: "event-busy",
     color: "#F44336",
-    title: "Appointment Cancelled",
-    description: "An appointment has been cancelled",
+    getTitle: () => i18n.t("customer.notificationTypes.appointment_deleted.title"),
+    getDescription: () => i18n.t("customer.notificationTypes.appointment_deleted.description"),
   },
   APPOINTMENT_COMPLETED: {
     type: "appointment_completed",
     icon: "check-circle",
     color: "#1f9c8b",
-    title: "Appointment Completed",
-    description: "A service appointment has been completed",
+    getTitle: () => i18n.t("customer.notificationTypes.appointment_completed.title"),
+    getDescription: () => i18n.t("customer.notificationTypes.appointment_completed.description"),
   },
   SERVICE_REQUEST_ACCEPTED: {
     type: "service_request_accepted",
     icon: "check",
     color: "#1f9c8b",
-    title: "Service Request Accepted",
-    description: "Your service request has been accepted",
+    getTitle: () => i18n.t("customer.notificationTypes.service_request_accepted.title"),
+    getDescription: () => i18n.t("customer.notificationTypes.service_request_accepted.description"),
   },
   SERVICE_REQUEST_DECLINED: {
     type: "service_request_declined",
     icon: "close",
     color: "#F44336",
-    title: "Service Request Declined",
-    description: "Your service request has been declined",
+    getTitle: () => i18n.t("customer.notificationTypes.service_request_declined.title"),
+    getDescription: () => i18n.t("customer.notificationTypes.service_request_declined.description"),
+  },
+  RESCHEDULE_DECLINED: {
+    type: "reschedule_declined",
+    icon: "event-busy",
+    color: "#F44336",
+    getTitle: () => i18n.t("customer.notificationTypes.reschedule_declined.title"),
+    getDescription: () => i18n.t("customer.notificationTypes.reschedule_declined.description"),
   },
 };
 
   const formatTimeAgo = (dateString) => {
-        const now = new Date();
-        const date = new Date(dateString);
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (diffMins < 1) return i18n.t("customer.common.justNow");
+    if (diffMins < 60) return i18n.t("customer.common.minutesAgo", { count: diffMins });
+    if (diffHours < 24) return i18n.t("customer.common.hoursAgo", { count: diffHours });
+    if (diffDays < 7) return i18n.t("customer.common.daysAgo", { count: diffDays });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const getStoredNotifications = async () => {
-      try {
-        const storedNotificationsJson = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-        if (storedNotificationsJson) {
-          return JSON.parse(storedNotificationsJson);
-        }
-      } catch (error) {
-        console.error("Failed to get stored notifications:", error);
+    try {
+      const storedNotificationsJson = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      if (storedNotificationsJson) {
+        return JSON.parse(storedNotificationsJson);
       }
-      
-      // Return default mock notifications
-      return [
-        {
-          id: '1',
-          type: 'appointment_created',
-          title: 'New Appointment Scheduled',
-          description: 'Myocide service scheduled for today at 14:00',
-          appointmentId: 'app_001',
-          appointmentDate: new Date().toISOString().split('T')[0],
-          appointmentTime: '14:00',
-          serviceType: 'Myocide',
-          technician: 'Christos Pamp',
-          isRead: false,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-        }
-      ];
+    } catch (error) {
+      console.error("Failed to get stored notifications:", error);
+    }
+    
+    // Return default mock notifications with translations
+    const now = new Date();
+    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+    
+    return [
+      {
+        id: '1',
+        type: 'appointment_created',
+        title: i18n.t("customer.notificationTypes.appointment_created.title"),
+        description: i18n.t("customer.notificationTypes.appointment_created.description") + ' ' + 
+                    i18n.t("customer.common.today") + ' 14:00',
+        appointmentId: 'app_001',
+        appointmentDate: now.toISOString().split('T')[0],
+        appointmentTime: '14:00',
+        serviceType: 'myocide',
+        technician: 'Christos Pamp',
+        isRead: false,
+        createdAt: twoHoursAgo.toISOString()
+      }
+    ];
   };
 
   const saveNotificationsToStorage = async (notifications) => {
@@ -113,46 +125,59 @@ export const notificationTypes = {
     setNotificationCount,
     setLastFetchTime,
     readNotificationIds = []
-    }) => {
-
+  }) => {
     try {
-      console.log("📢 Loading notifications from API...");
-      
+
       const result = await apiService.getCustomerNotifications();
       
       if (result?.success) {
-        // First, get read notifications from storage
         const storedReadNotificationsJson = await AsyncStorage.getItem(NOTIFICATIONS_READ_STORAGE_KEY);
         const storedReadNotifications = storedReadNotificationsJson ? JSON.parse(storedReadNotificationsJson) : [];
         
-        // Combine stored read notifications with newly fetched ones
         const combinedReadIds = [...new Set([...storedReadNotifications, ...readNotificationIds])];
         
-        // Mark notifications as read based on combined list
+        // Process notifications with translations
         const notificationsWithReadStatus = result.notifications.map(notification => {
-          const isRead =
-            notification.status === "read" ||
-            !!notification.readAt ||
-            combinedReadIds.includes(notification.id);
-
+          const isRead = notification.status === "read" || !!notification.readAt || combinedReadIds.includes(notification.id);
+          
+          // Find notification type template
+          const typeTemplate = Object.values(notificationTypes).find(nt => nt.type === notification.type);
+          
+          let title = notification.title;
+          let description = notification.description ?? notification.message ?? "";
+          
+          // If we have a template and no custom title/description, use translations
+          if (typeTemplate) {
+            title = typeTemplate.getTitle();
+            
+            // If description is empty or default, use template description
+            if (!description || description.includes('appointment') || description.includes('service')) {
+              description = typeTemplate.getDescription();
+              
+              // Add date/time if available
+              if (notification.appointmentDate) {
+                const dateStr = new Date(notification.appointmentDate).toLocaleDateString('el-GR');
+                description += ` ${dateStr}`;
+                if (notification.appointmentTime) {
+                  description += ` ${i18n.t('customer.common.at')} ${notification.appointmentTime}`;
+                }
+              }
+            }
+          }
+          
           return {
             ...notification,
-
-            // ✅ Normalize body text for UI
-            description: notification.description ?? notification.message ?? "",
-
-            // ✅ Normalize read flag
+            title,
+            description,
             isRead
           };
         });
         
         setNotifications(notificationsWithReadStatus);
         
-        // Calculate unread count
         const unreadCount = notificationsWithReadStatus.filter(n => !n.isRead).length;
         setNotificationCount(unreadCount);
         
-        // Save current read status to storage
         await AsyncStorage.setItem(
           NOTIFICATIONS_READ_STORAGE_KEY,
           JSON.stringify(combinedReadIds)
@@ -164,7 +189,6 @@ export const notificationTypes = {
         const storedReadNotificationsJson = await AsyncStorage.getItem(NOTIFICATIONS_READ_STORAGE_KEY);
         const storedReadNotifications = storedReadNotificationsJson ? JSON.parse(storedReadNotificationsJson) : [];
         
-        // If we have stored mock notifications, use them
         const mockNotifications = await getStoredNotifications();
         const notificationsWithReadStatus = mockNotifications.map(notification => ({
           ...notification,
@@ -179,7 +203,6 @@ export const notificationTypes = {
       
     } catch (error) {
       console.error("Failed to load notifications:", error);
-      // Use stored notifications as last resort
       const storedReadNotificationsJson = await AsyncStorage.getItem(NOTIFICATIONS_READ_STORAGE_KEY);
       const storedReadNotifications = storedReadNotificationsJson ? JSON.parse(storedReadNotificationsJson) : [];
       
@@ -233,7 +256,6 @@ export const notificationTypes = {
         
         // Call API to mark as read
         const result = await apiService.markNotificationAsRead(notificationId);
-        console.log("✅ markNotificationAsRead API result:", result);
         
         if (!result?.success) {
           console.warn("API call to mark notification as read failed");
@@ -250,19 +272,16 @@ export const notificationTypes = {
     setNotifications,
     setNotificationCount
   }) => {
-    console.log("DEBUG: markAllNotificationsAsRead FUNCTION STARTED");
     
     Alert.alert(
-      "Mark All as Read",
-      "Mark all notifications as read?",
+      i18n.t("customer.modals.markAllRead.title") || "Mark All as Read",
+      i18n.t("customer.modals.markAllRead.message") || "Mark all notifications as read?",
       [
-        { text: "Cancel", style: "cancel" },
+        { text: i18n.t("customer.modals.markAllRead.cancel") || "Cancel", style: "cancel" },
         { 
-          text: "Mark All", 
+          text: i18n.t("customer.modals.markAllRead.confirm") || "Mark All", 
           onPress: async () => {
-            console.log("DEBUG: User confirmed Mark All");
             try {
-              console.log("DEBUG: Marking all as read...");
               
               // Get all notification IDs
               const allNotificationIds = notifications.map(n => n.id);
@@ -285,8 +304,7 @@ export const notificationTypes = {
               // Call API to mark all as read
               try {
                 const result = await apiService.markAllNotificationsAsRead();
-                console.log("✅ API mark all as read result:", result);
-                
+
                 if (!result?.success) {
                   console.warn("⚠️ API call to mark all as read failed");
                 }
@@ -294,12 +312,9 @@ export const notificationTypes = {
                 console.error("❌ API error marking all as read:", apiError);
                 // Continue anyway - local state is already updated
               }
-              
-              console.log("✅ All notifications marked as read");
-              
             } catch (error) {
               console.error("❌ Error marking all as read:", error);
-              Alert.alert("Error", "Failed to mark all notifications as read");
+              Alert.alert(i18n.t("common.error"), i18n.t("customer.notifications.markAllReadError") || "Failed to mark all notifications as read");
             }
           }
         }
@@ -314,12 +329,12 @@ export const notificationTypes = {
             }) => {
 
           Alert.alert(
-            "Clear All Notifications",
-            "Are you sure you want to clear all notifications?",
+            i18n.t("customer.modals.clearAll.title") || "Clear All Notifications",
+            i18n.t("customer.modals.clearAll.message") || "Are you sure you want to clear all notifications?",
             [
-              { text: "Cancel", style: "cancel" },
+              { text: i18n.t("customer.modals.clearAll.cancel") || "Cancel", style: "cancel" },
               { 
-                text: "Clear All", 
+                text: i18n.t("customer.modals.clearAll.confirm") || "Clear All", 
                 style: "destructive",
                 onPress: async () => {
                   try {

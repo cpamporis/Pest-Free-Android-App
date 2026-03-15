@@ -1,5 +1,6 @@
 // CustomerHomeScreen.js - Update the import statement
 import React from "react";
+import { Image } from "react-native";
 import {
   View,
   Text,
@@ -26,6 +27,7 @@ import {
   loadNotifications, 
   markAllNotificationsAsRead  
 } from "./CustomerHome.notifications";
+import i18n from "../../services/i18n";
 
 export default function CustomerHomeScreen({
   customer,
@@ -56,13 +58,13 @@ export default function CustomerHomeScreen({
     home.urgencyOptions[1];
 
   const getServiceFromDescription = (description) => {
-    if (!description) return 'Service';
+    if (!description) return i18n.t("customer.visits.serviceTypes.default") || 'Service';
     
     const desc = description.toLowerCase();
-    if (desc.includes('disinfection')) return 'Disinfection';
-    if (desc.includes('insecticide')) return 'Insecticide';
-    if (desc.includes('special service')) return 'Special Service';
-    if (desc.includes('myocide')) return 'Myocide';
+    if (desc.includes('disinfection')) return i18n.t("customer.visits.serviceTypes.disinfection");
+    if (desc.includes('insecticide')) return i18n.t("customer.visits.serviceTypes.insecticide");
+    if (desc.includes('special service')) return i18n.t("customer.visits.serviceTypes.special");
+    if (desc.includes('myocide')) return i18n.t("customer.visits.serviceTypes.myocide");
     if (desc.includes('appointment')) {
       // Extract service type from appointment completed notifications
       const match = description.match(/Your (.*?) appointment has been completed/);
@@ -70,7 +72,7 @@ export default function CustomerHomeScreen({
         return match[1];
       }
     }
-    return 'Service'; // default
+    return i18n.t("customer.visits.serviceTypes.default") || 'Service';
   };
 
 
@@ -78,7 +80,7 @@ export default function CustomerHomeScreen({
     return (
       <SafeAreaView style={styles.center}>
         <ActivityIndicator size="large" color="#1f9c8b" />
-        <Text style={styles.loadingText}>Loading your dashboard...</Text>
+        <Text style={styles.loadingText}>{i18n.t("customer.loading")}</Text>
       </SafeAreaView>
     );
   }
@@ -92,11 +94,11 @@ export default function CustomerHomeScreen({
           keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
         >
         <View style={styles.header}>
-          <Text style={styles.title}>Dashboard unavailable</Text>
+          <Text style={styles.title}>{i18n.t("customer.dashboardUnavailable")}</Text>
         </View>
         <View style={styles.content}>
           <TouchableOpacity style={styles.logoutButton} onPress={home.onLogout}>
-            <Text style={styles.logoutText}>Logout</Text>
+            <Text style={styles.logoutText}>{i18n.t("customer.logout")}</Text>
           </TouchableOpacity>
         </View>
         </KeyboardAvoidingView>
@@ -113,12 +115,12 @@ export default function CustomerHomeScreen({
       const d = new Date(dateStr);
       if (Number.isNaN(d.getTime())) return "—";
       
-      // Convert to local date string
-      return d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+      const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const monthIndex = d.getMonth();
+      const day = d.getDate();
+      const year = d.getFullYear();
+      
+      return `${day} ${i18n.t(`months.${months[monthIndex]}`)} ${year}`;
     } catch {
       return "—";
     }
@@ -188,7 +190,7 @@ export default function CustomerHomeScreen({
                     name = `${customer.firstName} ${customer.lastName}`;
                   }
                   else if (customer?.email) name = customer.email.split('@')[0];
-                  else name = "C";
+                  else name = i18n.t("customer.welcome.customer").charAt(0) || "C";
                   
                   return name.charAt(0).toUpperCase();
                 })()}
@@ -199,7 +201,7 @@ export default function CustomerHomeScreen({
                 </View>
               )}
             </View>
-            <Text style={styles.welcomeText}>Welcome back,</Text>
+            <Text style={styles.welcomeText}>{i18n.t("customer.welcome.greeting")}</Text>
             <Text style={styles.customerName}>
               {/* Get customer name from multiple possible fields */}
               {(() => {
@@ -213,7 +215,7 @@ export default function CustomerHomeScreen({
                 }
                 if (customer?.email) return customer.email.split('@')[0];
                 
-                return "Customer";
+                return i18n.t("customer.welcome.customer");
               })()}
             </Text>
             <Text style={styles.customerEmail}>{home.dashboard.customer?.email || ""}</Text>
@@ -225,14 +227,17 @@ export default function CustomerHomeScreen({
           {/* Compliance Status Card */}
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="verified" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Compliance Status</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("customer.compliance.title")}</Text>
           </View>
           
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <FontAwesome5 name="shield-alt" size={16} color={statusColor} />
               <Text style={[styles.statusText, { color: statusColor }]}>
-                {(home.dashboard.compliance?.status || 'pending').toUpperCase()}
+                {home.dashboard.compliance?.status === "compliant" && i18n.t("customer.compliance.status.compliant")}
+                {home.dashboard.compliance?.status === "pending" && i18n.t("customer.compliance.status.pending")}
+                {home.dashboard.compliance?.status === "non-compliant" && i18n.t("customer.compliance.status.nonCompliant")}
+                {!home.dashboard.compliance?.status && i18n.t("customer.compliance.status.pending")}
               </Text>
             </View>
             <View style={styles.statusIndicator}>
@@ -243,25 +248,25 @@ export default function CustomerHomeScreen({
                 ]} 
               />
               <Text style={styles.statusDescription}>
-                {home.dashboard.compliance?.status === "compliant" && "Your certificate is valid"}
-                {home.dashboard.compliance?.status === "pending" && "A renewal is in progress"}
-                {home.dashboard.compliance?.status === "non-compliant" && "Your certificate has expired"}
+                {home.dashboard.compliance?.status === "compliant" && i18n.t("customer.compliance.description.compliant")}
+                {home.dashboard.compliance?.status === "pending" && i18n.t("customer.compliance.description.pending")}
+                {home.dashboard.compliance?.status === "non-compliant" && i18n.t("customer.compliance.description.nonCompliant")}
+                {!home.dashboard.compliance?.status && i18n.t("customer.compliance.description.pending")}
               </Text>
             </View>
             {home.dashboard.customer?.complianceValidUntil && (
-  <Text style={styles.validUntilText}>
-    Valid until{" "}
-    <Text style={styles.validUntilDate}>
-      {formatDate(home.dashboard.customer.complianceValidUntil)}
-    </Text>
-  </Text>
-)}
+              <Text style={styles.validUntilText}>
+                {i18n.t("customer.compliance.validUntil", { 
+                  date: formatDate(home.dashboard.customer.complianceValidUntil) 
+                })}
+              </Text>
+            )}
 
             {/* Last Visit Section */}
             <View style={styles.visitMeta}>
               <View style={styles.visitMetaRow}>
                 <MaterialIcons name="history" size={18} color="#1f9c8b" />
-                <Text style={styles.visitMetaLabel}>Last Visit:</Text>
+                <Text style={styles.visitMetaLabel}>{i18n.t("customer.compliance.lastVisit.label")}</Text>
                 <View style={styles.visitMetaValueContainer}>
                   {home.loadingVisits ? (
                     <ActivityIndicator size="small" color="#1f9c8b" />
@@ -287,21 +292,21 @@ export default function CustomerHomeScreen({
                       })()}
                     </Text>
                   ) : (
-                    <Text style={styles.noAppointmentText}>No visits yet</Text>
+                    <Text style={styles.noAppointmentText}>{i18n.t("customer.compliance.lastVisit.none")}</Text>
                   )}
                 </View>
               </View>
               
               <View style={styles.visitMetaRow}>
                 <MaterialIcons name="event" size={18} color="#1f9c8b" />
-                <Text style={styles.visitMetaLabel}>Next Scheduled:</Text>
+                <Text style={styles.visitMetaLabel}>{i18n.t("customer.compliance.nextScheduled.label")}</Text>
                 <View style={styles.visitMetaValueContainer}>
                   {home.dashboard?.nextAppointment?.date ? (
                     <Text style={styles.visitDateText}>
                       {home.formatDisplayDate(home.dashboard.nextAppointment.date)}
                     </Text>
                   ) : (
-                    <Text style={styles.noAppointmentText}>Not scheduled</Text>
+                    <Text style={styles.noAppointmentText}>{i18n.t("customer.compliance.nextScheduled.none")}</Text>
                   )}
                 </View>
               </View>
@@ -311,10 +316,14 @@ export default function CustomerHomeScreen({
           {/* NOTIFICATIONS SECTION */}
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="notifications" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Notifications</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("customer.notifications.title")}</Text>
             {home.notificationCount > 0 && (
               <View style={styles.notificationCountBadge}>
-                <Text style={styles.notificationCountText}>{home.notificationCount} new</Text>
+                <Text style={styles.notificationCountText}>
+                  {home.notificationCount === 1 
+                    ? i18n.t("customer.notifications.newBadge_one", { count: home.notificationCount })
+                    : i18n.t("customer.notifications.newBadge_other", { count: home.notificationCount })}
+                </Text>
               </View>
             )}
             {home.notifications.length > 0 && (
@@ -324,7 +333,7 @@ export default function CustomerHomeScreen({
                   onPress={home.toggleNotifications}
                 >
                   <Text style={styles.notificationsToggleText}>
-                    {home.showNotifications ? 'Hide' : 'Show'}
+                    {home.showNotifications ? i18n.t("customer.notifications.hide") : i18n.t("customer.notifications.show")}
                   </Text>
                 </TouchableOpacity>
                 
@@ -332,11 +341,10 @@ export default function CustomerHomeScreen({
                   <TouchableOpacity 
                     style={styles.markAllReadButton}
                     onPress={() => {
-                      console.log("DEBUG: Mark All button pressed");  // Add this for testing
                       home.markAllNotificationsAsRead();
                     }}
                   >
-                    <Text style={styles.markAllReadText}>Mark All Read</Text>
+                    <Text style={styles.markAllReadText}>{i18n.t("customer.notifications.markAllRead")}</Text>
                   </TouchableOpacity>
                 )}
               </>
@@ -346,9 +354,9 @@ export default function CustomerHomeScreen({
           {home.notifications.length === 0 ? (
             <View style={[styles.card, styles.emptyNotificationsCard]}>
               <MaterialIcons name="notifications-off" size={48} color="#ddd" />
-              <Text style={styles.emptyNotificationsTitle}>No Notifications</Text>
+              <Text style={styles.emptyNotificationsTitle}>{i18n.t("customer.notifications.empty.title")}</Text>
               <Text style={styles.emptyNotificationsText}>
-                You don't have any notifications yet.
+                {i18n.t("customer.notifications.empty.text")}
               </Text>
             </View>
           ) : home.showNotifications ? (
@@ -412,7 +420,9 @@ export default function CustomerHomeScreen({
                   }}
                 >
                   <Text style={styles.viewAllNotificationsText}>
-                    {home.showAllNotifications ? 'Show less' : `View all ${home.notifications.length} notifications`}
+                    {home.showAllNotifications 
+                      ? i18n.t("customer.notifications.showLess")
+                      : i18n.t("customer.notifications.viewAll", { count: home.notifications.length })}
                   </Text>
                   <MaterialIcons 
                     name={home.showAllNotifications ? "arrow-upward" : "arrow-forward"} 
@@ -449,10 +459,14 @@ export default function CustomerHomeScreen({
                 </View>
                 <View style={styles.notificationsPreviewContent}>
                   <Text style={styles.notificationsPreviewTitle}>
-                    {home.notificationCount > 0 ? `${home.notificationCount} New Notifications` : 'Recent Notifications'}
+                    {home.notificationCount > 0 
+                      ? i18n.t("customer.notifications.preview.new", { count: home.notificationCount })
+                      : i18n.t("customer.notifications.preview.recent")}
                   </Text>
                   <Text style={styles.notificationsPreviewSubtitle}>
-                    Tap to view {home.notificationCount > 0 ? 'new' : 'recent'} notifications
+                    {i18n.t("customer.notifications.preview.tapToView", { 
+                      type: home.notificationCount > 0 ? 'new' : 'recent' 
+                    })}
                   </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={24} color="#666" />
@@ -463,7 +477,7 @@ export default function CustomerHomeScreen({
           {/* Quick Actions */}
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="dashboard" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("customer.quickActions.title")}</Text>
           </View>
           
           <View style={styles.quickActionsGrid}>
@@ -474,7 +488,7 @@ export default function CustomerHomeScreen({
               <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                 <MaterialIcons name="history" size={24} color="#1f9c8b" />
               </View>
-              <Text style={styles.quickActionText}>Visit History</Text>
+              <Text style={styles.quickActionText}>{i18n.t("customer.quickActions.visitHistory")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -484,7 +498,7 @@ export default function CustomerHomeScreen({
               <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                 <MaterialIcons name="event" size={24} color="#1f9c8b" />
               </View>
-              <Text style={styles.quickActionText}>Appointments</Text>
+              <Text style={styles.quickActionText}>{i18n.t("customer.quickActions.appointments")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -494,7 +508,7 @@ export default function CustomerHomeScreen({
               <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                 <MaterialIcons name="add-circle" size={24} color="#1f9c8b" />
               </View>
-              <Text style={styles.quickActionText}>Request Service</Text>
+              <Text style={styles.quickActionText}>{i18n.t("customer.quickActions.requestService")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -504,7 +518,7 @@ export default function CustomerHomeScreen({
               <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                 <MaterialIcons name="support-agent" size={24} color="#1f9c8b" />
               </View>
-              <Text style={styles.quickActionText}>Contact Us</Text>
+              <Text style={styles.quickActionText}>{i18n.t("customer.quickActions.contactUs")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -513,15 +527,15 @@ export default function CustomerHomeScreen({
             <View style={styles.expandedSection}>
               <View style={styles.sectionTitleContainer}>
                 <MaterialIcons name="event" size={20} color="#1f9c8b" />
-                <Text style={styles.sectionTitle}>Upcoming Appointments</Text>
+                <Text style={styles.sectionTitle}>{i18n.t("customer.appointments.title")}</Text>
               </View>
               
               {home.appointments.length === 0 ? (
                 <View style={styles.emptyStateCard}>
                   <MaterialIcons name="event-busy" size={48} color="#ddd" />
-                  <Text style={styles.emptyStateTitle}>No Upcoming Appointments</Text>
+                  <Text style={styles.emptyStateTitle}>{i18n.t("customer.appointments.empty.title")}</Text>
                   <Text style={styles.emptyStateText}>
-                    You don't have any scheduled appointments. Request a service to get started.
+                    {i18n.t("customer.appointments.empty.text")}
                   </Text>
                 </View>
               ) : (
@@ -555,7 +569,9 @@ export default function CustomerHomeScreen({
                       {appointment.technician && (
                         <View style={styles.technicianInfo}>
                           <MaterialIcons name="engineering" size={14} color="#666" />
-                          <Text style={styles.technicianText}>Technician: {appointment.technician}</Text>
+                          <Text style={styles.technicianText}>
+                            {i18n.t("customer.appointments.technician", { name: appointment.technician })}
+                          </Text>
                         </View>
                       )}
                       
@@ -601,10 +617,10 @@ export default function CustomerHomeScreen({
                                 home.setNewAppointmentTime(normalizedTime);                             
                                 home.setShowRescheduleModal(true);
                             }}
-                        >
+                          >
                             <MaterialIcons name="edit" size={16} color="#1f9c8b" />
                             <Text style={[styles.actionButtonText, { color: "#1f9c8b" }]}>
-                              Request Reschedule
+                              {i18n.t("customer.appointments.requestReschedule")}
                             </Text>
                           </TouchableOpacity>
                         )}
@@ -621,13 +637,13 @@ export default function CustomerHomeScreen({
             <View style={styles.expandedSection}>
               <View style={styles.sectionTitleContainer}>
                 <MaterialIcons name="construction" size={20} color="#1f9c8b" />
-                <Text style={styles.sectionTitle}>Request New Service</Text>
+                <Text style={styles.sectionTitle}>{i18n.t("customer.serviceRequest.title")}</Text>
               </View>
               
               <View style={[styles.card, styles.serviceRequestCard]}>
                 {/* Service Type Selection */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Service Type *</Text>
+                  <Text style={styles.formLabel}>{i18n.t("customer.serviceRequest.form.serviceType")}</Text>
                   <TouchableOpacity
                     style={styles.dropdownSelector}
                     onPress={() => home.setShowServiceDropdown(true)}
@@ -651,7 +667,7 @@ export default function CustomerHomeScreen({
                 {/* Special Service Subtype */}
                 {home.serviceType === "special" && (
                   <View style={styles.formGroup}>
-                    <Text style={styles.formLabel}>Specific Service Type *</Text>
+                    <Text style={styles.formLabel}>{i18n.t("customer.serviceRequest.form.specificServiceType")}</Text>
                     <TouchableOpacity
                       style={styles.dropdownSelector}
                       onPress={() => home.setShowSpecialSubtypeDropdown(true)}
@@ -665,7 +681,7 @@ export default function CustomerHomeScreen({
                             </Text>
                           </>
                         ) : (
-                          <Text style={styles.dropdownPlaceholder}>Select service type</Text>
+                          <Text style={styles.dropdownPlaceholder}>{i18n.t("customer.serviceRequest.form.selectService")}</Text>
                         )}
                       </View>
                       <MaterialIcons name="expand-more" size={24} color="#666" />
@@ -673,10 +689,10 @@ export default function CustomerHomeScreen({
                     {/* Other Pest Name Input */}
                     {home.specialServiceSubtype === "other" && (
                       <View style={styles.formGroup}>
-                        <Text style={styles.formLabel}>Specify Pest Name *</Text>
+                        <Text style={styles.formLabel}>{i18n.t("customer.serviceRequest.specialService.specifyPest")}</Text>
                         <TextInput
                           style={styles.simpleInput}
-                          placeholder="e.g., Ants, Spiders, Cockroaches, etc."
+                          placeholder={i18n.t("customer.serviceRequest.specialService.pestPlaceholder")}
                           placeholderTextColor="#999"
                           value={home.otherPestName}
                           onChangeText={home.setOtherPestName}
@@ -689,7 +705,7 @@ export default function CustomerHomeScreen({
 
                 {/* Urgency Selection */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Urgency</Text>
+                  <Text style={styles.formLabel}>{i18n.t("customer.serviceRequest.form.urgency")}</Text>
                   <View style={styles.urgencyGrid}>
                     {home.urgencyOptions.map((option) => (
                       <TouchableOpacity
@@ -727,10 +743,10 @@ export default function CustomerHomeScreen({
 
                 {/* Description */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Problem Description *</Text>
+                  <Text style={styles.formLabel}>{i18n.t("customer.serviceRequest.form.description")}</Text>
                   <TextInput
                     style={styles.simpleTextArea}
-                    placeholder="Please describe the pest problem or service needed..."
+                    placeholder={i18n.t("customer.serviceRequest.form.descriptionPlaceholder")}
                     placeholderTextColor="#999"
                     value={home.description}
                     onChangeText={home.setDescription}
@@ -742,10 +758,10 @@ export default function CustomerHomeScreen({
                 {/* Preferred Date & Time */}
                 <View style={styles.formRow}>
                   <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={styles.formLabel}>Preferred Date (optional)</Text>
+                    <Text style={styles.formLabel}>{i18n.t("customer.serviceRequest.form.preferredDate")}</Text>
                     <TextInput
                       style={styles.simpleInput}
-                      placeholder="YYYY-MM-DD"
+                      placeholder={i18n.t("customer.serviceRequest.form.preferredDatePlaceholder")}
                       placeholderTextColor="#999"
                       value={home.preferredDate}
                       onChangeText={(text) => {
@@ -770,10 +786,10 @@ export default function CustomerHomeScreen({
                   </View>
 
                   <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={styles.formLabel}>Preferred Time (optional)</Text>
+                    <Text style={styles.formLabel}>{i18n.t("customer.serviceRequest.form.preferredTime")}</Text>
                     <TextInput
                       style={styles.simpleInput}
-                      placeholder="HH:MM"
+                      placeholder={i18n.t("customer.serviceRequest.form.preferredTimePlaceholder")}
                       placeholderTextColor="#999"
                       value={home.preferredTime}
                       keyboardType="number-pad"
@@ -792,6 +808,71 @@ export default function CustomerHomeScreen({
                       }}
                     />
                   </View>
+                </View>
+
+                {/* Optional Image Upload */}
+                <View style={{ alignItems: "center", marginTop: 20 }}>
+                  <TouchableOpacity
+                    style={{ alignItems: "center" }}
+                    onPress={home.openserviceRequestImagesChooser}
+                    activeOpacity={0.7}
+                  >
+                    <MaterialIcons name="add-a-photo" size={30} color="#1f9c8b" />
+                    <Text style={{ marginTop: 6, fontSize: 14, fontWeight: "600", color: "#1f9c8b" }}>
+                      {home.serviceRequestImages.length > 0
+                        ? i18n.t("customer.serviceRequest.form.addMorePhotos")
+                        : i18n.t("customer.serviceRequest.form.addPhotos")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {home.serviceRequestImages.length > 0 && (
+                    <View style={{ marginTop: 15, width: "100%" }}>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {home.serviceRequestImages.map((img, index) => (
+                          <View
+                            key={index}
+                            style={{
+                              marginRight: 10,
+                              position: "relative",
+                            }}
+                          >
+                            <Image
+                              source={{ uri: img.uri }}
+                              style={{
+                                width: 120,
+                                height: 120,
+                                borderRadius: 10,
+                              }}
+                              resizeMode="cover"
+                            />
+
+                            {/* Remove single image */}
+                            <TouchableOpacity
+                              style={{
+                                position: "absolute",
+                                top: -6,
+                                right: -6,
+                                backgroundColor: "#e74c3c",
+                                width: 24,
+                                height: 24,
+                                borderRadius: 12,
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              onPress={() => {
+                                const updated = home.serviceRequestImages.filter(
+                                  (_, i) => i !== index
+                                );
+                                home.setServiceRequestImages(updated);
+                              }}
+                            >
+                              <MaterialIcons name="close" size={16} color="#fff" />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
                 </View>
 
                 {/* Submit Button */}
@@ -813,12 +894,12 @@ export default function CustomerHomeScreen({
                   ) : (
                     <>
                       <MaterialIcons name="send" size={20} color="#fff" />
-                      <Text style={styles.submitButtonText}>Submit Service Request</Text>
+                      <Text style={styles.submitButtonText}>{i18n.t("customer.serviceRequest.form.submit")}</Text>
                     </>
                   )}
                 </TouchableOpacity>
                 <Text style={styles.formNote}>
-                  * Required fields. Our team will contact you within 24 hours to confirm details.
+                  {i18n.t("customer.serviceRequest.form.note")}
                 </Text>
               </View>
             </View>
@@ -829,24 +910,24 @@ export default function CustomerHomeScreen({
             <View style={styles.expandedSection}>
               <View style={styles.sectionTitleContainer}>
                 <MaterialIcons name="contact-page" size={20} color="#1f9c8b" />
-                <Text style={styles.sectionTitle}>Contact Us</Text>
+                <Text style={styles.sectionTitle}>{i18n.t("customer.contact.title")}</Text>
               </View>
               
               <View style={[styles.card, styles.contactCard]}>
                 <View style={styles.contactHeader}>
                   <MaterialIcons name="support-agent" size={20} color="#1f9c8b" />
-                  <Text style={styles.contactTitle}>Contact Support</Text>
+                  <Text style={styles.contactTitle}>{i18n.t("customer.contact.support")}</Text>
                 </View>
                 
                 <Text style={styles.contactSubtitle}>
-                  Need help? Send us an email or give us a call
+                  {i18n.t("customer.contact.subtitle")}
                 </Text>
 
                 {/* Phone Number Section */}
                 <View style={styles.phoneSection}>
                   <View style={styles.phoneHeader}>
                     <MaterialIcons name="phone" size={20} color="#1f9c8b" />
-                    <Text style={styles.phoneTitle}>Call Us</Text>
+                    <Text style={styles.phoneTitle}>{i18n.t("customer.contact.phone.title")}</Text>
                   </View>
                   
                   <TouchableOpacity
@@ -854,11 +935,11 @@ export default function CustomerHomeScreen({
                     onPress={home.handleCallPhone}
                   >
                     <MaterialIcons name="call" size={20} color="#fff" />
-                    <Text style={styles.phoneNumberText}>+30 698 624 4371</Text>
+                    <Text style={styles.phoneNumberText}>{i18n.t("customer.contact.phone.number")}</Text>
                   </TouchableOpacity>
                   
                   <Text style={styles.phoneNote}>
-                    Tap to call our support team directly
+                    {i18n.t("customer.contact.phone.note")}
                   </Text>
                 </View>
 
@@ -866,16 +947,16 @@ export default function CustomerHomeScreen({
                 <View style={styles.emailSection}>
                   <View style={styles.emailHeader}>
                     <MaterialIcons name="email" size={20} color="#1f9c8b" />
-                    <Text style={styles.emailTitle}>Send Email</Text>
+                    <Text style={styles.emailTitle}>{i18n.t("customer.contact.email.title")}</Text>
                   </View>
                   
                   <Text style={styles.emailRecipient}>
-                    Email will be sent to: <Text style={styles.emailRecipientBold}>info@pest-free.gr</Text>
+                    {i18n.t("customer.contact.email.recipient", { email: "info@pestify.gr" })}
                   </Text>
 
                   <TextInput
                     style={styles.simpleInput}
-                    placeholder="Subject"
+                    placeholder={i18n.t("customer.contact.email.subjectPlaceholder")}
                     placeholderTextColor="#999"
                     value={home.emailSubject}
                     onChangeText={home.setEmailSubject}
@@ -883,7 +964,7 @@ export default function CustomerHomeScreen({
 
                   <TextInput
                     style={styles.simpleTextArea}
-                    placeholder="Your message"
+                    placeholder={i18n.t("customer.contact.email.messagePlaceholder")}
                     placeholderTextColor="#999"
                     value={home.emailBody}
                     onChangeText={home.setEmailBody}
@@ -905,14 +986,13 @@ export default function CustomerHomeScreen({
                     ) : (
                       <>
                         <MaterialIcons name="send" size={18} color="#fff" />
-                        <Text style={styles.sendButtonText}>Send Email</Text>
+                        <Text style={styles.sendButtonText}>{i18n.t("customer.contact.email.send")}</Text>
                       </>
                     )}
                   </TouchableOpacity>
                   
                   <Text style={styles.emailNote}>
-                    • Your default email app will open with pre-filled content
-                    {"\n"}• Make sure to review before sending
+                    {i18n.t("customer.contact.email.note")}
                   </Text>
                 </View>
               </View>
@@ -922,7 +1002,7 @@ export default function CustomerHomeScreen({
           {/* Account Settings Section */}
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="settings" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Account Settings</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("customer.account.title")}</Text>
           </View>
           
           {/* Account Settings Button */}
@@ -931,7 +1011,7 @@ export default function CustomerHomeScreen({
             onPress={home.togglePasswordForm}
           >
             <Ionicons name="key" size={20} color="#1f9c8b" />
-            <Text style={styles.accountButtonText}>Security Settings</Text>
+            <Text style={styles.accountButtonText}>{i18n.t("customer.account.security")}</Text>
             <MaterialIcons 
               name={home.showPasswordForm ? "expand-less" : "expand-more"} 
               size={24} 
@@ -944,19 +1024,19 @@ export default function CustomerHomeScreen({
             <View style={[styles.card, styles.passwordCard]}>
               <View style={styles.passwordHeader}>
                 <MaterialIcons name="lock" size={20} color="#1f9c8b" />
-                <Text style={styles.passwordTitle}>Change Password</Text>
+                <Text style={styles.passwordTitle}>{i18n.t("customer.account.changePassword.title")}</Text>
               </View>
               
               <Text style={styles.passwordSubtitle}>
-                For security reasons, please update your password regularly
+                {i18n.t("customer.account.changePassword.subtitle")}
               </Text>
 
               {/* Current Password Input */}
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Current Password *</Text>
+                <Text style={styles.formLabel}>{i18n.t("customer.account.changePassword.currentPassword")}</Text>
                 <TextInput
                   style={styles.simpleInput}
-                  placeholder="Enter your current password"
+                  placeholder={i18n.t("customer.account.changePassword.currentPlaceholder")}
                   placeholderTextColor="#999"
                   secureTextEntry
                   autoCapitalize="none"
@@ -969,10 +1049,10 @@ export default function CustomerHomeScreen({
 
               {/* New Password Input */}
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>New Password *</Text>
+                <Text style={styles.formLabel}>{i18n.t("customer.account.changePassword.newPassword")}</Text>
                 <TextInput
                   style={styles.simpleInput}
-                  placeholder="Enter new password (min. 6 characters)"
+                  placeholder={i18n.t("customer.account.changePassword.newPlaceholder")}
                   placeholderTextColor="#999"
                   secureTextEntry
                   autoCapitalize="none"
@@ -981,22 +1061,22 @@ export default function CustomerHomeScreen({
                   value={home.newPassword}
                   onChangeText={(text) => home.setNewPassword(text)}
                 />
-                {home.newPassword.length > 0 && home.newPassword.length < 6 && (
+                {home.newPassword.length > 0 && home.newPassword.length < 8 && (
                   <Text style={styles.validationError}>
-                    Password must be at least 6 characters
+                    {i18n.t("customer.account.changePassword.validation.minLength")}
                   </Text>
                 )}
               </View>
 
               {/* Confirm Password Input */}
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Confirm New Password *</Text>
+                <Text style={styles.formLabel}>{i18n.t("customer.account.changePassword.confirmPassword")}</Text>
                 <TextInput
                   style={[
                     styles.simpleInput,
                     home.confirmPassword && home.newPassword !== home.confirmPassword && styles.inputError
                   ]}
-                  placeholder="Re-enter new password"
+                  placeholder={i18n.t("customer.account.changePassword.confirmPlaceholder")}
                   placeholderTextColor="#999"
                   secureTextEntry
                   autoCapitalize="none"
@@ -1007,7 +1087,7 @@ export default function CustomerHomeScreen({
                 />
                 {home.confirmPassword && home.newPassword !== home.confirmPassword && (
                   <Text style={styles.validationError}>
-                    Passwords do not match
+                    {i18n.t("customer.account.changePassword.validation.mismatch")}
                   </Text>
                 )}
               </View>
@@ -1016,7 +1096,7 @@ export default function CustomerHomeScreen({
                 style={[
                   styles.updateButton,
                   (!home.currentPassword || !home.newPassword || !home.confirmPassword || 
-                  home.newPassword.length < 6 || home.newPassword !== home.confirmPassword) && 
+                  home.newPassword.length < 8 || home.newPassword !== home.confirmPassword) && 
                   styles.updateButtonDisabled
                 ]}
                 onPress={home.handleChangePassword}
@@ -1024,7 +1104,7 @@ export default function CustomerHomeScreen({
                   !home.currentPassword || 
                   !home.newPassword || 
                   !home.confirmPassword ||
-                  home.newPassword.length < 6 ||
+                  home.newPassword.length < 8 ||
                   home.newPassword !== home.confirmPassword
                 }
               >
@@ -1033,14 +1113,13 @@ export default function CustomerHomeScreen({
                 ) : (
                   <>
                     <MaterialIcons name="update" size={18} color="#fff" />
-                    <Text style={styles.updateButtonText}>Update Password</Text>
+                    <Text style={styles.updateButtonText}>{i18n.t("customer.account.changePassword.updateButton")}</Text>
                   </>
                 )}
               </TouchableOpacity>
               
               <Text style={styles.passwordNote}>
-                • Password must be at least 6 characters long
-                {"\n"}• Use a combination of letters and numbers for better security
+                {i18n.t("customer.account.changePassword.note")}
               </Text>
             </View>
           )}
@@ -1051,16 +1130,16 @@ export default function CustomerHomeScreen({
             onPress={home.onLogout}
           >
             <MaterialIcons name="logout" size={20} color="#fff" />
-            <Text style={styles.logoutText}>Logout</Text>
+            <Text style={styles.logoutText}>{i18n.t("customer.logout")}</Text>
           </TouchableOpacity>
 
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Pestify Customer Portal 
+              {i18n.t("customer.footer.text")}
             </Text>
             <Text style={styles.footerCopyright}>
-              © {new Date().getFullYear()} Pest-Free. All rights reserved.
+              {i18n.t("customer.footer.copyright", { year: new Date().getFullYear() })}
             </Text>
           </View>
         </View>
@@ -1116,12 +1195,12 @@ export default function CustomerHomeScreen({
                   {home.selectedNotification.appointmentId && (
                     <View style={styles.appointmentDetailsSection}>
                       <Text style={styles.appointmentDetailsTitle}>
-                        Appointment Details
+                        {i18n.t("customer.modals.notificationDetails.appointmentDetails")}
                       </Text>
                       
                       <View style={styles.detailRow}>
                         <MaterialIcons name="event" size={18} color="#666" />
-                        <Text style={styles.detailLabel}>Date:</Text>
+                        <Text style={styles.detailLabel}>{i18n.t("customer.modals.notificationDetails.date")}</Text>
                         <Text style={styles.detailValue}>
                           {home.formatDisplayDate(home.selectedNotification.appointmentDate)}
                         </Text>
@@ -1129,7 +1208,7 @@ export default function CustomerHomeScreen({
                       
                       <View style={styles.detailRow}>
                         <MaterialIcons name="access-time" size={18} color="#666" />
-                        <Text style={styles.detailLabel}>Time:</Text>
+                        <Text style={styles.detailLabel}>{i18n.t("customer.modals.notificationDetails.time")}</Text>
                         <Text style={styles.detailValue}>
                           {formatTime(home.selectedNotification.appointmentTime)}
                         </Text>
@@ -1137,7 +1216,7 @@ export default function CustomerHomeScreen({
                       
                       <View style={styles.detailRow}>
                         <MaterialIcons name="construction" size={18} color="#666" />
-                        <Text style={styles.detailLabel}>Service:</Text>
+                        <Text style={styles.detailLabel}>{i18n.t("customer.modals.notificationDetails.service")}</Text>
                         <Text style={styles.detailValue}>
                           {home.selectedNotification?.serviceType ? 
                             home.getServiceTypeLabel(
@@ -1153,7 +1232,7 @@ export default function CustomerHomeScreen({
                       {home.selectedNotification.technician && (
                         <View style={styles.detailRow}>
                           <MaterialIcons name="engineering" size={18} color="#666" />
-                          <Text style={styles.detailLabel}>Technician:</Text>
+                          <Text style={styles.detailLabel}>{i18n.t("customer.modals.notificationDetails.technician")}</Text>
                           <Text style={styles.detailValue}>
                             {home.selectedNotification.technician}
                           </Text>
@@ -1178,7 +1257,7 @@ export default function CustomerHomeScreen({
                       >
                         <MaterialIcons name="event" size={20} color="#fff" />
                         <Text style={styles.notificationActionButtonText}>
-                          View Appointments
+                          {i18n.t("customer.modals.notificationDetails.viewAppointments")}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -1193,7 +1272,7 @@ export default function CustomerHomeScreen({
                       >
                         <MaterialIcons name="history" size={20} color="#fff" />
                         <Text style={styles.notificationActionButtonText}>
-                          View Visit History
+                          {i18n.t("customer.modals.notificationDetails.viewHistory")}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -1219,7 +1298,7 @@ export default function CustomerHomeScreen({
         >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Service Type</Text>
+              <Text style={styles.modalTitle}>{i18n.t("customer.modals.selectService.title")}</Text>
               <TouchableOpacity 
                 onPress={() => home.setShowServiceDropdown(false)}
                 style={styles.modalCloseButton}
@@ -1286,7 +1365,7 @@ export default function CustomerHomeScreen({
         >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Specific Service</Text>
+              <Text style={styles.modalTitle}>{i18n.t("customer.modals.selectSpecificService.title")}</Text>
               <TouchableOpacity 
                 onPress={() => home.setShowSpecialSubtypeDropdown(false)}
                 style={styles.modalCloseButton}
@@ -1367,7 +1446,7 @@ export default function CustomerHomeScreen({
             <Pressable style={styles.modalCard} onPress={() => {}}>
               {/* HEADER */}
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Request Appointment Reschedule</Text>
+                <Text style={styles.modalTitle}>{i18n.t("customer.modals.reschedule.title")}</Text>
                 <TouchableOpacity
                   onPress={() => home.setShowRescheduleModal(false)}
                   style={styles.modalCloseButton}
@@ -1380,10 +1459,10 @@ export default function CustomerHomeScreen({
               <View style={styles.modalBody}>
                 {/* New Date */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>New Preferred Date *</Text>
+                  <Text style={styles.formLabel}>{i18n.t("customer.modals.reschedule.newDate")}</Text>
                   <TextInput
                     style={styles.simpleInput}
-                    placeholder="YYYY-MM-DD"
+                    placeholder={i18n.t("customer.modals.reschedule.newDatePlaceholder")}
                     placeholderTextColor="#999"
                     value={home.newAppointmentDate}
                     onChangeText={(text) => {
@@ -1409,10 +1488,10 @@ export default function CustomerHomeScreen({
 
                 {/* New Time */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>New Preferred Time *</Text>
+                  <Text style={styles.formLabel}>{i18n.t("customer.modals.reschedule.newTime")}</Text>
                   <TextInput
                     style={styles.simpleInput}
-                    placeholder="HH:MM"
+                    placeholder={i18n.t("customer.modals.reschedule.newTimePlaceholder")}
                     placeholderTextColor="#999"
                     value={home.newAppointmentTime}
                     keyboardType="number-pad"
@@ -1448,7 +1527,7 @@ export default function CustomerHomeScreen({
                     <>
                       <MaterialIcons name="send" size={20} color="#fff" />
                       <Text style={styles.submitButtonText}>
-                        Submit Reschedule Request
+                        {i18n.t("customer.modals.reschedule.submit")}
                       </Text>
                     </>
                   )}

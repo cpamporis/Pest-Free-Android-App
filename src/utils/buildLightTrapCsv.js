@@ -5,28 +5,6 @@ export function buildLightTrapCsv({
   technicianName,
   visitId,
 }) {
-  console.log("🔍 buildLightTrapCsv called with:", {
-    stationCount: stations.length,
-    customerName,
-    technicianName,
-    visitId
-  });
-  
-  // Log each station's data
-  stations.forEach((station, index) => {
-    console.log(`📊 Station ${index + 1}:`, {
-      stationId: station.stationId,
-      stationType: station.stationType,
-      mosquitoes: station.mosquitoes,
-      lepidoptera: station.lepidoptera,
-      drosophila: station.drosophila,
-      flies: station.flies,
-      others: station.others,
-      replaceBulb: station.replaceBulb,
-      condition: station.condition,
-      access: station.access
-    });
-  });
   
   // 🔹 Find max number of "Others" entries across all LT stations
   const maxOthersCount = Math.max(
@@ -82,9 +60,5 @@ export function buildLightTrapCsv({
       visitId,
     ];
   });
-
-  console.log("📋 CSV Headers:", headers);
-  console.log("📊 Number of rows:", rows.length);
-  
   return { headers, rows };
 }

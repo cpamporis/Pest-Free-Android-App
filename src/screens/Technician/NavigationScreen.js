@@ -11,13 +11,17 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import i18n from "../../services/i18n";
 
 export default function NavigationScreen({ customer, technician, onBack, onNavigateToMap }) {
   const [loading, setLoading] = useState(false);
 
   const openNavigationApp = (appType) => {
     if (!customer || !customer.address) {
-      Alert.alert("No Address", "This customer doesn't have an address saved.");
+      Alert.alert(
+        i18n.t("technician.navigation.errors.noAddress"),
+        i18n.t("technician.navigation.errors.noAddressMessage")
+      );
       return;
     }
 
@@ -45,29 +49,32 @@ export default function NavigationScreen({ customer, technician, onBack, onNavig
       })
       .catch((err) => {
         setLoading(false);
-        Alert.alert("Error", "Could not open navigation app. Make sure it's installed.");
+        Alert.alert(
+          i18n.t("common.error"),
+          i18n.t("technician.navigation.errors.appNotInstalled")
+        );
       });
   };
 
   const quickNavigate = () => {
     Alert.alert(
-      "Navigate to Customer",
-      `How would you like to navigate to ${customer.customerName}?`,
+      i18n.t("technician.navigation.quickNav.chooseApp"),
+      i18n.t("technician.navigation.quickNav.prompt", { name: customer.customerName }),
       [
         {
-          text: "Google Maps",
+          text: i18n.t("technician.navigation.apps.googleMaps.name"),
           onPress: () => openNavigationApp("google-maps"),
         },
         {
-          text: "Waze",
+          text: i18n.t("technician.navigation.apps.waze.name"),
           onPress: () => openNavigationApp("waze"),
         },
         {
-          text: "Apple Maps",
+          text: i18n.t("technician.navigation.apps.appleMaps.name"),
           onPress: () => openNavigationApp("apple-maps"),
         },
         {
-          text: "Cancel",
+          text: i18n.t("common.cancel"),
           style: "cancel",
         },
       ]
@@ -80,24 +87,24 @@ export default function NavigationScreen({ customer, technician, onBack, onNavig
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Text style={styles.backButtonText}>← {i18n.t("technician.common.back")}</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Navigation</Text>
+          <Text style={styles.title}>{i18n.t("technician.navigation.title")}</Text>
           <View style={{ width: 60 }} />
         </View>
 
         {/* Customer Info */}
         <View style={styles.customerCard}>
           <Text style={styles.customerName}>{customer.customerName}</Text>
-          <Text style={styles.customerId}>ID: {customer.customerId}</Text>
+          <Text style={styles.customerId}>{i18n.t("technician.navigation.customerInfo.id", { id: customer.customerId })}</Text>
           
           <View style={styles.addressSection}>
-            <Text style={styles.sectionLabel}>Address:</Text>
-            <Text style={styles.address}>{customer.address || "No address available"}</Text>
+            <Text style={styles.sectionLabel}>{i18n.t("technician.navigation.customerInfo.address")}</Text>
+            <Text style={styles.address}>{customer.address || i18n.t("technician.common.noAddress")}</Text>
           </View>
 
           <View style={styles.technicianSection}>
-            <Text style={styles.sectionLabel}>Technician:</Text>
+            <Text style={styles.sectionLabel}>{i18n.t("technician.navigation.customerInfo.technician")}</Text>
             <Text style={styles.technicianName}>
               {technician.firstName} {technician.lastName}
             </Text>
@@ -116,14 +123,16 @@ export default function NavigationScreen({ customer, technician, onBack, onNavig
             <>
               <Text style={styles.navIcon}>📍</Text>
               <Text style={styles.quickNavText}>
-                {customer.address ? "Start Navigation" : "No Address Available"}
+                {customer.address 
+                  ? i18n.t("technician.navigation.quickNav.button")
+                  : i18n.t("technician.navigation.quickNav.noAddress")}
               </Text>
             </>
           )}
         </TouchableOpacity>
 
         {/* Navigation Apps */}
-        <Text style={styles.sectionTitle}>Choose Navigation App</Text>
+        <Text style={styles.sectionTitle}>{i18n.t("technician.navigation.quickNav.chooseApp")}</Text>
         
         <TouchableOpacity
           style={[styles.appButton, styles.googleMapsButton]}
@@ -132,8 +141,8 @@ export default function NavigationScreen({ customer, technician, onBack, onNavig
         >
           <Text style={styles.appIcon}>🗺️</Text>
           <View style={styles.appInfo}>
-            <Text style={styles.appName}>Google Maps</Text>
-            <Text style={styles.appDescription}>Detailed directions & live traffic</Text>
+            <Text style={styles.appName}>{i18n.t("technician.navigation.apps.googleMaps.name")}</Text>
+            <Text style={styles.appDescription}>{i18n.t("technician.navigation.apps.googleMaps.description")}</Text>
           </View>
         </TouchableOpacity>
 
@@ -144,8 +153,8 @@ export default function NavigationScreen({ customer, technician, onBack, onNavig
         >
           <Text style={styles.appIcon}>🚗</Text>
           <View style={styles.appInfo}>
-            <Text style={styles.appName}>Waze</Text>
-            <Text style={styles.appDescription}>Community-based traffic alerts</Text>
+            <Text style={styles.appName}>{i18n.t("technician.navigation.apps.waze.name")}</Text>
+            <Text style={styles.appDescription}>{i18n.t("technician.navigation.apps.waze.description")}</Text>
           </View>
         </TouchableOpacity>
 
@@ -156,8 +165,8 @@ export default function NavigationScreen({ customer, technician, onBack, onNavig
         >
           <Text style={styles.appIcon}>🍎</Text>
           <View style={styles.appInfo}>
-            <Text style={styles.appName}>Apple Maps</Text>
-            <Text style={styles.appDescription}>iOS native maps app</Text>
+            <Text style={styles.appName}>{i18n.t("technician.navigation.apps.appleMaps.name")}</Text>
+            <Text style={styles.appDescription}>{i18n.t("technician.navigation.apps.appleMaps.description")}</Text>
           </View>
         </TouchableOpacity>
 
@@ -168,18 +177,18 @@ export default function NavigationScreen({ customer, technician, onBack, onNavig
               style={styles.secondaryButton}
               onPress={onNavigateToMap}
             >
-              <Text style={styles.secondaryButtonText}>Go to Map Screen</Text>
+              <Text style={styles.secondaryButtonText}>{i18n.t("technician.navigation.mapScreen.button")}</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Tips */}
         <View style={styles.tipsContainer}>
-          <Text style={styles.tipsTitle}>📌 Tips for Your Visit</Text>
-          <Text style={styles.tip}>• Check traffic before departure</Text>
-          <Text style={styles.tip}>• Bring all necessary equipment</Text>
-          <Text style={styles.tip}>• Call ahead if running late</Text>
-          <Text style={styles.tip}>• Save customer contact info</Text>
+          <Text style={styles.tipsTitle}>{i18n.t("technician.navigation.tips.title")}</Text>
+          <Text style={styles.tip}>{i18n.t("technician.navigation.tips.tip1")}</Text>
+          <Text style={styles.tip}>{i18n.t("technician.navigation.tips.tip2")}</Text>
+          <Text style={styles.tip}>{i18n.t("technician.navigation.tips.tip3")}</Text>
+          <Text style={styles.tip}>{i18n.t("technician.navigation.tips.tip4")}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

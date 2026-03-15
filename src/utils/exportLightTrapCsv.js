@@ -7,15 +7,8 @@ export async function exportLightTrapCsv({
   customerName,
   visitId,
 }) {
-  console.log("🔍 exportLightTrapCsv called with:", {
-    headers,
-    rowCount: rows.length,
-    customerName,
-    visitId
-  });
   
   if (rows.length === 0) {
-    console.log("⚠️ No rows to export!");
     return null;
   }
 
@@ -26,8 +19,6 @@ export async function exportLightTrapCsv({
     ),
   ].join("\n");
 
-  console.log("📝 CSV Content (first 500 chars):", csvContent.substring(0, 500));
-
   const safeCustomer = customerName
     .replace(/\s+/g, "_")
     .replace(/[^\w]/g, "");
@@ -36,20 +27,15 @@ export async function exportLightTrapCsv({
   const fileName = `LT_${safeCustomer}_${date}_${visitId}.csv`;
   const fileUri = FileSystem.documentDirectory + fileName;
 
-  console.log("💾 Saving to:", fileUri);
-  console.log("📁 Document Directory:", FileSystem.documentDirectory);
 
   try {
     await FileSystem.writeAsStringAsync(fileUri, csvContent);
-    console.log("✅ LT CSV saved successfully at:", fileUri);
     
     // Verify the file was created
     const fileInfo = await FileSystem.getInfoAsync(fileUri);
-    console.log("📄 File info:", fileInfo);
     
     if (fileInfo.exists) {
       const fileSize = fileInfo.size;
-      console.log("📏 File size:", fileSize, "bytes");
     }
     
     return fileUri;

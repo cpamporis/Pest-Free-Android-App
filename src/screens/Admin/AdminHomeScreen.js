@@ -1,4 +1,4 @@
-// AdminHomeScreen.js
+//AdminHomeScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -26,6 +26,7 @@ import { buildComplianceNotifications } from "../../utils/complianceNotification
 import ReportScreen from "../Technician/ReportScreen";
 import Statistics from "./Statistics";
 import AdminTechCalendarPreview from "./AdminTechCalendarPreview"; //temporary
+import i18n from "../../services/i18n";
 
 export default function AdminHomeScreen({ onLogout }) {
   const [customers, setCustomers] = useState([]);
@@ -46,7 +47,6 @@ export default function AdminHomeScreen({ onLogout }) {
     setScheduleCustomerId(customerId);
     setShowTechSchedule(true);
   };
-  const [homeScrollEnabled, setHomeScrollEnabled] = useState(true);
   const [adminReportContext, setAdminReportContext] = useState(null);
   const [showAdminReport, setShowAdminReport] = useState(false);
   const [showStatistics, setShowStatistics] = useState(false);
@@ -106,13 +106,11 @@ export default function AdminHomeScreen({ onLogout }) {
       // FORCE REFRESH: Add timestamp to prevent caching
       const timestamp = forceRefresh ? `?t=${Date.now()}` : '';
       // Load today's customer requests count WITH DEBUG
-      console.log("🔄 Fetching today's customer requests count...");
       const requestsCountResult = await apiService.getTodayCustomerRequestsCount();
       
       if (requestsCountResult?.success) {
         // Make sure we're using the correct count
         const actualCount = requestsCountResult.count || 0;
-        console.log(`✅ Setting todayCustomerRequests to: ${actualCount}`);
         setTodayCustomerRequests(actualCount);
       } else {
         console.error("❌ Failed to get requests count:", requestsCountResult);
@@ -145,8 +143,6 @@ export default function AdminHomeScreen({ onLogout }) {
   };
 
   const handleOpenAdminReport = (visit) => {
-    console.log("📄 Admin opening report:", visit);
-
     setAdminReportContext({
       visitId: visit.visitId || visit.id,
       serviceType: visit.serviceType,
@@ -163,7 +159,7 @@ export default function AdminHomeScreen({ onLogout }) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1f9c8b" />
-        <Text style={styles.loadingText}>Loading Admin Dashboard...</Text>
+        <Text style={styles.loadingText}>{i18n.t("admin.home.loading")}</Text>
       </SafeAreaView>
     );
   }
@@ -173,7 +169,6 @@ export default function AdminHomeScreen({ onLogout }) {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={homeScrollEnabled}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -190,7 +185,7 @@ export default function AdminHomeScreen({ onLogout }) {
               <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
               <View style={styles.adminBadge}>
                 <MaterialIcons name="admin-panel-settings" size={14} color="#fff" />
-                <Text style={styles.adminBadgeText}>ADMIN</Text>
+                <Text style={styles.adminBadgeText}>{i18n.t("admin.home.header.badge")}</Text>
               </View>
             </View>
             <TouchableOpacity 
@@ -199,15 +194,15 @@ export default function AdminHomeScreen({ onLogout }) {
               activeOpacity={0.7}
             >
               <MaterialIcons name="logout" size={18} color="#fff" />
-              <Text style={styles.logoutTextTop}>Logout</Text>
+              <Text style={styles.logoutTextTop}>{i18n.t("admin.home.header.logout")}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.headerContent}>
-            <Text style={styles.welcomeText}>Welcome back, Administrator</Text>
-            <Text style={styles.title}>System Dashboard</Text>
+            <Text style={styles.welcomeText}>{i18n.t("admin.home.header.welcome")}</Text>
+            <Text style={styles.title}>{i18n.t("admin.home.header.title")}</Text>
             <Text style={styles.subtitle}>
-              Manage operations, monitor activities, and oversee system performance
+              {i18n.t("admin.home.header.subtitle")}
             </Text>
           </View>
         </View>
@@ -215,7 +210,7 @@ export default function AdminHomeScreen({ onLogout }) {
         {/* QUICK STATS CARDS */}
         <View style={styles.sectionHeader}>
           <MaterialIcons name="dashboard" size={20} color="#2c3e50" />
-          <Text style={styles.sectionTitle}>Quick Overview</Text>
+          <Text style={styles.sectionTitle}>{i18n.t("admin.home.sections.quickOverview")}</Text>
         </View>
 
         <View style={styles.statsGrid}>
@@ -224,8 +219,8 @@ export default function AdminHomeScreen({ onLogout }) {
               <FontAwesome5 name="users" size={20} color="#1f9c8b" />
             </View>
             <Text style={styles.statNumber}>{customers.length}</Text>
-            <Text style={styles.statLabel}>Total Customers</Text>
-            <Text style={styles.statTrend}>Active</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.home.stats.totalCustomers")}</Text>
+            <Text style={styles.statTrend}>{i18n.t("admin.home.stats.active")}</Text>
           </View>
 
           <View style={styles.statCard}>
@@ -233,8 +228,8 @@ export default function AdminHomeScreen({ onLogout }) {
               <MaterialIcons name="engineering" size={22} color="#1f8c8b" />
             </View>
             <Text style={styles.statNumber}>{technicians.length}</Text>
-            <Text style={styles.statLabel}>Technicians</Text>
-            <Text style={styles.statTrend}>On Duty</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.home.stats.technicians")}</Text>
+            <Text style={styles.statTrend}>{i18n.t("admin.home.stats.onDuty")}</Text>
           </View>
 
           <View style={styles.statCard}>
@@ -242,8 +237,8 @@ export default function AdminHomeScreen({ onLogout }) {
               <MaterialIcons name="today" size={20} color="#1f9c8b" />
             </View>
             <Text style={styles.statNumber}>{todayVisits}</Text>
-            <Text style={styles.statLabel}>Today's Visits</Text>
-            <Text style={styles.statTrend}>Scheduled</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.home.stats.todayVisits")}</Text>
+            <Text style={styles.statTrend}>{i18n.t("admin.home.stats.scheduled")}</Text>
           </View>
 
           {/* 🔥 NEW: Today's Customer Requests Block */}
@@ -252,9 +247,9 @@ export default function AdminHomeScreen({ onLogout }) {
               <MaterialIcons name="request-page" size={20} color="#1f9c8b" />
             </View>
             <Text style={styles.statNumber}>{todayCustomerRequests}</Text>
-            <Text style={styles.statLabel}>Today's Requests</Text>
+            <Text style={styles.statLabel}>{i18n.t("admin.home.stats.todayRequests")}</Text>
             <Text style={[styles.statTrend, { color: todayCustomerRequests > 0 ? '#F44336' : '#1f9c8b' }]}>
-              {todayCustomerRequests > 0 ? 'Pending' : 'None'}
+              {todayCustomerRequests > 0 ? i18n.t("admin.home.stats.pending") : i18n.t("admin.home.stats.none")}
             </Text>
           </View>
         </View>
@@ -262,7 +257,7 @@ export default function AdminHomeScreen({ onLogout }) {
         {/* INLINE CALENDAR PREVIEW */}
         <View style={styles.sectionHeader}>
           <MaterialIcons name="calendar-view-week" size={20} color="#2c3e50" />
-          <Text style={styles.sectionTitle}>Weekly Overview</Text>
+          <Text style={styles.sectionTitle}>{i18n.t("admin.home.sections.weeklyOverview")}</Text>
 
           <TouchableOpacity
             onPress={() => setShowInlineCalendar(prev => !prev)}
@@ -278,17 +273,14 @@ export default function AdminHomeScreen({ onLogout }) {
 
         {showInlineCalendar && (
           <View style={styles.inlineCalendarContainer}>
-            <AdminTechCalendarPreview
-              onTouchStart={() => setHomeScrollEnabled(false)}
-              onTouchEnd={() => setHomeScrollEnabled(true)}
-            />
+            <AdminTechCalendarPreview />
           </View>
         )}
 
         {/* ADMINISTRATION MODULES */}
         <View style={styles.sectionHeader}>
           <MaterialIcons name="admin-panel-settings" size={20} color="#2c3e50" />
-          <Text style={styles.sectionTitle}>Administration Modules</Text>
+          <Text style={styles.sectionTitle}>{i18n.t("admin.home.sections.administrationModules")}</Text>
         </View>
 
         <View style={styles.modulesGrid}>
@@ -301,10 +293,10 @@ export default function AdminHomeScreen({ onLogout }) {
               <MaterialIcons name="notifications-active" size={24} color="#fff" />
             </View>
 
-            <Text style={styles.moduleTitle}>Compliance Alerts</Text>
+            <Text style={styles.moduleTitle}>{i18n.t("admin.home.modules.complianceAlerts.title")}</Text>
 
             <Text style={styles.moduleDescription}>
-              Customers with expiring compliance certificates
+              {i18n.t("admin.home.modules.complianceAlerts.description")}
             </Text>
 
             <View style={styles.moduleFooter}>
@@ -314,7 +306,9 @@ export default function AdminHomeScreen({ onLogout }) {
                   complianceAlertsCount > 0 && { color: '#1f9c8b', fontWeight: '700' }
                 ]}
               >
-                {complianceAlertsCount} alert{complianceAlertsCount !== 1 ? "s" : ""}
+                {complianceAlertsCount === 1 
+                  ? i18n.t("admin.home.modules.complianceAlerts.alerts_one", { count: complianceAlertsCount })
+                  : i18n.t("admin.home.modules.complianceAlerts.alerts_other", { count: complianceAlertsCount })}
               </Text>
 
               <MaterialIcons name="chevron-right" size={20} color="#1f9c8b" />
@@ -329,12 +323,16 @@ export default function AdminHomeScreen({ onLogout }) {
             <View style={[styles.moduleIconContainer, { backgroundColor: '#1f9c8b' }]}>
               <FontAwesome5 name="users-cog" size={24} color="#fff" />
             </View>
-            <Text style={styles.moduleTitle}>Customers</Text>
+            <Text style={styles.moduleTitle}>{i18n.t("admin.home.modules.customers.title")}</Text>
             <Text style={styles.moduleDescription}>
-              Manage customer accounts, details, and service history
+              {i18n.t("admin.home.modules.customers.description")}
             </Text>
             <View style={styles.moduleFooter}>
-              <Text style={styles.moduleCount}>{customers.length} registered</Text>
+              <Text style={styles.moduleCount}>
+                {customers.length === 1
+                  ? i18n.t("admin.home.modules.customers.registered_one", { count: customers.length })
+                  : i18n.t("admin.home.modules.customers.registered_other", { count: customers.length })}
+              </Text>
               <MaterialIcons name="chevron-right" size={20} color="#1f9c8b" />
             </View>
           </TouchableOpacity>
@@ -347,13 +345,15 @@ export default function AdminHomeScreen({ onLogout }) {
             <View style={[styles.moduleIconContainer, { backgroundColor: '#1f9c8b' }]}>
               <MaterialIcons name="request-page" size={24} color="#fff" />
             </View>
-            <Text style={styles.moduleTitle}>Customer Requests</Text>
+            <Text style={styles.moduleTitle}>{i18n.t("admin.home.modules.customerRequests.title")}</Text>
             <Text style={styles.moduleDescription}>
-              Review and manage customer service requests
+              {i18n.t("admin.home.modules.customerRequests.description")}
             </Text>
             <View style={styles.moduleFooter}>
               <Text style={[styles.moduleCount, todayCustomerRequests > 0 && { color: '#1f9c8b' }]}>
-                {todayCustomerRequests} pending
+                {todayCustomerRequests === 1
+                  ? i18n.t("admin.home.modules.customerRequests.pending_one", { count: todayCustomerRequests })
+                  : i18n.t("admin.home.modules.customerRequests.pending_other", { count: todayCustomerRequests })}
               </Text>
               <MaterialIcons name="chevron-right" size={20} color="#1f9c8b" />
             </View>
@@ -367,12 +367,16 @@ export default function AdminHomeScreen({ onLogout }) {
             <View style={[styles.moduleIconContainer, { backgroundColor: '#1f9c8b' }]}>
               <MaterialIcons name="engineering" size={24} color="#fff" />
             </View>
-            <Text style={styles.moduleTitle}>Technicians</Text>
+            <Text style={styles.moduleTitle}>{i18n.t("admin.home.modules.technicians.title")}</Text>
             <Text style={styles.moduleDescription}>
-              Manage technician profiles, assignments, and performance
+              {i18n.t("admin.home.modules.technicians.description")}
             </Text>
             <View style={styles.moduleFooter}>
-              <Text style={styles.moduleCount}>{technicians.length} active</Text>
+              <Text style={styles.moduleCount}>
+                {technicians.length === 1
+                  ? i18n.t("admin.home.modules.technicians.active_one", { count: technicians.length })
+                  : i18n.t("admin.home.modules.technicians.active_other", { count: technicians.length })}
+              </Text>
               <MaterialIcons name="chevron-right" size={20} color="#1f9c8b" />
             </View>
           </TouchableOpacity>
@@ -385,12 +389,16 @@ export default function AdminHomeScreen({ onLogout }) {
             <View style={[styles.moduleIconContainer, { backgroundColor: '#1f9c8b' }]}>
               <MaterialIcons name="schedule" size={24} color="#fff" />
             </View>
-            <Text style={styles.moduleTitle}>Schedule</Text>
+            <Text style={styles.moduleTitle}>{i18n.t("admin.home.modules.schedule.title")}</Text>
             <Text style={styles.moduleDescription}>
-              Plan and assign daily visits, optimize technician routes
+              {i18n.t("admin.home.modules.schedule.description")}
             </Text>
             <View style={styles.moduleFooter}>
-              <Text style={styles.moduleCount}>{todayVisits} today</Text>
+              <Text style={styles.moduleCount}>
+                {todayVisits === 1
+                  ? i18n.t("admin.home.modules.schedule.today_one", { count: todayVisits })
+                  : i18n.t("admin.home.modules.schedule.today_other", { count: todayVisits })}
+              </Text>
               <MaterialIcons name="chevron-right" size={20} color="#1f9c8b" />
             </View>
           </TouchableOpacity>
@@ -403,12 +411,12 @@ export default function AdminHomeScreen({ onLogout }) {
             <View style={[styles.moduleIconContainer, { backgroundColor: '#1f9c8b' }]}>
               <MaterialIcons name="inventory" size={24} color="#fff" />
             </View>
-            <Text style={styles.moduleTitle}>Materials</Text>
+            <Text style={styles.moduleTitle}>{i18n.t("admin.home.modules.materials.title")}</Text>
             <Text style={styles.moduleDescription}>
-              Manage bait types, chemicals, and inventory tracking
+              {i18n.t("admin.home.modules.materials.description")}
             </Text>
             <View style={styles.moduleFooter}>
-              <Text style={styles.moduleCount}>Inventory</Text>
+              <Text style={styles.moduleCount}>{i18n.t("admin.home.modules.materials.inventory")}</Text>
               <MaterialIcons name="chevron-right" size={20} color="#1f9c8b" />
             </View>
           </TouchableOpacity>
@@ -422,14 +430,14 @@ export default function AdminHomeScreen({ onLogout }) {
               <MaterialIcons name="bar-chart" size={24} color="#fff" />
             </View>
 
-            <Text style={styles.moduleTitle}>Statistics</Text>
+            <Text style={styles.moduleTitle}>{i18n.t("admin.home.modules.statistics.title")}</Text>
 
             <Text style={styles.moduleDescription}>
-              System metrics, activity distribution, and operational insights
+              {i18n.t("admin.home.modules.statistics.description")}
             </Text>
 
             <View style={styles.moduleFooter}>
-              <Text style={styles.moduleCount}>Overview</Text>
+              <Text style={styles.moduleCount}>{i18n.t("admin.home.modules.statistics.overview")}</Text>
               <MaterialIcons name="chevron-right" size={20} color="#1f9c8b" />
             </View>
           </TouchableOpacity>
@@ -438,7 +446,7 @@ export default function AdminHomeScreen({ onLogout }) {
         {/* SYSTEM ACTIONS */}
         <View style={styles.sectionHeader}>
           <MaterialIcons name="settings" size={20} color="#2c3e50" />
-          <Text style={styles.sectionTitle}>System Actions</Text>
+          <Text style={styles.sectionTitle}>{i18n.t("admin.home.sections.systemActions")}</Text>
         </View>
 
         <View style={styles.actionsContainer}>
@@ -457,10 +465,12 @@ export default function AdminHomeScreen({ onLogout }) {
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>
-                {refreshing ? "Refreshing Data..." : "Refresh Dashboard"}
+                {refreshing 
+                  ? i18n.t("admin.home.actions.refreshDashboard.title_refreshing")
+                  : i18n.t("admin.home.actions.refreshDashboard.title")}
               </Text>
               <Text style={styles.actionSubtitle}>
-                Update all statistics and information
+                {i18n.t("admin.home.actions.refreshDashboard.subtitle")}
               </Text>
             </View>
             <MaterialIcons name="chevron-right" size={20} color="#666" />
@@ -476,10 +486,10 @@ export default function AdminHomeScreen({ onLogout }) {
             </View>
             <View style={styles.actionContent}>
               <Text style={[styles.actionTitle, { color: '#F44336' }]}>
-                Logout
+                {i18n.t("admin.home.actions.logout.title")}
               </Text>
               <Text style={styles.actionSubtitle}>
-                Sign out from the admin dashboard
+                {i18n.t("admin.home.actions.logout.subtitle")}
               </Text>
             </View>
             <MaterialIcons name="chevron-right" size={20} color="#F44336" />
@@ -488,12 +498,12 @@ export default function AdminHomeScreen({ onLogout }) {
 
         {/* FOOTER */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Pestify Admin System</Text>
+          <Text style={styles.footerText}>{i18n.t("admin.home.footer.system")}</Text>
           <Text style={styles.footerSubtext}>
-            Version 1.0 • Last updated: {new Date().toLocaleDateString()}
+            {i18n.t("admin.home.footer.version", { date: new Date().toLocaleDateString() })}
           </Text>
           <Text style={styles.footerCopyright}>
-            © {new Date().getFullYear()} Pest-Free. All rights reserved.
+            {i18n.t("admin.home.footer.copyright", { year: new Date().getFullYear() })}
           </Text>
         </View>
 

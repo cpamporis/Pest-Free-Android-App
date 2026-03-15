@@ -20,6 +20,9 @@ import { Swipeable } from 'react-native-gesture-handler';
 import apiService from '../../services/apiService';
 import ChemicalsDropdown from '../../components/ChemicalsDropdown';
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from "expo-image-picker";
+import { Image } from "react-native";
+import i18n from "../../services/i18n";
 
 /**
  * InsecticideScreen
@@ -49,6 +52,8 @@ export default function InsecticideScreen({
 
   const [selectedChemicals, setSelectedChemicals] = useState([]);
   const [notes, setNotes] = useState('');
+  const [reportImages, setReportImages] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
 
   /* =========================
      TREATED AREAS STATE
@@ -68,7 +73,8 @@ export default function InsecticideScreen({
      INSECTICIDE DETAILS FROM ADMIN
   ========================= */
   const [insecticideDetails, setInsecticideDetails] = useState('');
-  const [serviceTypeLabel, setServiceTypeLabel] = useState('Insecticide');
+  const [serviceTypeLabel, setServiceTypeLabel] = useState(i18n.t("serviceTypes.insecticide"));
+  const [storedDuration, setStoredDuration] = useState(null);
 
   /* =========================
      HELPERS
@@ -101,15 +107,6 @@ export default function InsecticideScreen({
       session?.rawAppointment?.notes ||
       '';
     
-    console.log("🔍 getInsecticideDetailsLabel found:", {
-      details,
-      hasDetails: !!details,
-      fromRawAppointment: {
-        otherPestName: session?.rawAppointment?.otherPestName,
-        insecticideDetails: session?.rawAppointment?.insecticideDetails
-      }
-    });
-    
     return details;
   };
 
@@ -118,9 +115,9 @@ export default function InsecticideScreen({
     const h = Math.floor(total / 3600);
     const m = Math.floor((total % 3600) / 60);
     const s = total % 60;
-    if (h) return `${h}h ${m}m ${s}s`;
-    if (m) return `${m}m ${s}s`;
-    return `${s}s`;
+    if (h) return `${h}${i18n.t("technician.common.hours")} ${m}${i18n.t("technician.common.minutes")} ${s}${i18n.t("technician.common.seconds")}`;
+    if (m) return `${m}${i18n.t("technician.common.minutes")} ${s}${i18n.t("technician.common.seconds")}`;
+    return `${s}${i18n.t("technician.common.seconds")}`;
   };
 
   /* =========================
@@ -128,8 +125,6 @@ export default function InsecticideScreen({
   ========================= */
   useEffect(() => {
     const load = async () => {
-      console.log("🧠 InsecticideScreen session:", session);
-
       try {
         // Set loading first
         setLoading(true);
@@ -138,47 +133,26 @@ export default function InsecticideScreen({
         const insecticideDetailsFromSession = getInsecticideDetailsLabel();
         if (insecticideDetailsFromSession) {
           setInsecticideDetails(insecticideDetailsFromSession);
-          setServiceTypeLabel(`Insecticide - ${insecticideDetailsFromSession}`);
+          setServiceTypeLabel(`${i18n.t("serviceTypes.insecticide")} - ${insecticideDetailsFromSession}`);
         }
 
         // Check if we have a completed appointment with visitId
         const hasVisitId = session?.visitId || session?.rawAppointment?.visitId;
         const isCompleted = session?.status === "completed" || 
                           session?.rawAppointment?.status === "completed";
-        
-        console.log("🔍 Edit mode check:", {
-          hasVisitId,
-          isCompleted,
-          sessionStatus: session?.status,
-          rawStatus: session?.rawAppointment?.status
-        });
 
         // If we have a visitId, try to load the service log
         if (hasVisitId) {
           const visitIdToUse = session.visitId || session.rawAppointment?.visitId;
-          
-          console.log("🔍 Loading service log for visitId:", visitIdToUse);
-          
+        
           try {
             const res = await apiService.getServiceLogByVisitId(visitIdToUse);
-            
-            console.log("🔍 Service log API response:", {
-              success: res?.success,
-              hasLog: !!res?.log,
-              hasReport: !!res?.report
-            });
 
             if (res?.success) {
               // Handle both response formats
               const log = res.log || res.report;
               
               if (log) {
-                console.log("✅ Found existing service log:", {
-                  logId: log.logId || log.visitId,
-                  hasChemicals: !!log.chemicalsUsed,
-                  hasAreas: !!log.treatedAreas,
-                  hasNotes: !!log.notes
-                });
 
                 // Extract logId from multiple sources
                 const extractedLogId = 
@@ -189,6 +163,23 @@ export default function InsecticideScreen({
                 
                 setLogId(extractedLogId);
                 setVisitId(extractedLogId);
+
+                // LOAD EXISTING IMAGES
+                if (log?.images && Array.isArray(log.images)) {
+  
+  // Clean and normalize image filenames
+  const cleaned = log.images
+    .map(img => {
+      if (!img) return null;
+      // Convert to string and clean
+      let v = String(img).split("?")[0].trim();
+      // Extract just the filename if it's a full URL
+      if (v.includes("/")) v = v.substring(v.lastIndexOf("/") + 1);
+      return v;
+    })
+    .filter(Boolean);
+  setExistingImages(cleaned);
+}
                 
                 // Normalize chemicals from either format
                 const chemicalsFromLog = log.chemicalsUsed || log.chemicals_used || [];
@@ -200,17 +191,14 @@ export default function InsecticideScreen({
                   };
                 }).filter(c => c?.name);
                 
-                console.log("📋 Loading chemicals:", normalizedChemicals);
                 setSelectedChemicals(normalizedChemicals);
                 
                 // Get notes from either format
                 const notesFromLog = log.notes || "";
-                console.log("📋 Loading notes:", notesFromLog);
                 setNotes(notesFromLog);
                 
                 // Get treated areas from either format
                 const areasFromLog = log.treatedAreas || log.treated_areas || [];
-                console.log("📋 Loading treated areas:", areasFromLog.length);
                 setTreatedAreas(areasFromLog);
                 
                 // Set service as started and completed for edit mode
@@ -228,7 +216,8 @@ export default function InsecticideScreen({
                 
                 // Calculate elapsed time
                 if (log.duration) {
-                  setElapsedTime(log.duration);
+                  setStoredDuration(log.duration);
+                  setElapsedTime(log.duration * 1000); // Convert seconds to ms for display
                 } else if (startTime) {
                   setElapsedTime(Date.now() - new Date(startTime).getTime());
                 }
@@ -242,10 +231,9 @@ export default function InsecticideScreen({
                   
                 if (logInsecticideDetails && !insecticideDetailsFromSession) {
                   setInsecticideDetails(logInsecticideDetails);
-                  setServiceTypeLabel(`Insecticide - ${logInsecticideDetails}`);
+                  setServiceTypeLabel(`${i18n.t("serviceTypes.insecticide")} - ${logInsecticideDetails}`);
                 }
-                
-                console.log("✅ Service loaded in edit mode");
+              
               }
             }
           } catch (logError) {
@@ -297,7 +285,6 @@ export default function InsecticideScreen({
           if (!appt || cancelled) return;
 
           if (appt.status === "completed" && appt.visitId) {
-            console.log("✏️ Restoring completed insecticide visit from database", appt);
 
             setServiceStarted(true);
             setServiceCompleted(true);
@@ -321,9 +308,9 @@ export default function InsecticideScreen({
 
   const showStartServiceAlert = () => {
     Alert.alert(
-      "Start Service Required",
-      "Please start the service before entering data.",
-      [{ text: "OK" }]
+      i18n.t("technician.specialServices.alerts.startServiceRequired"),
+      i18n.t("technician.specialServices.alerts.startServiceMessage"),
+      [{ text: i18n.t("technician.common.ok") }]
     );
   };
 
@@ -336,16 +323,8 @@ export default function InsecticideScreen({
         dateFrom: session?.appointmentDate,
         dateTo: session?.appointmentDate
       });
-      
-      console.log("🔍 Looking for insecticide appointment:", {
-        customerId: customer?.customerId,
-        date: session?.appointmentDate,
-        time: session?.appointmentTime,
-        appointmentsCount: appointments?.length
-      });
 
       if (!appointments || !Array.isArray(appointments)) {
-        console.log("⚠️ No appointments returned");
         return;
       }
 
@@ -370,25 +349,9 @@ export default function InsecticideScreen({
         const dateMatch = apptDate === session?.appointmentDate;
         const timeMatch = apptTime === session?.appointmentTime;
         const serviceMatch = appt.service_type === 'insecticide';
-        
-        console.log("📅 Appointment match check:", {
-          customer_id: appt.customer_id,
-          expected_customer: customer?.customerId,
-          customerMatch,
-          apptDate,
-          sessionDate: session?.appointmentDate,
-          dateMatch,
-          apptTime,
-          sessionTime: session?.appointmentTime,
-          timeMatch,
-          service_type: appt.service_type,
-          serviceMatch
-        });
-        
+
         return customerMatch && dateMatch && timeMatch && serviceMatch;
       });
-
-      console.log("✅ Found matching appointment:", matchingAppointment);
 
       if (matchingAppointment) {
         // Check ALL possible fields for insecticide details
@@ -400,26 +363,21 @@ export default function InsecticideScreen({
           matchingAppointment.treatment_details ||
           matchingAppointment.notes;
         
-        console.log("🔍 Extracted insecticide details:", details);
-        
         if (details) {
           setInsecticideDetails(details);
-          setServiceTypeLabel(`Insecticide - ${details}`);
-          console.log("✅ Set insecticide details from database:", details);
+          setServiceTypeLabel(`${i18n.t("serviceTypes.insecticide")} - ${details}`);
         } else {
-          console.log("⚠️ No insecticide details found in database");
           setInsecticideDetails('');
-          setServiceTypeLabel('Insecticide');
+          setServiceTypeLabel(i18n.t("serviceTypes.insecticide"));
         }
       } else {
-        console.log("❌ No matching insecticide appointment found in database");
         setInsecticideDetails('');
-        setServiceTypeLabel('Insecticide');
+        setServiceTypeLabel(i18n.t("serviceTypes.insecticide"));
       }
     } catch (error) {
       console.error("Failed to fetch insecticide details:", error);
       setInsecticideDetails('');
-      setServiceTypeLabel('Insecticide');
+      setServiceTypeLabel(i18n.t("serviceTypes.insecticide"));
     }
   };
 
@@ -453,22 +411,16 @@ export default function InsecticideScreen({
   const startService = () => {
     // If we already have data loaded (edit mode), just enable editing
     if (selectedChemicals.length > 0 || treatedAreas.length > 0 || notes) {
-      console.log("✏️ Entering edit mode with existing data:", {
-        chemicals: selectedChemicals.length,
-        areas: treatedAreas.length,
-        hasNotes: !!notes
-      });
-      
       Alert.alert(
-        "Edit Service",
-        "You are entering edit mode. All existing data will be preserved.",
+        i18n.t("technician.specialServices.alerts.editMode") || "Edit Service",
+        i18n.t("technician.specialServices.alerts.editModeMessage") || "You are entering edit mode. All existing data will be preserved.",
         [
           { 
-            text: "Cancel", 
+            text: i18n.t("common.cancel"), 
             style: "cancel" 
           },
           { 
-            text: "Edit Service", 
+            text: i18n.t("technician.specialServices.actionButtons.updateService") || "Edit Service", 
             style: "default",
             onPress: () => {
               setServiceStarted(true);
@@ -480,8 +432,9 @@ export default function InsecticideScreen({
                 setServiceStartTime(Date.now() - 3600000); // 1 hour ago
               }
               
-              Alert.alert('Edit Mode', 
-                'You can now edit the service data.'
+              Alert.alert(
+                i18n.t("technician.specialServices.alerts.editMode") || 'Edit Mode', 
+                i18n.t("technician.specialServices.alerts.editModeMessage") || 'You can now edit the service data.'
               );
             }
           }
@@ -495,15 +448,15 @@ export default function InsecticideScreen({
         (session?.rawAppointment?.status === "completed" && session?.rawAppointment?.visitId)) {
       
       Alert.alert(
-        "Load Completed Service",
-        "This service has already been completed. Would you like to load the existing data for editing?",
+        i18n.t("technician.common.info") || "Load Completed Service",
+        i18n.t("technician.specialServices.alerts.dataNotReadyMessage") || "This service has already been completed. Would you like to load the existing data for editing?",
         [
           { 
-            text: "Cancel", 
+            text: i18n.t("common.cancel"), 
             style: "cancel" 
           },
           { 
-            text: "Load & Edit", 
+            text: i18n.t("technician.specialServices.actionButtons.loadData") || "Load & Edit", 
             style: "default",
             onPress: async () => {
               try {
@@ -537,12 +490,14 @@ export default function InsecticideScreen({
                   setServiceCompleted(true);
                   setShowGenerateReport(true);
                   
-                  Alert.alert('Edit Mode', 
-                    'Service data loaded. You can now edit.'
+                  Alert.alert(
+                    i18n.t("technician.specialServices.alerts.editMode") || 'Edit Mode', 
+                    i18n.t("technician.specialServices.alerts.dataNotReady") || 'Service data loaded. You can now edit.'
                   );
                 } else {
-                  Alert.alert('Error', 
-                    'Could not load existing service data. Starting new service instead.'
+                  Alert.alert(
+                    i18n.t("common.error"), 
+                    i18n.t("technician.specialServices.errors.noDataFound") || 'Could not load existing service data. Starting new service instead.'
                   );
                   // Start fresh if loading fails
                   const start = Date.now();
@@ -552,7 +507,10 @@ export default function InsecticideScreen({
                 }
               } catch (error) {
                 console.error("Failed to load service data:", error);
-                Alert.alert('Error', 'Failed to load service data');
+                Alert.alert(
+                  i18n.t("common.error"), 
+                  i18n.t("technician.specialServices.errors.noDataFound") || 'Failed to load service data'
+                );
               } finally {
                 setLoading(false);
               }
@@ -570,21 +528,35 @@ export default function InsecticideScreen({
     setServiceCompleted(false);
     setHasGeneratedReport(false);
     
-    Alert.alert('Service Started', 
-      `${getInsecticideDetailsLabel() ? `Insecticide - ${getInsecticideDetailsLabel()}` : 'Insecticide'} service started for ${customer?.customerName || 'customer'}`
+    Alert.alert(
+      i18n.t("technician.specialServices.alerts.serviceStarted") || 'Service Started', 
+      `${getInsecticideDetailsLabel() ? `${i18n.t("serviceTypes.insecticide")} - ${getInsecticideDetailsLabel()}` : i18n.t("serviceTypes.insecticide")} ${i18n.t("technician.specialServices.alerts.serviceStartedMessage", { 
+        name: customer?.customerName || i18n.t("technician.common.customer") 
+      })}`
     );
 };
 
+  const buildImageUrl = (img) => {
+    if (!img) return null;
+
+    let value = String(img).trim().replace(/[{}"]/g, "");
+
+    // remove query strings
+    value = value.split("?")[0];
+
+    // if contains full URL keep only filename
+    if (value.includes("/")) {
+      value = value.substring(value.lastIndexOf("/") + 1);
+    }
+
+    const base = apiService.API_BASE_URL.replace("/api", "");
+
+    return `${base}/uploads/${value}`;
+  };
+
   const markAppointmentCompleted = async (appointmentId, visitId, appointment) => {
       if (!appointmentId) return;
-  
-      console.log("💾 Marking appointment completed:", {
-        appointmentId,
-        visitId,
-        // 🚨 Don't send servicePrice - technicians can't see/set it
-        // servicePrice: appointment?.service_price
-      });
-  
+
       try {
         const result = await apiService.updateAppointment({
           id: appointmentId,
@@ -600,9 +572,9 @@ export default function InsecticideScreen({
           // Check if it's a price error
           if (result?.error?.includes('Service price must be set')) {
             Alert.alert(
-              "Price Not Set",
-              "Admin has not set the service price yet. Please contact admin to set the price before completing this appointment.",
-              [{ text: "OK" }]
+              i18n.t("technician.specialServices.alerts.priceNotSet"),
+              i18n.t("technician.specialServices.alerts.priceNotSetMessage"),
+              [{ text: i18n.t("technician.common.ok") }]
             );
           }
         }
@@ -615,13 +587,17 @@ export default function InsecticideScreen({
     try {
       // Validate required fields
       if (!customer?.customerId || !technician?.id) {
-        throw new Error("Missing customer or technician information");
+        throw new Error(i18n.t("technician.specialServices.errors.missingInfo") || "Missing customer or technician information");
       }
 
-      // Format chemicals properly before sending
+      // Format chemicals properly
       const formattedChemicals = selectedChemicals.map(chem => {
         if (typeof chem === 'string') {
-          return { name: chem, concentration: '', volume: '' };
+          return { 
+            name: chem, 
+            concentration: '', 
+            volume: '' 
+          };
         }
         return {
           name: chem.name || chem.chemicalName || '',
@@ -629,31 +605,33 @@ export default function InsecticideScreen({
           volume: chem.volume || chem.volumeMl || ''
         };
       }).filter(chem => chem.name);
-      
-      // Format treated areas before sending
-      const formattedTreatedAreas = treatedAreas.map(area => ({
-        ...area,
-        id: area.id || `area_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: area.name || '',
-        chemicals: Array.isArray(area.chemicals) ? area.chemicals.map(chem => ({
-          name: chem.name || chem.chemicalName || '',
-          concentration: chem.concentration && !chem.concentration.includes('%') 
-            ? `${chem.concentration}%` 
-            : chem.concentration || '',
-          volume: chem.volume && !chem.volume.includes('ml')
-            ? `${chem.volume}ml`
-            : chem.volume || ''
-        })) : [],
-        concentrationPercent: area.concentrationPercent && !area.concentrationPercent.includes('%') 
-          ? `${area.concentrationPercent}%` 
-          : area.concentrationPercent || '',
-        volumeMl: area.volumeMl && !area.volumeMl.includes('ml')
-          ? `${area.volumeMl}ml`
-          : area.volumeMl || '',
-        areaNotes: area.areaNotes || ''
-      }));
 
-      // Create stableVisitId BEFORE using it
+      // Format treated areas
+      const formattedTreatedAreas = treatedAreas.map(area => {
+        const areaChemicals = Array.isArray(area.chemicals) 
+          ? area.chemicals.map(chem => {
+              if (typeof chem === 'string') {
+                return { name: chem, concentration: '', volume: '' };
+              }
+              return {
+                name: chem.name || chem.chemicalName || '',
+                concentration: chem.concentration || chem.concentrationPercent || '',
+                volume: chem.volume || chem.volumeMl || ''
+              };
+            }).filter(chem => chem.name)
+          : [];
+
+        return {
+          id: area.id || `area_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: area.name || '',
+          chemicals: areaChemicals,
+          concentrationPercent: area.concentrationPercent || '',
+          volumeMl: area.volumeMl || '',
+          areaNotes: area.areaNotes || ''
+        };
+      });
+
+      // Create stableVisitId
       const stableVisitId =
         session?.visitId ||
         logId ||
@@ -661,50 +639,81 @@ export default function InsecticideScreen({
 
       const finalLogId = logId || stableVisitId;
       
-      // Use finalLogId instead of stableLogId
-      console.log("✅ Using logId for completion:", finalLogId);
-
-      // Calculate effective start time (fallback if not set)
-      const effectiveStartTime = serviceStartTime || Date.now() - 3600000; // 1 hour ago if not set
-
-       const insecticideDetails = getInsecticideDetailsLabel();
-    
-    console.log("📤 SAVING insecticide details:", {
-      fromGetLabel: insecticideDetails,
-      fromSession: session?.insecticideDetails,
-      fromAppointment: session?.appointment?.insecticideDetails
-    });
-
-    const payload = {
-      logId: finalLogId,
-      visitId: stableVisitId,
-      customerId: customer.customerId,
-      customerName: customer.customerName,
-      technicianId: technician.id,
-      technicianName: `${technician.firstName} ${technician.lastName}`,
-      serviceType: 'insecticide',
+      // Calculate duration with fallbacks
+      let durationSeconds = 0;
       
-      // 🚨 CRITICAL: Send insecticide details SEPARATELY from notes
-      insecticideDetails: insecticideDetails,  // This should NOT be the service notes
-      insecticide_details: insecticideDetails, // Send both formats
+      if (serviceStartTime) {
+        const now = Date.now();
+        const startTime = serviceStartTime;
+        const diffMs = now - startTime;
+        durationSeconds = Math.floor(diffMs / 1000);
+      } else {
+        durationSeconds = 3600; // Default to 1 hour
+      }
       
-      serviceStartTime: new Date(effectiveStartTime).toISOString(),
-      serviceEndTime: new Date().toISOString(),
-      duration: Date.now() - effectiveStartTime,
-      chemicalsUsed: formattedChemicals,
-      treatedAreas: formattedTreatedAreas,
-      notes: notes || '',  // Service notes are separate
-      completedAt: new Date().toISOString(),
-    };
+      if (isNaN(durationSeconds) || durationSeconds <= 0) {
+        durationSeconds = 3600;
+      }
 
-    console.log("📤 PAYLOAD CHECK - insecticide vs notes:", {
-      insecticideDetails: payload.insecticideDetails,
-      notes: payload.notes,
-      areDifferent: payload.insecticideDetails !== payload.notes
-    });
+      const insecticideDetails = getInsecticideDetailsLabel();
 
-    const res = await apiService.logService(payload);
-    if (!res?.success) throw new Error('Save failed');
+      // 🔥 CRITICAL: Use snake_case for chemicals_used and treated_areas
+      const payload = {
+        logId: finalLogId,
+        visitId: stableVisitId,
+        customerId: customer.customerId,
+        customerName: customer.customerName,
+        technicianId: technician.id,
+        technicianName: `${technician.firstName} ${technician.lastName}`,
+        serviceType: 'insecticide',
+        
+        // Send insecticide details in all formats
+        insecticideDetails: insecticideDetails,
+        insecticide_details: insecticideDetails,
+        
+        serviceStartTime: serviceStartTime ? new Date(serviceStartTime).toISOString() : new Date().toISOString(),
+        serviceEndTime: new Date().toISOString(),
+        duration: durationSeconds,
+        
+        // 🔥 CHANGE: Use chemicals_ed (snake_case) not chemicalsUsed
+        chemicals_used: formattedChemicals,
+        
+        // 🔥 CHANGE: Use treated_areas (snake_case) not treatedAreas
+        treated_areas: formattedTreatedAreas,
+        
+        notes: notes || '',
+        completedAt: new Date().toISOString(),
+      };
+      const formData = new FormData();
+
+      // 🔥 FIX: Properly stringify arrays/objects
+      Object.keys(payload).forEach(key => {
+        const value = payload[key];
+
+        if (key === 'chemicals_used' || key === 'treated_areas') {
+          formData.append(key, JSON.stringify(value));
+        } else if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      });
+
+      reportImages.forEach((img, index) => {
+        formData.append("images", {
+          uri: img.uri,
+          name: img.fileName || `photo_${Date.now()}_${index}.jpg`,
+          type: "image/jpeg"
+        });
+      });
+      
+      if (existingImages.length > 0) {
+        formData.append("existingImages", JSON.stringify(existingImages));
+      }
+
+      const res = await apiService.submitServiceLog(formData);
+
+      if (!res?.success) throw new Error(i18n.t("technician.specialServices.errors.saveFailed") || 'Save failed');
 
       // MARK APPOINTMENT AS COMPLETED
       if (session?.appointmentId) {
@@ -716,50 +725,44 @@ export default function InsecticideScreen({
       }
 
       // Update state
-      setLogId(finalLogId); // Save the logId to state
+      setLogId(finalLogId);
       setVisitId(stableVisitId);
       setServiceCompleted(true);
       setShowGenerateReport(true);
       setHasGeneratedReport(false);
       
       Alert.alert(
-        'Service Completed', 
-        'Data saved successfully.\n\nYou can now generate a report.',
-        [
-          { 
-            text: "OK",
-            onPress: () => {
-              // User can now generate report
-            }
-          }
-        ]
+        i18n.t("technician.specialServices.alerts.serviceCompleted") || 'Service Completed', 
+        i18n.t("technician.specialServices.alerts.serviceCompletedMessage") || 'Data saved successfully.\n\nYou can now generate a report.',
+        [{ text: i18n.t("technician.common.ok") }]
       );
       
     } catch (e) {
       console.error("❌ Complete service error:", e);
-      Alert.alert('Error', e.message || 'Failed to complete service');
+      Alert.alert(
+        i18n.t("common.error"), 
+        e.message || i18n.t("technician.specialServices.errors.saveFailed") || 'Failed to complete service'
+      );
     }
   };
 
   const updateService = async () => {
     try {
-      console.log("🔄 Updating insecticide service...");
-      
       // Validate required fields
       if (!customer?.customerId || !technician?.id) {
-        throw new Error("Missing customer or technician information");
+        throw new Error(i18n.t("technician.specialServices.errors.missingInfo") || "Missing customer or technician information");
       }
       
-      // Use logId, visitId, or create a new stable ID
       const stableLogId = logId || visitId || session?.visitId || getStableLogId();
       
       if (!stableLogId) {
-        Alert.alert("Error", "Missing service ID. Cannot update.");
+        Alert.alert(
+          i18n.t("common.error"), 
+          i18n.t("technician.specialServices.errors.missingServiceId") || "Missing service ID. Cannot update."
+        );
         return;
       }
-      
-      console.log("✅ Using logId for update:", stableLogId);
-      
+      // Format chemicals properly
       const formattedChemicals = selectedChemicals.map(chem => {
         if (typeof chem === 'string') {
           return { name: chem, concentration: '', volume: '' };
@@ -771,31 +774,47 @@ export default function InsecticideScreen({
         };
       }).filter(chem => chem.name);
     
+      // Format treated areas
       const formattedTreatedAreas = treatedAreas.map(area => ({
-        ...area,
         id: area.id || `area_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: area.name || '',
         chemicals: Array.isArray(area.chemicals) ? area.chemicals.map(chem => ({
-          name: chem.name || chem.chemicalName || '',
-          concentration: chem.concentration && !chem.concentration.includes('%') 
-            ? `${chem.concentration}%` 
-            : chem.concentration || '',
-          volume: chem.volume && !chem.volume.includes('ml')
-            ? `${chem.volume}ml`
-            : chem.volume || ''
+          name: chem.name || '',
+          concentration: chem.concentration || '',
+          volume: chem.volume || ''
         })) : [],
-        concentrationPercent: area.concentrationPercent && !area.concentrationPercent.includes('%') 
-          ? `${area.concentrationPercent}%` 
-          : area.concentrationPercent || '',
-        volumeMl: area.volumeMl && !area.volumeMl.includes('ml')
-          ? `${area.volumeMl}ml`
-          : area.volumeMl || '',
+        concentrationPercent: area.concentrationPercent || '',
+        volumeMl: area.volumeMl || '',
         areaNotes: area.areaNotes || ''
       }));
       
       const effectiveStartTime = serviceStartTime || Date.now() - 3600000;
       const stableVisitId = visitId || session?.visitId || stableLogId;
       
+      // Calculate duration with fallbacks
+      let durationSeconds = 0;
+      
+      if (storedDuration && !isNaN(storedDuration) && storedDuration > 0) {
+        durationSeconds = Number(storedDuration);
+      } else if (serviceStartTime) {
+        const now = Date.now();
+        const startTimeMs = typeof serviceStartTime === 'number' 
+          ? serviceStartTime 
+          : new Date(serviceStartTime).getTime();
+        
+        if (!isNaN(startTimeMs) && startTimeMs > 0) {
+          const diffMs = now - startTimeMs;
+          durationSeconds = Math.floor(diffMs / 1000);
+        }
+      }
+      
+      if (!durationSeconds || isNaN(durationSeconds) || durationSeconds <= 0) {
+        durationSeconds = 3600;
+      }
+      
+      durationSeconds = Number(durationSeconds);
+      
+      // 🔥 CRITICAL: Use snake_case for chemicals_used and treated_areas
       const payload = {
         logId: stableLogId,
         visitId: stableVisitId,
@@ -804,39 +823,70 @@ export default function InsecticideScreen({
         technicianId: technician.id,
         technicianName: `${technician.firstName} ${technician.lastName}`,
         serviceType: 'insecticide',
-
-        insecticideDetails:
-          getInsecticideDetailsLabel() ||
+        
+        // Send insecticide details in all formats
+        insecticideDetails: getInsecticideDetailsLabel() ||
           session?.rawAppointment?.otherPestName ||
           session?.rawAppointment?.insecticideDetails ||
+          session?.rawAppointment?.insecticide_details ||
           session?.rawAppointment?.other_pest_name ||
           '',
+        insecticide_details: getInsecticideDetailsLabel() ||
+          session?.rawAppointment?.otherPestName ||
+          session?.rawAppointment?.insecticideDetails ||
+          session?.rawAppointment?.insecticide_details ||
+          session?.rawAppointment?.other_pest_name ||
+          '',
+        
         serviceStartTime: new Date(effectiveStartTime).toISOString(),
-        chemicalsUsed: formattedChemicals,
-        treatedAreas: formattedTreatedAreas,
+        serviceEndTime: new Date().toISOString(),
+        duration: durationSeconds,
+        
+        // 🔥 CHANGE: Use chemicals_used (snake_case) not chemicalsUsed
+        chemicals_used: formattedChemicals,
+        
+        // 🔥 CHANGE: Use treated_areas (snake_case) not treatedAreas
+        treated_areas: formattedTreatedAreas,
+        
         notes: notes || '',
         updatedAt: new Date().toISOString(),
       };
-      
-      console.log("📤 Updating service with payload:", {
-        customerId: payload.customerId,
-        technicianId: payload.technicianId,
-        serviceType: payload.serviceType,
-        visitId: payload.visitId,
-        logId: payload.logId,
-        chemicalsCount: payload.chemicalsUsed.length,
-        areasCount: payload.treatedAreas.length,
-        insecticideDetails: payload.insecticideDetails
+
+      const formData = new FormData();
+
+      // 🔥 FIX: Properly stringify arrays/objects
+      Object.keys(payload).forEach(key => {
+        const value = payload[key];
+
+        if (key === 'chemicals_used' || key === 'treated_areas') {
+          formData.append(key, JSON.stringify(value));
+        } else if (key === 'duration') {
+          formData.append(key, String(value));
+        } else if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      });
+
+      reportImages.forEach((img, index) => {
+        formData.append("images", {
+          uri: img.uri,
+          name: img.fileName || `photo_${Date.now()}_${index}.jpg`,
+          type: "image/jpeg"
+        });
       });
       
-      const res = await apiService.logService(payload);
+      if (existingImages.length > 0) {
+        formData.append("existingImages", JSON.stringify(existingImages));
+      }
+
+      const res = await apiService.submitServiceLog(formData);
       
       if (!res?.success) {
-        throw new Error(res?.error || 'Update failed');
+        throw new Error(res?.error || i18n.t("technician.specialServices.errors.updateFailed") || 'Update failed');
       }
-      
-      console.log("✅ Service update successful");
-      
+
       setServiceCompleted(true);
       setHasGeneratedReport(false);
       
@@ -849,12 +899,11 @@ export default function InsecticideScreen({
       }
       
       Alert.alert(
-        'Service Updated', 
-        'Data saved successfully!\n\n' +
-        'You will be navigated to Report Screen automatically.',
+        i18n.t("technician.specialServices.alerts.serviceUpdated") || 'Service Updated', 
+        i18n.t("technician.specialServices.alerts.serviceUpdatedMessage") || 'Data saved successfully!\n\nYou will be navigated to Report Screen automatically.',
         [
           { 
-            text: 'OK', 
+            text: i18n.t("technician.common.ok"), 
             onPress: () => {
               const updatedContext = buildInsecticideReportContext(stableVisitId);
               onGenerateReport({
@@ -869,8 +918,62 @@ export default function InsecticideScreen({
       
     } catch (e) {
       console.error("❌ Update service error:", e);
-      Alert.alert('Error', e.message || 'Failed to update service');
+      Alert.alert(
+        i18n.t("common.error"), 
+        e.message || i18n.t("technician.specialServices.errors.updateFailed") || 'Failed to update service'
+      );
     }
+  };
+
+  const openImageChooser = () => {
+    Alert.alert(
+      i18n.t("technician.specialServices.photoUpload.add") || "Add Photo",
+      i18n.t("common.chooseOption") || "Choose image source",
+      [
+        {
+          text: i18n.t("components.chemicalsDropdown.camera") || "Camera",
+          onPress: async () => {
+            const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+            if (permission.status !== "granted") {
+              Alert.alert("Permission required", "Camera permission is required.");
+              return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ["images"],
+              quality: 0.7,
+            });
+
+            if (!result.canceled) {
+              setReportImages(prev => [...prev, ...result.assets]);
+            }
+          },
+        },
+        {
+          text: i18n.t("components.chemicalsDropdown.gallery") || "Gallery",
+          onPress: async () => {
+            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+            if (permission.status !== "granted") {
+              Alert.alert("Permission required", "Gallery permission is required.");
+              return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              allowsMultipleSelection: true,
+              quality: 0.7,
+            });
+
+            if (!result.canceled) {
+              setReportImages(prev => [...prev, ...result.assets]);
+            }
+          },
+        },
+        { text: i18n.t("common.cancel"), style: "cancel" },
+      ]
+    );
   };
 
   const buildInsecticideReportContext = (visitIdOverride) => {
@@ -879,33 +982,30 @@ export default function InsecticideScreen({
     
     // Get the CORRECT insecticide details
     const insecticideDetails = getInsecticideDetailsLabel();
-    
-    console.log("📤 Report context - insecticide details:", {
-      insecticideDetails,
-      notes: notes,
-      areSame: insecticideDetails === notes
-    });
-    
+
     return {
       date: date.toLocaleDateString(),
       duration: formatTime(elapsedTime),
-      customerName: customer?.customerName || 'Unknown Customer',
-      technicianName: technician ? `${technician.firstName} ${technician.lastName}` : 'Unknown Technician',
+      customerName: customer?.customerName || i18n.t("technician.common.unknown") || 'Unknown Customer',
+      technicianName: technician ? `${technician.firstName} ${technician.lastName}` : i18n.t("technician.common.unknown") || 'Unknown Technician',
       serviceType: 'insecticide',
       serviceTypeName: insecticideDetails 
-        ? `Insecticide - ${insecticideDetails}`
-        : 'Insecticide Service',
+        ? `${i18n.t("serviceTypes.insecticide")} - ${insecticideDetails}`
+        : i18n.t("technician.insecticide.title") || 'Insecticide Service',
       visitId: effectiveVisitId,
       
-      // 🚨 CRITICAL: Send insecticide details SEPARATELY
+      // 🚨 CRITICAL: Send insecticide details in ALL formats
       insecticideDetails: insecticideDetails,
       insecticide_details: insecticideDetails,
+      details: insecticideDetails,
       
       // Send notes SEPARATELY
       notes: notes,
       
-      chemicalsUsed: selectedChemicals,
-      treatedAreas: treatedAreas,
+      // 🔥 CHANGE: Use snake_case for report context too
+      chemicals_used: selectedChemicals,
+      treated_areas: treatedAreas,
+      
       serviceStartTime: serviceStartTime ? new Date(serviceStartTime).toISOString() : null,
       serviceEndTime: new Date().toISOString(),
       
@@ -915,24 +1015,22 @@ export default function InsecticideScreen({
         areasCount: treatedAreas.length,
         hasVisitId: !!effectiveVisitId,
         hasInsecticideDetails: !!insecticideDetails,
-        hasNotes: !!notes,
-        insecticideDetailsValue: insecticideDetails,
-        notesValue: notes
+        hasNotes: !!notes
       }
     };
   };
 
   const cancelWork = () => {
     Alert.alert(
-      "Cancel Service",
-      "Are you sure you want to cancel this service? All unsaved data will be lost.",
+      i18n.t("technician.specialServices.alerts.cancelServiceConfirm") || "Cancel Service",
+      i18n.t("technician.specialServices.alerts.unsavedChangesMessage") || "Are you sure you want to cancel this service? All unsaved data will be lost.",
       [
         { 
-          text: "No, Continue", 
+          text: i18n.t("technician.specialServices.alerts.continueService") || "No, Continue", 
           style: "cancel" 
         },
         { 
-          text: "Yes, Cancel", 
+          text: i18n.t("technician.specialServices.alerts.cancelServiceConfirm") || "Yes, Cancel", 
           style: "destructive",
           onPress: () => {
             if (timerRef.current) {
@@ -949,11 +1047,7 @@ export default function InsecticideScreen({
             setNotes('');
             setHasGeneratedReport(false);
             
-            Alert.alert(
-              "Service Cancelled", 
-              "Service cancelled. No data was saved.",
-              [{ text: "OK" }]
-            );
+            onBack();
           }
         }
       ]
@@ -975,12 +1069,12 @@ export default function InsecticideScreen({
                 onBack();
               } else if (serviceStarted) {
                 Alert.alert(
-                  "Unsaved Changes",
-                  "You have an active service. Do you want to cancel it?",
+                  i18n.t("technician.specialServices.alerts.unsavedChanges") || "Unsaved Changes",
+                  i18n.t("technician.specialServices.alerts.unsavedChangesMessage") || "You have an active service. Do you want to cancel it?",
                   [
-                    { text: "Continue Service", style: "cancel" },
+                    { text: i18n.t("technician.specialServices.alerts.continueService") || "Continue Service", style: "cancel" },
                     { 
-                      text: "Cancel Service", 
+                      text: i18n.t("technician.specialServices.alerts.cancelServiceConfirm") || "Cancel Service", 
                       style: "destructive",
                       onPress: () => {
                         cancelWork();
@@ -995,17 +1089,19 @@ export default function InsecticideScreen({
             }}
           >
             <MaterialIcons name="arrow-back" size={24} color="#fff" />
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.backText}>{i18n.t("technician.common.back")}</Text>
           </TouchableOpacity>
 
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>
               {getInsecticideDetailsLabel() 
-                ? `Insecticide - ${getInsecticideDetailsLabel()}`
-                : 'Insecticide Service'}
+                ? `${i18n.t("serviceTypes.insecticide")} - ${getInsecticideDetailsLabel()}`
+                : i18n.t("technician.insecticide.title") || 'Insecticide Service'}
             </Text>
             <Text style={styles.headerSubtitle}>
-              {serviceStarted ? 'Service in Progress' : 'Service Setup'}
+              {serviceStarted 
+                ? i18n.t("technician.specialServices.serviceInProgress") || 'Service in Progress'
+                : i18n.t("technician.specialServices.serviceSetup") || 'Service Setup'}
             </Text>
           </View>
 
@@ -1014,7 +1110,7 @@ export default function InsecticideScreen({
             onPress={onNavigate}
           >
             <MaterialIcons name="navigation" size={20} color="#fff" />
-            <Text style={styles.navigateText}>Navigate</Text>
+            <Text style={styles.navigateText}>{i18n.t("technician.common.navigate")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -1028,7 +1124,10 @@ export default function InsecticideScreen({
                 const visitIdToLoad = visitId || session?.visitId;
                 
                 if (!visitIdToLoad) {
-                  Alert.alert('Error', 'No visit ID found to load data');
+                  Alert.alert(
+                    i18n.t("common.error"), 
+                    i18n.t("technician.specialServices.errors.noVisitId") || 'No visit ID found to load data'
+                  );
                   return;
                 }
                 
@@ -1055,20 +1154,29 @@ export default function InsecticideScreen({
                   const areasFromLog = log.treatedAreas || log.treated_areas || [];
                   setTreatedAreas(areasFromLog);
                   
-                  Alert.alert('Success', 'Service data loaded successfully');
+                  Alert.alert(
+                    i18n.t("technician.common.success"), 
+                    i18n.t("technician.specialServices.alerts.serviceUpdated") || 'Service data loaded successfully'
+                  );
                 } else {
-                  Alert.alert('Error', 'No data found for this service');
+                  Alert.alert(
+                    i18n.t("common.error"), 
+                    i18n.t("technician.specialServices.errors.noDataFound") || 'No data found for this service'
+                  );
                 }
               } catch (error) {
                 console.error("Failed to load data:", error);
-                Alert.alert('Error', 'Failed to load service data');
+                Alert.alert(
+                  i18n.t("common.error"), 
+                  i18n.t("technician.specialServices.errors.noDataFound") || 'Failed to load service data'
+                );
               } finally {
                 setLoading(false);
               }
             }}
           >
             <MaterialIcons name="cloud-download" size={20} color="#fff" />
-            <Text style={styles.secondaryButtonText}>Load Service Data</Text>
+            <Text style={styles.secondaryButtonText}>{i18n.t("technician.specialServices.actionButtons.loadData") || 'Load Service Data'}</Text>
           </TouchableOpacity>
         )}
 
@@ -1090,7 +1198,7 @@ export default function InsecticideScreen({
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <MaterialIcons name="person" size={20} color="#1f9c8b" />
-            <Text style={styles.cardTitle}>Customer Information</Text>
+            <Text style={styles.cardTitle}>{i18n.t("technician.specialServices.customerInfo")}</Text>
           </View>
           
           <View style={styles.customerInfo}>
@@ -1099,28 +1207,35 @@ export default function InsecticideScreen({
             <View style={styles.infoRow}>
               <MaterialIcons name="schedule" size={16} color="#666" />
               <Text style={styles.infoText}>
-                Appointment: {session?.appointmentTime || 'N/A'}
+                {i18n.t("technician.specialServices.appointment", { time: session?.appointmentTime || 'N/A' })}
               </Text>
             </View>
             
             <View style={styles.infoRow}>
               <MaterialIcons name="person-pin" size={16} color="#666" />
               <Text style={styles.infoText}>
-                Technician: {technician?.firstName} {technician?.lastName}
+                {i18n.t("technician.specialServices.technician", { 
+                  firstName: technician?.firstName, 
+                  lastName: technician?.lastName 
+                })}
               </Text>
             </View>
             
             <View style={styles.infoRow}>
               <MaterialIcons name="location-on" size={16} color="#666" />
               <Text style={styles.infoText}>
-                {customer?.address || 'No address available'}
+                {customer?.address || i18n.t("technician.common.noAddress") || 'No address available'}
               </Text>
             </View>
             
             <View style={styles.infoRow}>
               <MaterialIcons name="medical-services" size={16} color="#666" />
               <Text style={styles.serviceTypeText}>
-                Service: <Text style={styles.serviceTypeValue}>{serviceTypeLabel}</Text>
+                {i18n.t("technician.specialServices.service")} <Text style={styles.serviceTypeValue}>
+                  {getInsecticideDetailsLabel() 
+                    ? `${i18n.t("serviceTypes.insecticide")} - ${getInsecticideDetailsLabel()}`
+                    : i18n.t("serviceTypes.insecticide")}
+                </Text>
               </Text>
             </View>
           </View>
@@ -1130,8 +1245,8 @@ export default function InsecticideScreen({
             <View style={styles.warningCard}>
               <MaterialIcons name="info" size={20} color="#ff9800" />
               <Text style={styles.warningText}>
-                This insecticide appointment doesn't have specific details. 
-                Please contact admin or specify the treatment in your notes below.
+                {i18n.t("technician.insecticide.warning.noDetails") || 
+                  "This insecticide appointment doesn't have specific details. Please contact admin or specify the treatment in your notes below."}
               </Text>
             </View>
           )}
@@ -1140,7 +1255,7 @@ export default function InsecticideScreen({
         {/* SERVICE STATUS INDICATOR */}
         {serviceStarted && (
           <View style={styles.statusCard}>
-            <Text style={styles.sectionTitle}>Service Progress</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.serviceProgress")}</Text>
             <View style={styles.progressContainer}>
               <View style={styles.progressStep}>
                 <View style={[
@@ -1154,7 +1269,7 @@ export default function InsecticideScreen({
                 <Text style={[
                   styles.progressLabel,
                   serviceStarted && styles.progressLabelActive
-                ]}>Started</Text>
+                ]}>{i18n.t("technician.specialServices.progress.started")}</Text>
               </View>
               
               <View style={[
@@ -1174,7 +1289,7 @@ export default function InsecticideScreen({
                 <Text style={[
                   styles.progressLabel,
                   serviceCompleted && styles.progressLabelActive
-                ]}>Completed</Text>
+                ]}>{i18n.t("technician.specialServices.progress.completed")}</Text>
               </View>
             </View>
           </View>
@@ -1184,7 +1299,7 @@ export default function InsecticideScreen({
         <View style={styles.sectionContainer}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="science" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Chemicals Used</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.chemicalsUsed")}</Text>
           </View>
           
           <View style={[
@@ -1195,7 +1310,10 @@ export default function InsecticideScreen({
               selectedChemicals={selectedChemicals}
               onChemicalsChange={(newChemicals) => {
                 if (!serviceStarted) {
-                  Alert.alert("Start Service Required", "Please start the service before selecting chemicals.");
+                  Alert.alert(
+                    i18n.t("technician.specialServices.alerts.startServiceRequired"),
+                    i18n.t("technician.specialServices.alerts.startServiceMessage")
+                  );
                   return;
                 }
                 setSelectedChemicals(newChemicals);
@@ -1204,7 +1322,7 @@ export default function InsecticideScreen({
               editable={serviceStarted}
             />
             {!serviceStarted && (
-              <Text style={styles.disabledHint}>Start service to enable</Text>
+              <Text style={styles.disabledHint}>{i18n.t("technician.specialServices.startHint")}</Text>
             )}
           </View>
         </View>
@@ -1213,7 +1331,7 @@ export default function InsecticideScreen({
         <View style={styles.sectionContainer}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="layers" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Treated Areas</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.treatedAreas")}</Text>
           </View>
 
           {/* Add Area Input */}
@@ -1223,7 +1341,7 @@ export default function InsecticideScreen({
                 styles.areaInput,
                 !serviceStarted && styles.disabledInput
               ]}
-              placeholder="Enter area name (e.g. Bathroom)"
+              placeholder={i18n.t("technician.specialServices.areaPlaceholder")}
               placeholderTextColor="#999"
               value={areaNameInput}
               onChangeText={setAreaNameInput}
@@ -1254,7 +1372,7 @@ export default function InsecticideScreen({
               }}
             >
               <MaterialIcons name="add" size={20} color="#fff" />
-              <Text style={styles.addAreaButtonText}>Add</Text>
+              <Text style={styles.addAreaButtonText}>{i18n.t("technician.specialServices.add")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1279,7 +1397,7 @@ export default function InsecticideScreen({
                   }}
                 >
                   <MaterialIcons name="info-outline" size={20} color="#fff" />
-                  <Text style={styles.areaActionText}>Details</Text>
+                  <Text style={styles.areaActionText}>{i18n.t("technician.specialServices.areaDetails.title")}</Text>
                 </TouchableOpacity>
               )}
             >
@@ -1296,7 +1414,7 @@ export default function InsecticideScreen({
                   {a.chemicals && a.chemicals.length > 0 ? (
                     <View style={styles.areaChemicalsPreview}>
                       <Text style={styles.areaChemicalsCount}>
-                        {a.chemicals.length} chemical{a.chemicals.length > 1 ? 's' : ''} used
+                        {a.chemicals.length} {i18n.t("technician.specialServices.chemicalsInArea")}
                       </Text>
                       <Text style={styles.areaChemicalsList}>
                         {a.chemicals.slice(0, 2).map(c => c.name).join(', ')}
@@ -1305,7 +1423,7 @@ export default function InsecticideScreen({
                     </View>
                   ) : (
                     <Text style={styles.noChemicalsText}>
-                      No chemicals added yet
+                      {i18n.t("technician.specialServices.noChemicals")}
                     </Text>
                   )}
                 </View>
@@ -1315,11 +1433,127 @@ export default function InsecticideScreen({
           ))}
         </View>
 
+        {/* PHOTO UPLOAD */}
+        <View style={{ marginTop: 20 }}>
+        
+                  {/* Title row aligned like other section headers */}
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                    <MaterialIcons name="add-a-photo" size={20} color="#1f9c8b" />
+                    <Text style={{ marginLeft: 6, fontSize: 16, fontWeight: "600", color: "#333" }}>
+                      {i18n.t("technician.specialServices.treatmentPhotos")}
+                    </Text>
+                  </View>
+
+          <TouchableOpacity
+            style={{ marginBottom: 40, marginTop: 20,alignItems: "flex-start" }}
+            onPress={() => {
+              if (!serviceStarted && !serviceCompleted) {
+                showStartServiceAlert();
+                return;
+              }
+              openImageChooser();
+            }}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons
+              name="add-a-photo"
+              size={30}
+              color={(serviceStarted || serviceCompleted)  ? "#1f9c8b" : "#ccc"}
+            />
+
+            <Text
+              style={{
+                marginTop: 6,
+                fontSize: 14,
+                fontWeight: "600",
+                color: (serviceStarted || serviceCompleted)  ? "#1f9c8b" : "#999",
+              }}
+            >
+              {reportImages.length > 0 
+                ? i18n.t("technician.specialServices.photoUpload.addMore")
+                : i18n.t("technician.specialServices.photoUpload.add")}
+            </Text>
+          </TouchableOpacity>
+
+          {(existingImages.length > 0 || reportImages.length > 0) && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {/* EXISTING IMAGES - FIXED */}
+            {existingImages.map((img, index) => {
+              // Build the full URL for the image
+              const imageUrl = buildImageUrl(img);
+
+              return (
+                <View key={`existing-${index}`} style={{ marginRight: 10, position: "relative" }}>
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={{ width: 120, height: 120, borderRadius: 10 }}
+                    resizeMode="cover"
+                    onError={(e) => console.log(`❌ Image load error for ${img}:`, e.nativeEvent.error)}
+                  />
+
+                  <TouchableOpacity
+                    style={{
+                      position: "absolute",
+                      top: -6,
+                      right: -6,
+                      backgroundColor: "#e74c3c",
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    onPress={() => {
+                      const updated = existingImages.filter((_, i) => i !== index);
+                      setExistingImages(updated);
+                    }}
+                  >
+                    <MaterialIcons name="close" size={16} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+
+            {/* NEW IMAGES */}
+            {reportImages.map((img, index) => (
+              <View key={`new-${index}`} style={{ marginRight: 10, position: "relative" }}>
+                <Image
+                  source={{ uri: img.uri }}
+                  style={{ width: 120, height: 120, borderRadius: 10 }}
+                  resizeMode="cover"
+                />
+
+                <TouchableOpacity
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -6,
+                    backgroundColor: "#e74c3c",
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  onPress={() => {
+                    const updated = reportImages.filter((_, i) => i !== index);
+                    setReportImages(updated);
+                  }}
+                >
+                  <MaterialIcons name="close" size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ))}
+
+          </ScrollView>
+          )}
+        </View>
+
         {/* SERVICE NOTES SECTION */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionTitleContainer}>
             <MaterialIcons name="notes" size={20} color="#1f9c8b" />
-            <Text style={styles.sectionTitle}>Service Notes</Text>
+            <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.serviceNotes")}</Text>
           </View>
           
           <TextInput
@@ -1337,7 +1571,7 @@ export default function InsecticideScreen({
               }
               setNotes(text);
             }}
-            placeholder="Enter service notes, observations, or special instructions..."
+            placeholder={i18n.t("technician.specialServices.notesPlaceholder")}
             placeholderTextColor="#999"
             editable={serviceStarted}
           />
@@ -1356,8 +1590,8 @@ export default function InsecticideScreen({
               <MaterialIcons name="play-arrow" size={22} color="#fff" />
               <Text style={styles.primaryButtonText}>
                 {!getInsecticideDetailsLabel() 
-                  ? 'Start Service (No Details)'
-                  : `Start ${serviceTypeLabel}`}
+                  ? i18n.t("technician.insecticide.actionButtons.startNoDetails") || 'Start Service (No Details)'
+                  : i18n.t("technician.insecticide.actionButtons.startService") || `Start ${serviceTypeLabel}`}
               </Text>
             </TouchableOpacity>
           )}
@@ -1369,7 +1603,7 @@ export default function InsecticideScreen({
                 onPress={completeService}
               >
                 <MaterialIcons name="check-circle" size={22} color="#fff" />
-                <Text style={styles.primaryButtonText}>Complete Service</Text>
+                <Text style={styles.primaryButtonText}>{i18n.t("technician.specialServices.actionButtons.completeService")}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -1377,7 +1611,7 @@ export default function InsecticideScreen({
                 onPress={cancelWork}
               >
                 <MaterialIcons name="cancel" size={20} color="#fff" />
-                <Text style={styles.cancelButtonText}>Cancel Service</Text>
+                <Text style={styles.cancelButtonText}>{i18n.t("technician.specialServices.actionButtons.cancelService")}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -1389,7 +1623,7 @@ export default function InsecticideScreen({
                 onPress={updateService}
               >
                 <MaterialIcons name="edit" size={20} color="#fff" />
-                <Text style={styles.updateButtonText}>Update Service</Text>
+                <Text style={styles.updateButtonText}>{i18n.t("technician.specialServices.actionButtons.updateService")}</Text>
               </TouchableOpacity>
 
               {!hasGeneratedReport && (
@@ -1401,29 +1635,22 @@ export default function InsecticideScreen({
                   onPress={() => {
                     if (!visitId && !logId) {
                       Alert.alert(
-                        "Data Not Ready",
-                        "Please wait a moment for the service data to be saved, or tap 'Update Service' first.",
-                        [{ text: "OK" }]
+                        i18n.t("technician.specialServices.alerts.dataNotReady"),
+                        i18n.t("technician.specialServices.alerts.dataNotReadyMessage"),
+                        [{ text: i18n.t("technician.common.ok") }]
                       );
                       return;
                     }
                     
                     setHasGeneratedReport(true);
-                    const reportContext = buildInsecticideReportContext(visitId || logId);
-                    
-                    // Debug what we're passing
-                    console.log("📤 Generating report - Context being passed:", {
-                      insecticideDetails: reportContext.insecticideDetails,
-                      serviceType: reportContext.serviceType,
-                      visitId: reportContext.visitId
-                    });
+                    const reportContext = buildInsecticideReportContext(visitId || logId);                   
                     
                     onGenerateReport(reportContext);
                   }}
                   disabled={!visitId && !logId}
                 >
                   <MaterialIcons name="description" size={20} color="#fff" />
-                  <Text style={styles.secondaryButtonText}>Generate Report</Text>
+                  <Text style={styles.secondaryButtonText}>{i18n.t("technician.specialServices.actionButtons.generateReport")}</Text>
                 </TouchableOpacity>
               )}
             </>
@@ -1433,10 +1660,10 @@ export default function InsecticideScreen({
         {/* FOOTER */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Pest - Free Technician Portal • Insecticide Module
+            {i18n.t("technician.insecticide.footer") || "Pest - Free Technician Portal • Insecticide Module"}
           </Text>
           <Text style={styles.footerCopyright}>
-            © {new Date().getFullYear()} All data is securely recorded
+            {i18n.t("technician.home.footer.copyright", { year: new Date().getFullYear() })}
           </Text>
         </View>
       </ScrollView>
@@ -1457,7 +1684,7 @@ export default function InsecticideScreen({
                   <MaterialIcons name="close" size={24} color="#666" />
                 </TouchableOpacity>
                 <Text style={styles.modalTitle}>
-                  Area Details
+                  {i18n.t("technician.specialServices.areaDetails.title")}
                 </Text>
                 <View style={{ width: 40 }} />
               </View>
@@ -1469,7 +1696,7 @@ export default function InsecticideScreen({
                 <View style={styles.areaHeaderCard}>
                   <MaterialIcons name="location-on" size={24} color="#1f9c8b" />
                   <Text style={styles.areaModalName}>
-                    {treatedAreas.find(a => a.id === activeAreaId)?.name || 'Untitled Area'}
+                    {treatedAreas.find(a => a.id === activeAreaId)?.name || i18n.t("technician.common.unknown") || 'Untitled Area'}
                   </Text>
                 </View>
 
@@ -1478,10 +1705,10 @@ export default function InsecticideScreen({
                   <View style={styles.referenceSection}>
                     <View style={styles.referenceHeader}>
                       <MaterialIcons name="science" size={18} color="#1f9c8b" />
-                      <Text style={styles.referenceTitle}>Available Chemicals</Text>
+                      <Text style={styles.referenceTitle}>{i18n.t("technician.specialServices.areaDetails.availableChemicals")}</Text>
                     </View>
                     <Text style={styles.referenceSubtitle}>
-                      Tap to add to this area:
+                      {i18n.t("technician.specialServices.areaDetails.tapToAdd")}
                     </Text>
                     <ScrollView 
                       horizontal 
@@ -1535,7 +1762,7 @@ export default function InsecticideScreen({
                 <View style={styles.areaChemicalsSection}>
                   <View style={styles.sectionTitleContainer}>
                     <MaterialIcons name="format-list-bulleted" size={18} color="#1f9c8b" />
-                    <Text style={styles.sectionTitle}>Chemicals in this Area</Text>
+                    <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.chemicalsInArea")}</Text>
                   </View>
                   
                   {(() => {
@@ -1547,10 +1774,10 @@ export default function InsecticideScreen({
                         <View style={styles.emptyState}>
                           <MaterialIcons name="science" size={40} color="#e0e0e0" />
                           <Text style={styles.emptyStateText}>
-                            No chemicals added yet
+                            {i18n.t("technician.specialServices.noChemicals")}
                           </Text>
                           <Text style={styles.emptyStateSubtext}>
-                            Tap on a chemical above to add it
+                            {i18n.t("technician.specialServices.areaDetails.tapToAdd")}
                           </Text>
                         </View>
                       );
@@ -1562,7 +1789,7 @@ export default function InsecticideScreen({
                           <View style={styles.chemicalNameContainer}>
                             <MaterialIcons name="water-drop" size={16} color="#1f9c8b" />
                             <Text style={styles.chemicalItemName}>
-                              {chemical.name || `Chemical ${chemIndex + 1}`}
+                              {chemical.name || `${i18n.t("technician.specialServices.chemicalsUsed")} ${chemIndex + 1}`}
                             </Text>
                           </View>
                           <TouchableOpacity
@@ -1585,11 +1812,11 @@ export default function InsecticideScreen({
                         
                         <View style={styles.chemicalInputsRow}>
                           <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Concentration (%)</Text>
+                            <Text style={styles.inputLabel}>{i18n.t("components.chemicalsDropdown.concentration")}</Text>
                             <View style={styles.inputContainer}>
                               <TextInput
                                 style={styles.chemicalInput}
-                                placeholder="e.g., 10"
+                                placeholder={i18n.t("components.chemicalsDropdown.concentrationPlaceholder")}
                                 value={chemical.concentration?.replace('%', '') || ''}
                                 onChangeText={(text) => {
                                   const currentArea = treatedAreas.find(a => a.id === activeAreaId);
@@ -1613,11 +1840,11 @@ export default function InsecticideScreen({
                           </View>
                           
                           <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Volume (ml)</Text>
+                            <Text style={styles.inputLabel}>{i18n.t("components.chemicalsDropdown.volume")}</Text>
                             <View style={styles.inputContainer}>
                               <TextInput
                                 style={styles.chemicalInput}
-                                placeholder="e.g., 500"
+                                placeholder={i18n.t("components.chemicalsDropdown.volumePlaceholder")}
                                 value={chemical.volume?.replace('ml', '') || ''}
                                 onChangeText={(text) => {
                                   const currentArea = treatedAreas.find(a => a.id === activeAreaId);
@@ -1649,11 +1876,11 @@ export default function InsecticideScreen({
                 <View style={styles.notesSection}>
                   <View style={styles.sectionTitleContainer}>
                     <MaterialIcons name="notes" size={18} color="#1f9c8b" />
-                    <Text style={styles.sectionTitle}>Area Notes</Text>
+                    <Text style={styles.sectionTitle}>{i18n.t("technician.specialServices.areaDetails.areaNotes")}</Text>
                   </View>
                   <TextInput
                     style={styles.areaNotesInput}
-                    placeholder="Enter area-specific notes, observations, or special instructions..."
+                    placeholder={i18n.t("technician.specialServices.areaDetails.notesPlaceholder")}
                     placeholderTextColor="#999"
                     multiline
                     numberOfLines={4}
@@ -1668,7 +1895,7 @@ export default function InsecticideScreen({
                     style={styles.modalCancelButton}
                     onPress={() => setAreaModalVisible(false)}
                   >
-                    <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                    <Text style={styles.modalCancelButtonText}>{i18n.t("technician.specialServices.areaDetails.cancel")}</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
@@ -1706,7 +1933,7 @@ export default function InsecticideScreen({
                     }}
                   >
                     <MaterialIcons name="save" size={20} color="#fff" />
-                    <Text style={styles.modalSaveButtonText}>Save Area</Text>
+                    <Text style={styles.modalSaveButtonText}>{i18n.t("technician.specialServices.areaDetails.save")}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -1722,27 +1949,22 @@ export default function InsecticideScreen({
       <SafeAreaView style={styles.centerContainer}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1f9c8b" />
-          <Text style={styles.loadingText}>Loading service details...</Text>
+          <Text style={styles.loadingText}>{i18n.t("technician.common.loading")} {i18n.t("serviceTypes.insecticide").toLowerCase()}...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {!areaModalVisible ? (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={{ flex: 1 }}>
-            {renderContent()}
-          </View>
-        </TouchableWithoutFeedback>
-      ) : (
-        <View style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           {renderContent()}
-        </View>
-      )}
-    </SafeAreaView>
-  );
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
 }
 
 /* =========================

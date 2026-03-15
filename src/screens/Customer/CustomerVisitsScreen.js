@@ -1,4 +1,4 @@
-// CustomerVisitsScreen.js - FIXED VERSION (No MediaLibrary)
+// CustomerVisitsScreen.js - FIXED VERSION with i18n
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -10,23 +10,22 @@ import {
   RefreshControl,
   StatusBar,
   Alert,
-  Platform,
-  Linking
 } from "react-native";
 import apiService from "../../services/apiService";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Ionicons, Feather } from '@expo/vector-icons';
-// Conditionally import native modules only on native platforms
 import * as Sharing from "expo-sharing";
 import * as FileSystem from 'expo-file-system/legacy';
 import { formatTimeInGreece, formatDateInGreece } from "../../utils/timeZoneUtils";
-
-// REMOVED: import * as MediaLibrary from 'expo-media-library';
+import i18n from "../../services/i18n";
 
 export default function CustomerVisitsScreen({ 
   onSelectVisit, 
   onBack
+  // REMOVE: navigation from props
 }) {
+
+  
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [visits, setVisits] = useState([]);
@@ -36,50 +35,33 @@ export default function CustomerVisitsScreen({
     try {
       const res = await apiService.getCustomerVisitHistory();
       
-      console.log("📋 API Response:", JSON.stringify(res, null, 2));
-      
       if (res?.success) {
-        let visits = res.visits || [];
+        let visitsData = res.visits || [];
         
-        // CREATE A UNIQUE KEY FOR EACH ITEM
-        const getItemKey = (item) => {
-          const idFields = ['visitId', 'id', 'visit_id', 'log_id'];
-          for (const field of idFields) {
-            if (item[field]) return `${field}_${item[field]}`;
-          }
-          // Fallback to timestamp
-          const timestamp = item.startTime || item.created_at || item.service_start_time;
-          if (timestamp) {
-            return `time_${String(timestamp).replace(/[^a-zA-Z0-9]/g, '_')}`;
-          }
-          return null;
-        };
+        // Process each visit to ensure consistent format
+        const processedVisits = visitsData.map(visit => ({
+          ...visit,
+          // Ensure visitId exists
+          visitId: visit.visitId || visit.id || visit.visit_id,
+          // Ensure serviceType is set
+          serviceType: visit.serviceType || visit.service_type || 'myocide',
+          // Format service type for display
+          serviceTypeDisplay: visit.serviceTypeDisplay || 
+                            formatServiceTypeDisplay(visit.serviceType || visit.service_type, 
+                                                      visit.serviceSubtype, 
+                                                      visit.otherPestName),
+          // Ensure timestamp exists
+          startTime: visit.startTime || visit.start_time || visit.createdAt,
+        }));
         
-        // REMOVE DUPLICATES
-        const uniqueVisits = [];
-        const seenKeys = new Set();
-        
-        visits.forEach((item, index) => {
-          const key = getItemKey(item) || `index_${index}`;
-          
-          if (!seenKeys.has(key)) {
-            seenKeys.add(key);
-            item._key = key;
-            uniqueVisits.push(item);
-          }
-        });
-        
-        console.log(`✅ Removed ${visits.length - uniqueVisits.length} duplicates`);
-        console.log(`📊 Unique visits: ${uniqueVisits.length}`);
-        
-        setVisits(uniqueVisits);
+        setVisits(processedVisits);
       } else {
-        Alert.alert("Error", res?.error || "Failed to load visit history");
+        Alert.alert(i18n.t("common.error"), res?.error || i18n.t("customer.visits.errors.loadFailed"));
         setVisits([]);
       }
     } catch (error) {
-      console.error("Load visits error:", error);
-      Alert.alert("Error", "Failed to load visits");
+      console.error("❌ Load visits error:", error);
+      Alert.alert(i18n.t("common.error"), i18n.t("customer.visits.errors.loadFailed"));
       setVisits([]);
     } finally {
       setLoading(false);
@@ -101,21 +83,22 @@ export default function CustomerVisitsScreen({
     return formatTimeInGreece(dateString);
   };
 
-  // ============= FIXED PDF DOWNLOAD WITH ANDROID SAVE (NO MEDIA LIBRARY) =============
+
+  // Download PDF report
   const downloadPDFReport = async (visit) => {
     try {
-      setDownloadingId(visit.visitId);
+      setDownloadingId(visit.visitId); // Use visit.visitId
       
-      const reportId = visit.visitId;
+      const reportId = visit.visitId; // Use visit.visitId
       
       if (!reportId) {
-        Alert.alert("Error", "No report ID found for this visit");
+        Alert.alert(i18n.t("common.error"), i18n.t("customer.visits.errors.noReportId"));
         return;
       }
       
       const token = apiService.getCurrentToken();
       if (!token) {
-        Alert.alert("Error", "Authentication required. Please login again.");
+        Alert.alert(i18n.t("common.error"), i18n.t("customer.visits.errors.authRequired"));
         return;
       }
       
@@ -129,179 +112,79 @@ export default function CustomerVisitsScreen({
       
       const fileName = `Service_Report_${safeName}_${dateStr}.pdf`;
       
-      const API_BASE_URL = apiService.API_BASE_URL || "https://field-inspections-backend-production.up.railway.app/api";
-      const pdfUrl = `${API_BASE_URL}/reports/pdf/${reportId}`;
+      const API_BASE_URL = apiService.API_BASE_URL || "http://192.168.1.79:3000/api";
+      const lang = i18n.getLocale();
+      const pdfUrl = `${API_BASE_URL}/reports/pdf/${reportId}?lang=${lang}`;
       
-      console.log("📥 Downloading PDF:", {
-        url: pdfUrl,
-        serviceType: visit.serviceType || visit.workType,
-        visitId: reportId,
-        platform: Platform.OS
-      });
-
-      // ============ WEB PLATFORM ============
-      if (Platform.OS === 'web') {
-        try {
-          const response = await fetch(pdfUrl, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            }
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+      const downloadResult = await FileSystem.downloadAsync(
+        pdfUrl,
+        FileSystem.documentDirectory + fileName,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
           }
-
-          const blob = await response.blob();
-          const blobUrl = window.URL.createObjectURL(blob);
-          
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(blobUrl);
-          
-          console.log("✅ PDF downloaded on web platform");
-          Alert.alert("Success", "PDF downloaded successfully");
-          
-        } catch (webError) {
-          console.error("❌ Web download error:", webError);
-          const fallbackUrl = `${pdfUrl}?token=${encodeURIComponent(token)}`;
-          window.open(fallbackUrl, '_blank');
-          throw webError;
         }
-      } 
-      // ============ ANDROID PLATFORM (FIXED - SAVE TO APP STORAGE) ============
-      else if (Platform.OS === 'android') {
-        try {
-          // Use app's document directory - no permissions needed!
-          const fileUri = FileSystem.documentDirectory + fileName;
-          
-          console.log("📥 Downloading to Android:", fileUri);
-
-          const downloadResult = await FileSystem.downloadAsync(
-            pdfUrl,
-            fileUri,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              }
-            }
-          );
-          
-          console.log("✅ Download result:", {
-            status: downloadResult.status,
-            uri: downloadResult.uri,
-            exists: await FileSystem.getInfoAsync(downloadResult.uri)
+      );
+      
+      if (downloadResult.status === 200) {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: "application/pdf",
+            dialogTitle: i18n.t("customer.visits.alerts.downloadComplete"),
+            UTI: "com.adobe.pdf",
           });
-          
-          if (downloadResult.status === 200) {
-            // Show options dialog
-            Alert.alert(
-              "PDF Downloaded",
-              "What would you like to do?",
-              [
-                {
-                  text: "Share",
-                  onPress: async () => {
-                    if (await Sharing.isAvailableAsync()) {
-                      await Sharing.shareAsync(downloadResult.uri, {
-                        mimeType: "application/pdf",
-                        dialogTitle: "Share Service Report",
-                      });
-                    } else {
-                      Alert.alert("Error", "Sharing is not available");
-                    }
-                  }
-                },
-                {
-                  text: "Open",
-                  onPress: async () => {
-                    if (await Sharing.isAvailableAsync()) {
-                      await Sharing.shareAsync(downloadResult.uri, {
-                        mimeType: "application/pdf",
-                        dialogTitle: "Open with...",
-                      });
-                    }
-                  }
-                },
-                {
-                  text: "OK",
-                  style: "cancel"
-                }
-              ]
-            );
-            
-            console.log("✅ PDF saved to:", downloadResult.uri);
-            
-          } else {
-            throw new Error(`Download failed with status ${downloadResult.status}`);
-          }
-        } catch (androidError) {
-          console.error("❌ Android download error:", androidError);
+        } else {
           Alert.alert(
-            "Download Failed",
-            androidError.message || "The report could not be downloaded."
+            i18n.t("customer.visits.alerts.downloadComplete"),
+            i18n.t("customer.visits.alerts.downloadCompleteMessage", { path: downloadResult.uri }),
+            [{ text: i18n.t("common.ok") || "OK" }]
           );
         }
-      }
-      // ============ IOS PLATFORM ============
-      else {
-        try {
-          const downloadResult = await FileSystem.downloadAsync(
-            pdfUrl,
-            FileSystem.documentDirectory + fileName,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              }
-            }
-          );
-          
-          console.log("✅ Download result:", {
-            status: downloadResult.status,
-            uri: downloadResult.uri
-          });
-          
-          if (downloadResult.status === 200) {
-            if (await Sharing.isAvailableAsync()) {
-              await Sharing.shareAsync(downloadResult.uri, {
-                mimeType: "application/pdf",
-                dialogTitle: "Service Report",
-                UTI: "com.adobe.pdf",
-              });
-            } else {
-              Alert.alert(
-                "Download Complete",
-                `The PDF report has been downloaded to:\n${downloadResult.uri}`,
-                [{ text: "OK" }]
-              );
-            }
-          } else {
-            throw new Error(`Download failed with status ${downloadResult.status}`);
-          }
-        } catch (nativeError) {
-          console.error("❌ Native download error:", nativeError);
-          throw nativeError;
-        }
+      } else {
+        throw new Error(i18n.t("customer.visits.alerts.downloadFailed") + ` ${downloadResult.status}`);
       }
       
     } catch (error) {
       console.error("❌ PDF download error:", error);
       Alert.alert(
-        "Download Failed",
-        error.message || "The report could not be downloaded."
+        i18n.t("customer.visits.alerts.downloadFailed"),
+        error.message || i18n.t("customer.visits.errors.downloadFailed")
       );
     } finally {
       setDownloadingId(null);
     }
   };
 
+  const formatServiceTypeDisplay = (serviceType, subtype, otherPestName) => {
+    if (!serviceType) return i18n.t("customer.visits.serviceTypes.default") || 'Service';
+    
+    const type = String(serviceType).toLowerCase();
+    
+    if (type === 'myocide' || type.includes('myocide')) {
+      return i18n.t("customer.visits.serviceTypes.myocide");
+    } else if (type === 'disinfection' || type.includes('disinfection')) {
+      return i18n.t("customer.visits.serviceTypes.disinfection");
+    } else if (type === 'insecticide' || type.includes('insecticide')) {
+      return i18n.t("customer.visits.serviceTypes.insecticide");
+    } else if (type === 'special' || type.includes('special')) {
+      if (subtype === 'other' && otherPestName) {
+        return i18n.t("customer.serviceDisplay.special", { name: otherPestName });
+      } else if (subtype) {
+        // Format subtype (e.g., "grass_cutworm" -> "Grass Cutworm")
+        const subtypeLabel = subtype.split('_').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+        return i18n.t("customer.serviceDisplay.specialWithSubtype", { subtype: subtypeLabel });
+      }
+      return i18n.t("customer.visits.serviceTypes.special");
+    }
+    
+    // Default: capitalize
+    return serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
+  };
+
   const generateUniqueKey = (item, index) => {
+    // Try all possible ID fields
     const possibleIds = [
       item.visitId,
       item.id,
@@ -315,48 +198,42 @@ export default function CustomerVisitsScreen({
       if (id) return `key_${id}`;
     }
     
+    // Generate a stable key using data properties
     const timestamp = item.startTime || item.created_at || item.service_start_time;
     if (timestamp) {
       return `key_${timestamp}_${index}`;
     }
     
+    // Last resort: index-based with component mount time
     return `key_${index}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
   const handleViewDetails = (visit) => {
-    console.log("🔍 handleViewDetails called with visit:", visit);
 
     const visitId = visit.visitId || visit.id || visit.visit_id;
 
     if (!visitId) {
       console.error("❌ No visitId found in visit object:", visit);
-      Alert.alert("Error", "Could not find visit ID. Please try again.");
+      Alert.alert(i18n.t("common.error"), i18n.t("customer.visits.errors.noVisitId"));
       return;
     }
 
-    onSelectVisit({
-      visit_id: visitId,
-      service_type:
-        visit.serviceType ||
-        visit.work_type ||
-        visit.workType ||
-        "myocide",
-      customerName:
-        visit.customer_name ||
-        visit.customerName ||
-        "Customer",
-      technicianName:
-        visit.technicianName ||
-        visit.technician_name ||
-        "Technician",
-      startTime:
-        visit.startTime ||
-        visit.start_time ||
-        visit.created_at
-    });
+    const visitPayload = {
+      visitId: visitId,
+      serviceType: visit.serviceType || visit.service_type || "myocide",
+      customerName: visit.customerName || visit.customer_name || i18n.t("customer.welcome.customer"),
+      technicianName: visit.technicianName || visit.technician_name || i18n.t("customer.visits.card.technician"),
+      startTime: visit.startTime || visit.start_time || visit.createdAt
+    };
+    onSelectVisit(visitPayload);
   };
 
   const renderVisitItem = ({ item }) => {
+    const serviceType = item.serviceType || 'myocide';
+    const serviceDisplay = item.serviceTypeDisplay || formatServiceTypeDisplay(serviceType);
+    const iconName = getServiceIcon(serviceType);
+    const color = getServiceColor(serviceType);
+
     return (
       <TouchableOpacity
         style={styles.visitCard}
@@ -364,20 +241,15 @@ export default function CustomerVisitsScreen({
         activeOpacity={0.7}
       >
         <View style={styles.visitHeader}>
-          <View style={[styles.serviceTypeBadge, 
-            { backgroundColor: getServiceColor(item.serviceType || item.workType) }]}>
-            <MaterialIcons 
-              name={getServiceIcon(item.serviceType || item.workType)} 
-              size={12} 
-              color="#fff" 
-            />
-            <Text style={styles.serviceTypeText}>
-              {formatServiceType(item.serviceType || item.workType)}
+          <View style={[styles.serviceTypeBadge, { backgroundColor: color }]}>
+            <MaterialIcons name={iconName} size={12} color="#fff" />
+            <Text style={styles.serviceTypeText} numberOfLines={1}>
+              {serviceDisplay}
             </Text>
           </View>
           <View style={styles.visitStatus}>
             <View style={[styles.statusDot, { backgroundColor: '#4CAF50' }]} />
-            <Text style={styles.statusText}>Completed</Text>
+            <Text style={styles.statusText}>{i18n.t("customer.visits.card.status")}</Text>
           </View>
         </View>
 
@@ -387,7 +259,7 @@ export default function CustomerVisitsScreen({
             <Text style={styles.detailText}>
               {item.startTime 
                 ? formatDateInGreece(item.startTime)
-                : 'Date not available'}
+                : i18n.t("customer.visits.card.dateNotAvailable")}
             </Text>
           </View>
           
@@ -396,19 +268,21 @@ export default function CustomerVisitsScreen({
             <Text style={styles.detailText}>
               {item.startTime
                 ? formatTimeInGreece(item.startTime)
-                : 'Time not available'}
+                : i18n.t("customer.visits.card.timeNotAvailable")}
             </Text>
           </View>
           
           <View style={styles.detailRow}>
             <MaterialIcons name="person" size={16} color="#666" />
-            <Text style={styles.detailText}>{item.technicianName || 'Technician'}</Text>
+            <Text style={styles.detailText}>
+              {item.technicianName || i18n.t("customer.visits.card.technician")}
+            </Text>
           </View>
           
           <View style={styles.detailRow}>
             <MaterialIcons name="category" size={16} color="#666" />
             <Text style={styles.detailText}>
-              Service: {formatServiceType(item.serviceType || item.workType)}
+              {i18n.t("customer.visits.card.service", { type: formatServiceType(item.serviceType || item.workType) })}
             </Text>
           </View>
         </View>
@@ -419,7 +293,7 @@ export default function CustomerVisitsScreen({
               style={styles.viewButton}
               onPress={() => handleViewDetails(item)}
             >
-              <Text style={styles.viewButtonText}>View Report</Text>
+              <Text style={styles.viewButtonText}>{i18n.t("customer.visits.card.viewReport")}</Text>
               <MaterialIcons name="visibility" size={16} color="#1f9c8b" />
             </TouchableOpacity>
             
@@ -433,7 +307,7 @@ export default function CustomerVisitsScreen({
               ) : (
                 <>
                   <MaterialIcons name="picture-as-pdf" size={16} color="#fff" />
-                  <Text style={styles.downloadButtonText}>Download PDF</Text>
+                  <Text style={styles.downloadButtonText}>{i18n.t("customer.visits.card.downloadPDF")}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -447,7 +321,7 @@ export default function CustomerVisitsScreen({
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1f9c8b" />
-        <Text style={styles.loadingText}>Loading Visits...</Text>
+        <Text style={styles.loadingText}>{i18n.t("customer.visits.loading")}</Text>
       </SafeAreaView>
     );
   }
@@ -464,19 +338,19 @@ export default function CustomerVisitsScreen({
           activeOpacity={0.7}
         >
           <MaterialIcons name="arrow-back" size={24} color="#1f9c8b" />
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>{i18n.t("customer.visits.back")}</Text>
         </TouchableOpacity>
         
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>All Service Visits</Text>
+          <Text style={styles.headerTitle}>{i18n.t("customer.visits.title")}</Text>
           <Text style={styles.headerSubtitle}>
-            Tap any visit to view full report
+            {i18n.t("customer.visits.subtitle")}
           </Text>
         </View>
         
         <View style={styles.headerStats}>
           <Text style={styles.visitsCount}>{visits.length}</Text>
-          <Text style={styles.visitsLabel}>Total</Text>
+          <Text style={styles.visitsLabel}>{i18n.t("customer.visits.total")}</Text>
         </View>
       </View>
 
@@ -484,7 +358,7 @@ export default function CustomerVisitsScreen({
       <View style={styles.infoBanner}>
         <MaterialIcons name="info" size={18} color="#1f9c8b" />
         <Text style={styles.infoText}>
-          Tap "View Report" to see details or "Download PDF" to save
+          {i18n.t("customer.visits.infoBanner")}
         </Text>
       </View>
 
@@ -492,9 +366,9 @@ export default function CustomerVisitsScreen({
       {visits.length === 0 ? (
         <View style={styles.emptyState}>
           <MaterialIcons name="history" size={64} color="#e0e0e0" />
-          <Text style={styles.emptyStateTitle}>No Visits Found</Text>
+          <Text style={styles.emptyStateTitle}>{i18n.t("customer.visits.empty.title")}</Text>
           <Text style={styles.emptyStateText}>
-            There are no completed service visits to display yet.
+            {i18n.t("customer.visits.empty.text")}
           </Text>
           <TouchableOpacity 
             style={styles.refreshButton}
@@ -502,13 +376,13 @@ export default function CustomerVisitsScreen({
             activeOpacity={0.7}
           >
             <MaterialIcons name="refresh" size={18} color="#1f9c8b" />
-            <Text style={styles.refreshButtonText}>Refresh</Text>
+            <Text style={styles.refreshButtonText}>{i18n.t("customer.visits.empty.refresh")}</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={visits}
-          keyExtractor={(item, index) => generateUniqueKey(item, index)}
+          keyExtractor={(item, index) => `${item.visitId}_${item.source || "visit"}_${index}`}
           renderItem={renderVisitItem}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
@@ -522,9 +396,9 @@ export default function CustomerVisitsScreen({
           }
           ListHeaderComponent={
             <View style={styles.listHeader}>
-              <Text style={styles.listTitle}>Service History</Text>
+              <Text style={styles.listTitle}>{i18n.t("customer.visits.listTitle")}</Text>
               <Text style={styles.listSubtitle}>
-                All completed service visits
+                {i18n.t("customer.visits.listSubtitle")}
               </Text>
             </View>
           }
@@ -534,15 +408,16 @@ export default function CustomerVisitsScreen({
   );
 }
 
-// Helper functions remain the same...
+// ===== UPDATED HELPER FUNCTIONS =====
 const getServiceColor = (serviceType) => {
+  // All service types use the same beautiful blue-green color
   return '#1f9c8b';
 };
 
 const getServiceIcon = (serviceType) => {
-  const type = String(serviceType || '').toLowerCase().trim();
+  const type = String(serviceType || '').toLowerCase();
   
-  if (type.includes('myocide') || type.includes('scheduled')) {
+  if (type.includes('myocide')) {
     return 'pest-control-rodent';
   } else if (type.includes('disinfection')) {
     return 'clean-hands';
@@ -550,43 +425,37 @@ const getServiceIcon = (serviceType) => {
     return 'bug-report';
   } else if (type.includes('special')) {
     return 'star';
-  } else if (type.includes('inspection')) {
-    return 'search';
-  } else if (type.includes('emergency')) {
-    return 'exclamation-triangle';
-  } else if (type.includes('installation')) {
-    return 'tools';
-  } else if (type.includes('follow-up') || type.includes('followup')) {
-    return 'redo';
   }
   
-  return 'clipboard-check';
+  return 'description';
 };
 
 const formatServiceType = (serviceType) => {
   const type = String(serviceType || '').toLowerCase().trim();
   
+  // Map service types to display names
   if (type.includes('myocide') || type.includes('scheduled')) {
-    return 'Myocide Service';
+    return i18n.t("customer.visits.serviceTypes.myocide");
   } else if (type.includes('disinfection')) {
-    return 'Disinfection Service';
+    return i18n.t("customer.visits.serviceTypes.disinfection");
   } else if (type.includes('insecticide')) {
-    return 'Insecticide Service';
+    return i18n.t("customer.visits.serviceTypes.insecticide");
   } else if (type.includes('special')) {
-    return 'Special Service';
+    return i18n.t("customer.visits.serviceTypes.special");
   } else if (type.includes('inspection')) {
-    return 'Inspection Service';
+    return i18n.t("customer.visits.serviceTypes.inspection");
   } else if (type.includes('emergency')) {
-    return 'Emergency Service';
+    return i18n.t("customer.visits.serviceTypes.emergency");
   } else if (type.includes('installation')) {
-    return 'Installation Service';
+    return i18n.t("customer.visits.serviceTypes.installation");
   } else if (type.includes('follow-up') || type.includes('followup')) {
-    return 'Follow-up Service';
+    return i18n.t("customer.visits.serviceTypes.followUp");
   } else if (type.includes('regular')) {
-    return 'Regular Service';
+    return i18n.t("customer.visits.serviceTypes.regular");
   }
   
-  return type.charAt(0).toUpperCase() + type.slice(1) + ' Service';
+  // If we don't recognize it, capitalize it
+  return type.charAt(0).toUpperCase() + type.slice(1) + ' ' + i18n.t("customer.visits.serviceTypes.default");
 };
 
 // Styles remain the same as previous

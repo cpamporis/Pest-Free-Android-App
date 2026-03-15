@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
 } from "react-native";
+import i18n from "../services/i18n";
 
 // ⚠️ Adjust this import if your styles live elsewhere
 import { styles } from "../styles/commonStyles";
@@ -22,7 +23,10 @@ export default function AddTechnicianModal({ onClose, onSave }) {
 
   const handleSave = () => {
     if (!firstName || !lastName || !username || !password) {
-      Alert.alert("Error", "All required fields must be filled");
+      Alert.alert(
+        i18n.t("common.error"), 
+        i18n.t("components.addTechnicianModal.error.requiredFields")
+      );
       return;
     }
 
@@ -43,13 +47,13 @@ export default function AddTechnicianModal({ onClose, onSave }) {
       <View style={styles.overlay}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.customerFormCard}>
-            <Text style={styles.title}>Add Technician</Text>
+            <Text style={styles.title}>{i18n.t("components.addTechnicianModal.title")}</Text>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>First Name *</Text>
+              <Text style={styles.inputLabel}>{i18n.t("components.addTechnicianModal.firstName")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter first name"
+                placeholder={i18n.t("components.addTechnicianModal.firstNamePlaceholder")}
                 placeholderTextColor="#999"
                 value={firstName}
                 onChangeText={setFirstName}
@@ -57,10 +61,10 @@ export default function AddTechnicianModal({ onClose, onSave }) {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Last Name *</Text>
+              <Text style={styles.inputLabel}>{i18n.t("components.addTechnicianModal.lastName")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter last name"
+                placeholder={i18n.t("components.addTechnicianModal.lastNamePlaceholder")}
                 placeholderTextColor="#999"
                 value={lastName}
                 onChangeText={setLastName}
@@ -68,10 +72,10 @@ export default function AddTechnicianModal({ onClose, onSave }) {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Age</Text>
+              <Text style={styles.inputLabel}>{i18n.t("components.addTechnicianModal.age")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter age"
+                placeholder={i18n.t("components.addTechnicianModal.agePlaceholder")}
                 placeholderTextColor="#999"
                 keyboardType="numeric"
                 value={age}
@@ -80,10 +84,10 @@ export default function AddTechnicianModal({ onClose, onSave }) {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Username *</Text>
+              <Text style={styles.inputLabel}>{i18n.t("components.addTechnicianModal.username")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter username"
+                placeholder={i18n.t("components.addTechnicianModal.usernamePlaceholder")}
                 placeholderTextColor="#999"
                 autoCapitalize="none"
                 value={username}
@@ -92,10 +96,10 @@ export default function AddTechnicianModal({ onClose, onSave }) {
             </View>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Password *</Text>
+              <Text style={styles.inputLabel}>{i18n.t("components.addTechnicianModal.password")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter password"
+                placeholder={i18n.t("components.addTechnicianModal.passwordPlaceholder")}
                 placeholderTextColor="#999"
                 secureTextEntry
                 value={password}
@@ -105,7 +109,7 @@ export default function AddTechnicianModal({ onClose, onSave }) {
 
             <View style={styles.formButtonContainer}>
               <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={styles.saveButtonText}>{i18n.t("components.addTechnicianModal.save")}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -115,7 +119,7 @@ export default function AddTechnicianModal({ onClose, onSave }) {
                 ]}
                 onPress={onClose}
               >
-                <Text style={styles.cancelButtonText}>Back</Text>
+                <Text style={styles.cancelButtonText}>{i18n.t("components.addTechnicianModal.back")}</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -1,0 +1,2001 @@
+{
+  "login": {
+    "emailPlaceholder": "Email",
+    "passwordPlaceholder": "Password",
+    "loginButton": "Login",
+    "forgotPassword": "Forgot Password",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "error": {
+      "title": "Error",
+      "enterEmailAndPassword": "Please enter email and password",
+      "loginFailed": "Login Failed"
+    }
+  },
+    "passwordRecovery": {
+    "badge": "PASSWORD RECOVERY",
+    "title": "Forgot Your Password?",
+    "subtitle": "Enter your registered email address below. An administrator will review your request and send you a new password within 24 hours.",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "Enter your registered email",
+    "submitButton": "Submit Recovery Request",
+    "backButton": "Back to Login",
+    "footer": {
+      "help": "Need Help? Contact Support",
+      "contact": "info@pestify.gr • +30 6986244371",
+      "copyright": "© {{year}} Pestify. All rights reserved."
+    },
+    "errors": {
+      "noEmail": "Please enter your registered email",
+      "invalidEmail": "Please enter a valid email address",
+      "submitFailed": "Failed to submit recovery request",
+      "unexpected": "An unexpected error occurred. Please try again."
+    },
+    "success": {
+      "title": "Password Recovery Request Submitted",
+      "message": "Your request has been sent to the administrator. You will receive a new password within 24 hours."
+    }
+  },
+  "privacyPolicy": {
+    "title": "Privacy Policy",
+    "closeButton": "Close",
+    "content": "Privacy Policy\n\nThis Privacy Policy is provided by Pest – Free (Owner: Christos Pamporis), Greece (\"we\", \"us\", \"our\").\n\nWe aim to comply with Regulation (EU) 2016/679 (GDPR) and applicable Greek data protection law.\n\n1. Data Controller\nData Controller: Pest – Free (Christos Pamporis), Greece\nContact email: manager@pestify.gr\n\n2. Scope\nThis Privacy Policy covers:\n\nMarketing website: pestify.gr (information pages, contact form, demo request)\nApplication platform: app.pestify.gr and Pestify mobile apps (iOS/Android)\nNote: The \"Login\" button on pestify.gr only redirects you to app.pestify.gr. No authentication occurs on pestify.gr.\n\n3. Marketing Website (pestify.gr)\n\n3.1 Data we collect\nWe collect personal data only when you voluntarily submit it:\n\nContact form: name, email, company, team size, message\nDemo booking (Calendly): name and email (as requested by Calendly)\n\n3.2 Purpose\nWe use this information strictly to:\n\nRespond to your request\nCommunicate with you about a demo you requested\nSchedule the demo\n\n3.3 What we do not do\nWe do not sell personal data\nWe do not use your data for advertising, remarketing, or profiling\nWe do not run transactions or process payments on pestify.gr\nWe do not create a marketing database for newsletters without your explicit consent\n\n3.4 Legal basis\nWe process this data under GDPR Article 6(1)(b) (steps prior to entering into a contract, at your request) and/or Article 6(1)(f) (legitimate interest in responding to business inquiries).\n\n3.5 Retention\nWe retain inquiry and demo-related communications only for as long as necessary to respond and follow up on your request, and then delete them when no longer needed, unless legal obligations require longer retention.\n\n3.6 Calendly\nIf you request a demo using Calendly, your booking details may be processed by Calendly. Calendly may act as an independent data controller for certain processing activities according to its own privacy policy. We recommend reviewing Calendly's privacy information before submitting data through the Calendly interface.\n\n4. Application Platform (app.pestify.gr & Mobile Apps)\n\n4.1 Data processed in the application\nWhen the application is used, the platform may process and store data such as:\n\nAccount data: customer/user name, username, email\nService locations: address of the location where pest control services are performed\nOperational data: service logs, reports, performance indicators (used only inside the app)\nTechnician data: technician name and age (used only for internal operational management)\nImages (admin-only): admin uploads images created by the admin (top-view diagrams of buildings / locations)\nNo payment data is processed. No transactions take place through the platform.\n\n4.2 Roles under GDPR (Controller / Processor)\nWhen pest control companies use Pestify and upload personal data of private individuals (e.g., homeowner names), the pest control company is typically the Data Controller and Data Processor for that customer's data, processing it only to provide the service.\n\nWhere Pestify acts as a Data Processor on behalf of a business customer, requests regarding personal data (e.g., access, deletion) should primarily be directed to the relevant business acting as Data Controller. Pestify will assist the Controller as required under GDPR Article 28.\n\n4.3 Legal basis\nFor platform account operation and service delivery, processing is generally based on GDPR Article 6(1)(b) (performance of a contract) and GDPR Article 28 (processing on behalf of a a controller, where applicable).\n\n4.4 Security\nPasswords are stored using hashing (not plaintext)\nRole-based access controls (e.g., admin-only uploads)\nHTTPS encryption in transit\n\n4.5 Retention\nApplication data is retained for the duration of the contractual relationship with the business customer and is deleted upon account termination or upon instruction from the business customer, unless legal obligations require longer retention.\n\n5. Hosting & Infrastructure\n\n5.1 Marketing website hosting\nThe website pestify.gr is hosted by Papaki (Top.Host). Papaki may process limited technical data (e.g., IP addresses) as part of standard hosting operations.\n\n5.2 Application backend hosting\nThe application backend is hosted on Railway and data is stored in PostgreSQL (PSQL).\n\n6. Sharing of Data\nWe do not sell, rent, or trade personal data.\n\nData may be processed only by:\n\nOur hosting/infrastructure providers (Papaki for the website; Railway for the backend and database)\nCalendly (for demo scheduling, when you use the demo booking feature)\nAuthorized personnel, solely for support and operations\n\n7. International Transfers\nWhere any service provider involved in processing transfers personal data outside the European Economic Area (EEA), appropriate safeguards (such as Standard Contractual Clauses) will be used where required in accordance with GDPR Chapter V.\n\n8. Cookies\nAt the time of this policy, pestify.gr does not use analytics or marketing cookies. If analytics/advertising tools are enabled in the future, they will be activated only with user consent where required, and this policy will be updated.\n\nThe application may use strictly necessary cookies (or similar technologies) for secure authentication and session management.\n\nFor more information, see our Cookie Settings.\n\n9. Your Rights and Supervisory Authority\nDepending on the circumstances, you may have rights including:\n\nRight of access\nRight to rectification\nRight to erasure\nRight to restriction of processing\nRight to object\nRight to data portability\nRight to withdraw consent (where processing is based on consent)\nTo exercise your rights, contact: manager@pestify.gr\n\nYou also have the right to lodge a complaint with the competent supervisory authority. For Greece, the supervisory authority is\n\nHellenic Data Protection Authority (HDPA)\nAddress: Kifisias 1-3\n115 23 Athens\nGreece\nWebsite: https://www.dpa.gr\nTelephone: +30 210 6475600\n\n10. Changes to this Policy\nWe may update this Privacy Policy to reflect changes in our services or legal requirements. We will publish the updated version on this page with a revised date."
+  },
+  "termsOfUse": {
+    "title": "Terms of Use",
+    "closeButton": "Close",
+    "content": "Terms of Use\n\nEffective Date: 23/02/2026\nLast Updated: 23/02/2026\n\nThese Terms of Use (\"Terms\") govern your access to and use of:\n\npestify.gr (marketing website), and\napp.pestify.gr and related mobile applications (the \"Platform\"),\noperated by:\n\nPest – Free\nOwner: Christos Pamporis (Χρήστος Παμπόρης)\nGreece\n\nBy accessing or using Pestify, you agree to be bound by these Terms.\n\nIf you do not agree, you must not use the services.\n\n1. Scope of the Services\nPestify is a digital software platform designed for pest control businesses to:\n\nManage customer data\nOrganize service schedules\nMaintain service logs and documentation\nGenerate structured compliance reports\nImprove operational workflows\nThe marketing website (pestify.gr) is informational only and does not provide pest control services.\n\n2. Eligibility\nThe Platform is intended primarily for business users (B2B).\n\nBy using the Platform, you confirm that:\n\nYou are acting on behalf of a business entity, or\nYou are legally authorized to bind the business you represent\nIf you are a consumer within the meaning of EU consumer law, certain mandatory consumer protections may apply.\n\n3. Account Registration\nTo access the Platform, you may need to create an account.\n\nYou agree to:\n\nProvide accurate and complete information\nMaintain confidentiality of login credentials\nBe responsible for all activities under your account\nYou must notify us immediately of unauthorized use.\n\nWe reserve the right to suspend or terminate accounts in case of breach.\n\n4. Subscription & Payments\nIf paid plans are offered:\n\nSubscription fees are stated on the Pricing page.\nFees are exclusive of VAT unless stated otherwise.\nPayment terms will be specified at checkout.\nFailure to pay may result in suspension.\nFree trials, if offered, convert to paid subscriptions unless cancelled before expiration.\n\n5. Acceptable Use\nYou agree NOT to:\n\nUse the Platform for unlawful purposes\nUpload illegal or harmful content\nInterfere with system security\nReverse engineer, copy, or exploit the software\nUse the Platform to process data without legal basis under GDPR\nYou are solely responsible for the legality of the data you upload.\n\n6. Intellectual Property\nAll intellectual property rights in:\n\nSoftware\nCode\nDesign\nBranding\nDocumentation\nLogos\nare owned by Pest – Free unless otherwise stated.\n\nYou are granted a limited, non-exclusive, non-transferable license to use the Platform for internal business purposes only.\n\nYou may not:\n\nResell the Platform\nModify or redistribute it\nCreate derivative works\n\n7. Data Protection (GDPR Roles)\n\n7.1 Marketing Website\nFor pestify.gr, Pest – Free acts as Data Controller as described in the Privacy Policy.\n\n7.2 Application Platform\nWhen business customers upload personal data (e.g., homeowner names):\n\nThe pest control company is the Data Controller\nPestify acts as a Data Processor under Article 28 GDPR\nWe process data solely:\n\nOn documented instructions from the business customer\nTo provide the contracted service\nRequests from individuals (data subjects) should primarily be directed to the business acting as Controller.\n\nA Data Processing Agreement (DPA) may apply where required by law.\n\n8. Availability of Service\nWe aim to provide continuous access but do not guarantee uninterrupted availability.\n\nThe Platform may be temporarily unavailable due to:\n\nMaintenance\nSecurity updates\nTechnical failures\nForce majeure events\nWe reserve the right to modify or discontinue features.\n\n9. Limitation of Liability\nTo the maximum extent permitted under Greek and EU law:\n\nThe Platform is provided \"as is\".\nWe do not guarantee error-free or uninterrupted service.\nWe are not liable for indirect, incidental, or consequential damages.\nOur total liability shall not exceed the amount paid by the customer in the preceding 12 months.\nNothing in these Terms excludes liability for:\n\nDeath or personal injury caused by negligence\nFraud or fraudulent misrepresentation\nAny liability that cannot be excluded under applicable law\n\n10. No Professional Advice\nPestify is a software tool.\n\nIt does not provide:\n\nLegal advice\nRegulatory advice\nPest control services\nCertification guarantees\nUsers remain fully responsible for regulatory compliance in their jurisdiction.\n\n11. Termination\nWe may suspend or terminate access if:\n\nYou breach these Terms\nYou fail to pay subscription fees\nUse poses security risks\nRequired by law\nYou may terminate your account at any time.\n\nUpon termination:\n\nAccess is revoked\nData may be deleted according to the Privacy Policy\n\n12. Third-Party Services\nThe Platform may integrate third-party services such as:\n\nHosting providers\nCalendly (demo booking)\nInfrastructure services\nWe are not responsible for third-party policies or performance.\n\n13. Confidentiality\nBoth parties agree to maintain confidentiality of non-public business information.\n\nThis obligation survives termination.\n\n14. Force Majeure\nWe are not liable for failure to perform due to events beyond reasonable control, including:\n\nNatural disasters\nWar\nGovernment actions\nInternet failures\nPower outages\n\n15. Governing Law & Jurisdiction\nThese Terms are governed by the laws of Greece.\n\nAny disputes shall be subject to the exclusive jurisdiction of the courts of Greece, unless mandatory EU consumer law provides otherwise.\n\n16. Amendments\nWe may update these Terms.\n\nUpdated versions will be published on this page with a revised date.\n\nContinued use constitutes acceptance.\n\n17. Contact\nFor legal inquiries:\n\nmanager@pestify.gr"
+  },
+  
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "refresh": "Refresh",
+    "back": "Back",
+    "confirm": "Confirm",
+    "version": "Version 1.1 • Date: {{date}}",
+    "copyright": "© {{year}} Pestify. All rights reserved.",
+    "required": "Required",
+    "optional": "Optional",
+    "yes": "Yes",
+    "no": "No",
+    "confirmDelete": "Confirm Delete",
+    "confirmAction": "Confirm Action",
+    "warning": "Warning",
+    "info": "Information",
+    "days_one": "day",
+    "days_other": "days",
+    "hours_one": "hour",
+    "hours_other": "hours",
+    "minutes_one": "minute",
+    "minutes_other": "minutes",
+    "chooseOption": "Choose option"
+  },
+
+  "admin": {
+    "home": {
+      "loading": "Loading Admin Dashboard...",
+      "header": {
+        "welcome": "Welcome back, Administrator",
+        "title": "System Dashboard",
+        "subtitle": "Manage operations, monitor activities, and oversee system performance",
+        "logout": "Logout",
+        "badge": "ADMIN"
+      },
+      "sections": {
+        "quickOverview": "Quick Overview",
+        "weeklyOverview": "Weekly Overview",
+        "administrationModules": "Administration Modules",
+        "systemActions": "System Actions"
+      },
+      "stats": {
+        "totalCustomers": "Total Customers",
+        "active": "Active",
+        "technicians": "Technicians",
+        "onDuty": "On Duty",
+        "todayVisits": "Today's Visits",
+        "scheduled": "Scheduled",
+        "todayRequests": "Today's Requests",
+        "pending": "Pending",
+        "none": "None"
+      },
+      "modules": {
+        "complianceAlerts": {
+          "title": "Compliance Alerts",
+          "description": "Customers with expiring compliance certificates",
+          "alerts_one": "{{count}} alert",
+          "alerts_other": "{{count}} alerts"
+        },
+        "customers": {
+          "title": "Customers",
+          "description": "Manage customer accounts, details, and service history",
+          "registered_one": "{{count}} registered",
+          "registered_other": "{{count}} registered"
+        },
+        "customerRequests": {
+          "title": "Customer Requests",
+          "description": "Review and manage customer service requests",
+          "pending_one": "{{count}} pending",
+          "pending_other": "{{count}} pending"
+        },
+        "technicians": {
+          "title": "Technicians",
+          "description": "Manage technician profiles, assignments, and performance",
+          "active_one": "{{count}} active",
+          "active_other": "{{count}} active"
+        },
+        "schedule": {
+          "title": "Schedule",
+          "description": "Plan and assign daily visits, optimize technician routes",
+          "today_one": "{{count}} today",
+          "today_other": "{{count}} today"
+        },
+        "materials": {
+          "title": "Materials",
+          "description": "Manage bait types, chemicals, and inventory tracking",
+          "inventory": "Inventory"
+        },
+        "statistics": {
+          "title": "Statistics",
+          "description": "System metrics, activity distribution, and operational insights",
+          "overview": "Overview"
+        }
+      },
+      "actions": {
+        "refreshDashboard": {
+          "title": "Refresh Dashboard",
+          "title_refreshing": "Refreshing Data...",
+          "subtitle": "Update all statistics and information"
+        },
+        "logout": {
+          "title": "Logout",
+          "subtitle": "Sign out from the admin dashboard"
+        }
+      },
+      "footer": {
+        "system": "Pestify Admin System",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+
+    "notifications": {
+      "loading": "Loading Notifications...",
+      "header": {
+        "welcome": "Compliance Monitoring",
+        "title": "Certificate Status",
+        "subtitle": "Review customers with expiring or expired compliance certificates",
+        "badge": "ALERTS"
+      },
+      "emptyState": {
+        "title": "All Compliant",
+        "text": "No compliance issues detected. All customers have valid certificates."
+      },
+      "sections": {
+        "expiringSoon": "Expiring Soon ({{count}})",
+        "expired": "Expired ({{count}})"
+      },
+      "hints": {
+        "expiring": "Customers with certificates expiring in the next 7 days",
+        "expired": "These customers are no longer compliant. You may schedule a visit or leave them inactive."
+      },
+      "cards": {
+        "validUntil": "Valid until {{date}}",
+        "expiresIn": "Expires in {{count}} {{days}}",
+        "expiredOn": "Expired on {{date}}",
+        "scheduleButton": "Schedule Visit"
+      },
+      "status": {
+        "expiring": "Expiring",
+        "expired": "Expired"
+      },
+      "footer": {
+        "system": "Compliance Monitoring System",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+
+    "calendar": {
+      "loading": "Loading Calendar...",
+      "header": {
+        "badge": "WEEK VIEW",
+        "subtitle": "Technician schedule overview with status tracking"
+      },
+      "navigation": {
+        "prev": "Prev",
+        "next": "Next",
+        "weekOf": "Week of {{start}} – {{end}}",
+        "today": "Today"
+      },
+      "filter": {
+        "title": "Filter by Technician"
+      },
+      "legend": {
+        "title": "Status Legend",
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "schedule": {
+        "title": "Weekly Schedule",
+        "time": "TIME",
+        "scrollHint": "Drag calendar left/right to view • Swipe up/down for time slots"
+      },
+      "stats": {
+        "total": "Total",
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "appointmentDetails": {
+        "title": "Appointment Details",
+        "date": "Date",
+        "time": "Time",
+        "customer": "Customer",
+        "telephone": "Telephone",
+        "address": "Address",
+        "lastVisit": "Last Visit",
+        "serviceType": "Service Type",
+        "category": "Category",
+        "technician": "Technician",
+        "specialService": "Special Service",
+        "insecticideDetails": "Insecticide Details",
+        "disinfectionDetails": "Disinfection Details",
+        "close": "Close"
+      },
+      "compliance": {
+        "valid": "Compliant",
+        "expired": "Expired",
+        "unknown": "Unknown"
+      }
+    },
+
+    "schedule": {
+      "loading": "Loading Schedule...",
+      "header": {
+        "welcome": "Schedule Management",
+        "title": "Plan Technician Visits",
+        "subtitle": "Assign and manage daily appointments for technicians",
+        "badge": "SCHEDULE"
+      },
+      "stats": {
+        "totalVisits": "Total Visits",
+        "completed": "Completed",
+        "scheduled": "Scheduled"
+      },
+      "technician": {
+        "title": "Select Technician",
+        "noTechnicians": "No Technicians",
+        "noTechniciansDesc": "Add technicians first from the Admin Dashboard"
+      },
+      "compliance": {
+        "title": "Compliance Validity",
+        "validUntil": "Valid Until",
+        "selectDate": "Select compliance date",
+        "requiredForMyocide": "Required for Myocide",
+        "missing": "Compliance date missing"
+      },
+      "dateTime": {
+        "title": "Date & Time",
+        "selectedDate": "Selected Date",
+        "appointmentTime": "Appointment Time",
+        "selectTime": "Select time",
+        "appointmentDate": "Appointment Date"
+      },
+      "serviceType": {
+        "title": "Service Type",
+        "selectService": "Select Service Type",
+        "myocide": {
+          "label": "Myocide",
+          "description": "Standard bait station service"
+        },
+        "disinfection": {
+          "label": "Disinfection",
+          "description": "Disinfection service"
+        },
+        "insecticide": {
+          "label": "Insecticide",
+          "description": "Insecticide treatment"
+        },
+        "special": {
+          "label": "Special Service",
+          "description": "Custom pest control services"
+        }
+      },
+      "specialSubtypes": {
+        "grass_cutworm": "Grass Cutworm",
+        "fumigation": "Fumigation",
+        "termites": "Termites",
+        "exclusion": "Exclusion Service",
+        "snake_repulsion": "Snake Repulsion",
+        "bird_control": "Bird Control",
+        "bed_bugs": "Bed Bugs",
+        "fleas": "Fleas",
+        "plant_protection": "Plant Protection",
+        "palm_weevil": "Palm Weevil",
+        "other": "Other",
+        "selectType": "Select specific service type",
+        "specifyPest": "Specify Pest Name",
+        "pestPlaceholder": "e.g., Ants, Spiders, Cockroaches, etc."
+      },
+      "treatmentDetails": {
+        "title": "Treatment Details",
+        "insecticidePlaceholder": "Describe the insecticide requirements...",
+        "disinfectionPlaceholder": "Describe the disinfection requirements..."
+      },
+      "appointmentCategory": {
+        "title": "Appointment Category",
+        "description": "Defines billing and visit purpose",
+        "first_time": "First-Time Appointment",
+        "follow_up": "Follow-Up Visit",
+        "one_time": "One-Time Treatment",
+        "installation": "Installation Appointment",
+        "inspection": "Inspection / Assessment",
+        "emergency": "Emergency Call-Out",
+        "contract_service": "Contract / Recurring Service"
+      },
+      "servicePrice": {
+        "title": "Service Price",
+        "placeholder": "Enter service price in Euro (e.g. 80)",
+        "invalid": "Enter a value for price with up to two decimals"
+      },
+      "appointments": {
+        "title": "Appointments for {{date}}",
+        "noAppointments": "No Appointments",
+        "noAppointmentsDesc": "Add customers below to create appointments",
+        "unknownCustomer": "Unknown Customer",
+        "customerId": "Customer ID: {{id}}",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "removeTitle": "Διαγραφή Ραντεβού",
+        "removeConfirm": "Θέλετε να διαγράψετε αυτό το ραντεβού;",
+        "removeSuccess": "Το ραντεβού διαγράφτηκε επιτυχώς"
+      },
+      "addCustomer": {
+        "title": "Add Customer Appointment",
+        "available_one": "{{count}} available",
+        "available_other": "{{count}} available",
+        "dropdownPlaceholder": "Select a customer to schedule",
+        "noCustomers": "No customers available",
+        "id": "ID: {{id}}",
+        "scheduleButton": "Schedule Appointment",
+        "createSuccess": "Appointment created successfully",
+        "noTime": "Please set the time for the appointment"
+      },
+      "editModal": {
+        "title": "Edit Appointment",
+        "customerInfo": "Editing existing appointment",
+        "servicePrice": "Service Price (€)",
+        "appointmentCategory": "Appointment Category",
+        "complianceValidUntil": "Compliance Valid Until",
+        "complianceRequired": "Required for Myocide service compliance certificate",
+        "complianceOptional": "Optional: Only needed if this service affects compliance",
+        "time": "Time",
+        "technician": "Technician",
+        "serviceType": "Service Type",
+        "serviceTypeUnchangeable": "Service type cannot be changed",
+        "currentDetails": "Current Appointment Details",
+        "date": "Date: {{date}}",
+        "time_current": "Time: {{time}}",
+        "technician_current": "Technician: {{name}}",
+        "saveChanges": "Save Changes",
+        "cancel": "Cancel",
+        "updateSuccess": "Appointment updated successfully",
+        "treatmentDetails": "Service Details"
+      },
+      "modals": {
+        "selectService": "Select Service Type",
+        "selectCategory": "Select Appointment Category",
+        "selectSpecialType": "Select Service Type"
+      },
+      "footer": {
+        "system": "Technician's Schedule Management System",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+
+    "customerProfile": {
+      "loading": "Loading customer profile...",
+      "header": {
+        "badge": "CUSTOMER PROFILE",
+        "welcome": "Customer Details",
+        "subtitle": "View complete customer information and service history"
+      },
+      "stats": {
+        "maps_one": "Map",
+        "maps_other": "Maps",
+        "stations_one": "Station",
+        "stations_other": "Stations",
+        "services_one": "Service",
+        "services_other": "Services"
+      },
+      "revenue": {
+        "title": "Customer Revenue",
+        "totalRevenue": "Total Revenue",
+        "completedServices": "Completed Services"
+      },
+      "customerInfo": {
+        "title": "Customer Information",
+        "id": "ID: {{id}}"
+      },
+      "maps": {
+        "title_one": "Location Map ({{count}})",
+        "title_other": "Location Maps ({{count}})",
+        "noMaps": "No maps uploaded",
+        "stations": "Stations: {{count}}"
+      },
+      "stations": {
+        "title_one": "Station Summary ({{count}})",
+        "title_other": "Stations Summary ({{count}})",
+        "noStations": "No stations recorded",
+        "baitStation": "Bait Station",
+        "rodentMonitor": "Rodent Monitor",
+        "stickyTrap": "Sticky Trap",
+        "lightTrap": "Light Trap"
+      },
+      "serviceHistory": {
+        "title_one": "Service History ({{count}})",
+        "title_other": "Service History ({{count}})",
+        "noServices": "No services recorded",
+        "service_one": "service",
+        "service_other": "services"
+      },
+      "footer": {
+        "system": "Customer Profile Display",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+
+    "customerRequests": {
+      "loading": "Loading Customer Requests...",
+      "header": {
+        "badge": "REQUESTS",
+        "welcome": "Service & Reschedule Requests",
+        "title": "Request Management",
+        "subtitle": "Review and manage customer service requests and reschedule requests"
+      },
+      "at": "at",
+      "overview": {
+        "title": "Request Overview",
+        "pendingRequests": "Pending Requests",
+        "actionRequired": "Action Required",
+        "allClear": "All Clear",
+        "todayRequests": "Today's Requests",
+        "new": "New",
+        "rescheduleRequests": "Reschedule Requests",
+        "priority": "Priority"
+      },
+      "emptyState": {
+        "title": "No Pending Requests",
+        "text": "All customer requests have been processed",
+        "refresh": "Refresh"
+      },
+      "requestList": {
+        "title_one": "Pending Request ({{count}})",
+        "title_other": "Pending Requests ({{count}})",
+        "unknownDate": "Unknown date",
+        "passwordBadge": "PASSWORD",
+        "rescheduleBadge": "RESCHEDULE",
+        "serviceBadge": "SERVICE",
+        "priority": "{{priority}} PRIORITY",
+        "noDescription": "No description provided",
+        "preferred": "Preferred: {{datetime}}",
+        "viewDetails": "View Details",
+        "decline": "Decline",
+        "accept": "Accept"
+      },
+      "detailsModal": {
+        "title": "Request Details",
+        "customer": "Customer",
+        "serviceType": "Service Type",
+        "pest": "Pest: {{name}}",
+        "urgency": "Urgency",
+        "description": "Description",
+        "attachedImages": "Attached Images",
+        "rescheduleDetails": "Reschedule Details",
+        "original": "Original: {{datetime}}",
+        "requested": "Requested: {{datetime}}",
+        "preferredDateTime": "Preferred Date & Time",
+        "notSpecified": "Not specified",
+        "submitted": "Submitted",
+        "additionalNotes": "Additional Notes",
+        "declineRequest": "Decline Request",
+        "acceptAction": "{{action}}",
+        "acceptAndSchedule": "Accept Request"
+      },
+      "declineRequest":"Decline Request",
+      "declineConfirm": "Decline customer's request?",
+      "declineButton": "Decline",
+      "appointmentModal": {
+        "title": "Schedule Appointment",
+        "approveTitle": "Approve Reschedule Request",
+        "customerInfo": "New Service Request",
+        "rescheduleInfo": "Reschedule Request",
+        "servicePrice": "Service Price (€)",
+        "appointmentCategory": "Appointment Category",
+        "complianceValidUntil": "Compliance Valid Until",
+        "complianceRequired": "Required for Myocide service compliance certificate",
+        "complianceOptional": "Optional: Only needed if this service affects compliance",
+        "serviceType": "Service Type",
+        "currentService": "Current: {{type}}",
+        "changeServiceType": "Change Service Type",
+        "specificServiceType": "Specific Service Type",
+        "technician": "Technician",
+        "date": "Date",
+        "time": "Time",
+        "customerPreferences": "Customer Preferences",
+        "preferredDate": "Preferred date: {{date}}",
+        "preferredTime": "Preferred time: {{time}}",
+        "customerNotes": "Customer Notes",
+        "noTechnicians": "No technicians available. Please add technicians first.",
+        "cancel": "Cancel",
+        "createAppointment": "Create Appointment",
+        "approveReschedule": "Approve Reschedule"
+      },
+      "passwordModal": {
+        "title": "Reset Customer Password",
+        "subtitle": "Set a new password for this customer account",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "updatePassword": "Update Password",
+        "newPasswordPlaceholder": "Enter new password",
+        "confirmPasswordPlaceholder": "Confirm new password"
+     },
+      "footer": {
+        "system": "Customer Request Management System",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+
+    "customers": {
+      "loading": "Loading Customers...",
+      "header": {
+        "badge": "CUSTOMERS",
+        "welcome": "Customer Management",
+        "title": "Manage Customer Accounts",
+        "subtitle": "Create, edit, and manage customer profiles and locations"
+      },
+      "restoreSuccess": "Customer successfully restored",
+      "stats": {
+        "totalCustomers": "Total Customers",
+        "locationMaps": "Location Maps",
+        "totalStations": "Total Stations"
+      },
+      "actions": {
+        "title": "Customer Actions",
+        "add": "Add Customer",
+        "addDesc": "Create new customer profile",
+        "edit": "Edit Customer",
+        "editDesc": "Modify existing customer",
+        "remove": "Remove Customer",
+        "removeDesc": "Remove customer permanently",
+        "restore": "Restore Customer",
+        "restoreDesc": "Restore from deleted list",
+        "permanentDelete": "Permanent Delete",
+        "permanentDeleteDesc": "Remove permanently",
+        "noDeletedCustomers": "No removed customers",
+        "noDeletedToPermanentDelete": "There are no deleted customer to delete permanently"
+      },
+      "directory": {
+        "title": "Customer Directory",
+        "title_other": "Customer Directory",
+        "count_one": "{{count}} customer",
+        "count_other": "{{count}} customers",
+        "emptyTitle": "No Customers Found",
+        "emptyText": "Start by adding your first customer to the system",
+        "addFirst": "Add First Customer"
+      },
+      "customerCard": {
+        "id": "ID: {{id}}"
+      },
+      "deletedSection": {
+        "title": "Deleted Customers",
+        "show": "Show",
+        "hide": "Hide",
+        "noDeleted": "No deleted customers",
+        "deletedDate": "Deleted: {{date}}",
+        "restore": "Restore",
+        "deleteForever": "Delete Forever"
+      },
+      "addModal": {
+        "title": "Add New Customer",
+        "subtitle": "Enter customer details below",
+        "basicInfo": "Basic Information",
+        "customerName": "Customer Name",
+        "address": "Address",
+        "email": "Email Address",
+        "telephone": "Telephone",
+        "loginAccount": "Login Account (Optional)",
+        "loginDesc": "Create login credentials for customer portal access",
+        "loginEmail": "Login Email",
+        "initialPassword": "Initial Password",
+        "mapsSection": "Maps & Layouts",
+        "mapsDesc": "Upload location maps after customer is created",
+        "saveFirst": "Save customer first to add maps",
+        "addMap": "Add Map",
+        "mapName": "Map Name",
+        "chooseGallery": "Choose from Gallery",
+        "changeImage": "Change Image",
+        "uploadMap": "Upload Map",
+        "saveCustomer": "Save Customer",
+        "passwordPlaceholder": "Enter password",
+        "customerNamePlaceholder": "Customer's name",
+        "addressPlaceholder": "Residence address",
+        "emailPlaceholder": "Email address",
+        "customerNameRequired": "Please add customer's name",
+        "createSuccess": "Client created successfully",
+        "createWithLoginSuccess": "Customer account created successfully",
+        "createWithoutLoginSuccess": "Customer's account was not created"
+      },
+      "editModal": {
+        "title": "Edit Customer",
+        "subtitle": "Customer ID: {{id}}",
+        "basicInfo": "Basic Information",
+        "customerName": "Customer Name",
+        "address": "Address",
+        "email": "Email Address",
+        "telephone": "Telephone",
+        "mapsSection": "Customer Maps",
+        "currentMaps_one": "Current Map ({{count}})",
+        "currentMaps_other": "Current Maps ({{count}})",
+        "deleteMap": "Delete",
+        "addNewMap": "Add New Map",
+        "mapName": "Map Name",
+        "chooseGallery": "Choose from Gallery",
+        "changeImage": "Change Image",
+        "uploadMap": "Upload Map",
+        "saveChanges": "Save Changes"
+      },
+      "deleteModal": {
+        "title": "Remove Customer",
+        "message": "Are you sure you want to remove {{name}}?",
+        "warning": "This action removes all associated maps and stations of that customer, but they may be recovered",
+        "remove": "Remove",
+        "moveSuccess" : "Customer successfully removed"
+        
+      },
+      "permanentDeleteModal": {
+        "title": "Confirm Permanent Delete",
+        "message": "Are you ABSOLUTELY sure you want to PERMANENTLY delete \"{{name}}\"?",
+        "warning": "This will remove all customer data including appointments, maps, and stations.",
+        "deleteForever": "Delete Forever",
+        "success": "Customer has been successfully deleted"
+      },
+      "selectModal": {
+        "select": "Select Customer to {{action}}",
+        "choose": "Choose a customer from the list",
+        "id": "ID: {{id}}",
+        "cancelSelection": "Cancel Selection"
+      },
+      "footer": {
+        "system": "Customer Management System",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+
+    "materials": {
+      "loading": "Loading Materials...",
+      "header": {
+        "badge": "MATERIALS",
+        "welcome": "Materials Management",
+        "title": "Manage Inventory Items",
+        "subtitle": "Configure bait types and chemicals for technician use"
+      },
+      "stats": {
+        "baitTypes": "Bait Types",
+        "active": "Active",
+        "stored": "Stored",
+        "chemicals": "Chemicals",
+        "totalItems": "Total Items",
+        "combined": "Combined"
+      },
+      "categories": {
+        "title": "Inventory Categories",
+        "bait": "Bait Types",
+        "baitSingular": "bait type",
+        "chemicals": "Chemicals",
+        "chemicalsSingular": "chemical"
+      },
+      "refreshFailed": "Could not refresh {{plural}}. Please try again.",
+      "saveSuccess": "{{singular}} updated successfully",
+      "saveFailed": "Failed to save {{singular}}",
+      "duplicateError": "This {{singular}} name already exists",
+      "content": {
+        "emptyTitle": "No {{plural}}",
+        "emptyText": "Add your first {{singular}} below to get started",
+        "itemCount_one": "{{count}} {{singular}}",
+        "itemCount_other": "{{count}} {{plural}}",
+        "selectToEdit": "Select {{singular}} to edit",
+        "selectPlaceholder": "Select {{singular}}",
+        "editTitle": "Edit {{singular}}",
+        "nameLabel": "{{type}} Name",
+        "antidoteLabel": "Antidote",
+        "activeIngredient": "Active Ingredient",
+        "antidote": "Antidote / First Aid",
+        "saveChanges": "Save Changes",
+        "deleteItem": "Delete {{singular}}",
+        "allItems_one": "All {{plural}} ({{count}})",
+        "allItems_other": "All {{plural}} ({{count}})",
+        "noDetails": "No additional details",
+        "addTitle": "Add New {{singular}}",
+        "addNamePlaceholder": "New {{singular}} name (required)",
+        "activeIngredientPlaceholder": "Active ingredient (optional)",
+        "antidotePlaceholder": "Antidote or first aid information (optional)",
+        "addButton": "Add {{singular}}",
+        "hint": "* Required field. Additional fields are optional but recommended."
+      },
+      "deleteModal": {
+        "title": "Delete {{singular}}",
+        "message": "Are you sure you want to delete \"{{name}}\"?",
+        "warning": "This action cannot be undone and will remove this {{singular}} from all records.",
+        "activeIngredient": "Active Ingredient: {{ingredient}}"
+      },
+      "footer": {
+        "system": "Materials Management System",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+
+    "statistics": {
+      "loading": "Loading Statistics...",
+      "header": {
+        "badge": "ANALYTICS DASHBOARD",
+        "welcome": "Business Analytics",
+        "title": "Performance Dashboard",
+        "subtitle": "Real-time business insights and performance metrics"
+      },
+      "kpi": {
+        "title": "Business Performance Dashboard",
+        "monthlyRevenue": "Monthly Revenue",
+        "vsLastMonth": "vs last month",
+        "customerGrowth": "Customer Growth",
+        "newCustomers": "new customers",
+        "efficiencyScore": "Efficiency Score",
+        "efficiencyDesc": "based on visit duration",
+        "retentionRate": "Retention Rate",
+        "retentionDesc": "customer loyalty",
+        "avgTicketSize": "Avg Ticket Size",
+        "ticketDesc": "per service",
+        "visitFrequency": "Visit Frequency",
+        "frequencyDesc": "between services",
+        "excellent": ""
+      },
+      "insights": {
+        "title": "Quick Insights",
+        "bestPerforming": "Best Performing",
+        "topService": "Top Service",
+        "notAvailable": "Ν/Α"
+      },
+      "revenue": {
+        "summary": "Revenue Summary",
+        "totalRevenue": "Total Revenue",
+        "thisYear": "This Year",
+        "avgPrice": "Avg Price",
+        "completed": "Completed"
+      },
+      "revenueTrends": {
+        "title": "Revenue Trends",
+        "monthlyPerformance": "Monthly Revenue Performance",
+        "currentMonth": "Current Month",
+        "growth": "Growth",
+        "last3Months": "Last 3 Months",
+        "last6Months": "Last 6 Months",
+        "last12Months": "Last 12 Months",
+        "allTime": "All Time",
+        "noData": "No revenue data available",
+        "noDataDesc": "Revenue data will appear here as services are completed",
+        "currentMonthLabel": "Current Month",
+        "previousMonthsLabel": "Previous Months"
+      },
+      "overview": {
+        "title": "Business Overview",
+        "customers": "Customers",
+        "activeAccounts": "Active accounts",
+        "technicians": "Technicians",
+        "teamMembers": "Team members",
+        "appointments": "Appointments",
+        "totalScheduled": "Total scheduled",
+        "todayVisits": "Today's Visits",
+        "servicesToday": "Services today",
+        "todayRequests": "Today's Requests",
+        "newInquiries": "New inquiries",
+        "completionRate": "Completion Rate",
+        "servicesCompleted": "Services completed"
+      },
+      "serviceRevenue": {
+        "title": "Revenue by Service Type",
+        "services_one": "service",
+        "services_other": "services"
+      },
+      "topTechnicians": {
+        "title": "Top Technicians",
+        "senior": "Senior Technician"
+      },
+      "topCustomers": {
+        "title": "Top Customers",
+        "visits_one": "visit",
+        "visits_other": "visits",
+        "topRank": "Top {{rank}}"
+      },
+      "appointmentStatus": {
+        "title": "Appointment Status",
+        "totalAppointments": "Total Appointments"
+      },
+      "serviceDistribution": {
+        "title": "Service Distribution"
+      },
+      "revenueDetails": {
+        "title": "Revenue Details",
+        "servicesCompleted": "Services Completed",
+        "avgRevenuePerService": "Avg. Revenue/Service",
+        "month": "Month",
+        "revenue": "Revenue",
+        "services": "Services",
+        "growth": "Growth",
+        "close": "Close"
+      },
+      "footer": {
+        "system": "Business Analytics Dashboard",
+        "version": "Version 1.1 • Data updated: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+
+    "technicians": {
+      "loading": "Loading Technicians...",
+      "header": {
+        "badge": "TECHNICIANS",
+        "welcome": "Technician Management",
+        "title": "Manage Technician Profiles",
+        "subtitle": "Add, edit, or remove technicians from the system"
+      },
+      "stats": {
+        "totalTechnicians": "Total Technicians",
+        "active": "Active",
+        "newThisMonth": "New This Month"
+      },
+      "list": {
+        "title": "Technician List",
+        "addButton": "Add Technician",
+        "emptyTitle": "No Technicians Found",
+        "emptyText": "Start by adding your first technician to the system",
+        "addFirst": "Add First Technician",
+        "years": "years",
+        "id": "ID: {{id}}"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "addModal": {
+        "title": "Add New Technician",
+        "subtitle": "Fill in the details below",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "age": "Age",
+        "username": "Username",
+        "email": "Email Address",
+        "emailHint": "Leave blank to auto-generate: username@Pestify.gr",
+        "password": "Password",
+        "save": "Save Technician",
+        "firstNamePlaceholder": "Enter first name",
+        "lastNamePlaceholder": "Enter last name",
+        "agePlaceholder": "Enter age",
+        "emailPlaceholder": "Email address",
+        "usernamePlaceholder":"Enter username",
+        "passwordPlaceholder":"Enter password"
+      },
+      "editModal": {
+        "title": "Edit Technician",
+        "subtitle": "Update technician details",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "age": "Age",
+        "username": "Username",
+        "email": "Email Address",
+        "emailHint": "Leave blank to auto-generate: username@Pestify.gr",
+        "newPassword": "New Password (optional)",
+        "passwordHint": "Leave blank to keep current password",
+        "update": "Update Technician",
+        "newPasswordPlaceholder":"Enter new password"
+      },
+      "deleteModal": {
+        "title": "Delete Technician",
+        "message": "Are you sure you want to delete this technician? This action cannot be undone.",
+        "warning": "All assigned visits and history will be permanently removed.",
+        "delete": "Delete"
+      },
+      "footer": {
+        "system": "Technician Management System",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    }
+  },
+
+  "serviceTypes": {
+    "myocide": "Myocide",
+    "disinfection": "Disinfection",
+    "insecticide": "Insecticide",
+    "special": "Special Service",
+    "unknown": "Unknown Service"
+  },
+
+  "status": {
+    "scheduled": "Scheduled",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "pending": "Pending",
+    "inProgress": "In Progress",
+    "accepted": "Accepted",
+    "declined": "Declined"
+  },
+
+  "urgency": {
+    "emergency": "EMERGENCY",
+    "high": "HIGH",
+    "normal": "NORMAL",
+    "low": "LOW"
+  },
+
+  "months": {
+    "jan": "Jan",
+    "feb": "Feb",
+    "mar": "Mar",
+    "apr": "Apr",
+    "may": "May",
+    "jun": "Jun",
+    "jul": "Jul",
+    "aug": "Aug",
+    "sep": "Sep",
+    "oct": "Oct",
+    "nov": "Nov",
+    "dec": "Dec"
+  },
+
+  "weekdays": {
+    "short": {
+      "mon": "MON",
+      "tue": "TUE",
+      "wed": "WED",
+      "thu": "THU",
+      "fri": "FRI",
+      "sat": "SAT",
+      "sun": "SUN"
+    }
+  }, 
+   "customer": {
+    "loading": "Loading your dashboard...",
+    "dashboardUnavailable": "Dashboard unavailable",
+    "common": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "notSpecified": "Not specified",
+      "unknown": "Unknown",
+      "na": "N/A",
+      "at": "at",
+      "justNow": "Just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    },
+    "welcome": {
+      "greeting": "Welcome back,",
+      "customer": "Customer"
+    },
+    "compliance": {
+      "title": "Compliance Status",
+      "status": {
+        "compliant": "COMPLIANT",
+        "pending": "PENDING",
+        "nonCompliant": "NON-COMPLIANT"
+      },
+      "description": {
+        "compliant": "Your certificate is valid",
+        "pending": "A renewal is in progress",
+        "nonCompliant": "Your certificate has expired"
+      },
+      "validUntil": "Valid until {{date}}",
+      "lastVisit": {
+        "label": "Last Visit:",
+        "none": "No visits yet"
+      },
+      "nextScheduled": {
+        "label": "Next Scheduled:",
+        "none": "Not scheduled"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "newBadge_one": "{{count}} new",
+      "newBadge_other": "{{count}} new",
+      "hide": "Hide",
+      "show": "Show",
+      "markAllRead": "Mark All Read",
+      "empty": {
+        "title": "No Notifications",
+        "text": "You don't have any notifications yet."
+      },
+      "preview": {
+        "new": "{{count}} New Notifications",
+        "recent": "Recent Notifications",
+        "tapToView": "Tap to view {{type}} notifications"
+      },
+      "viewAll": "View all {{count}} notifications",
+      "showLess": "Show less",
+      "footer": {
+        "timeAgo": "{{time}} ago"
+      }
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "visitHistory": "Visit History",
+      "appointments": "Appointments",
+      "requestService": "Request Service",
+      "contactUs": "Contact Us"
+    },
+    "appointments": {
+      "title": "Upcoming Appointments",
+      "empty": {
+        "title": "No Upcoming Appointments",
+        "text": "You don't have any scheduled appointments. Request a service to get started."
+      },
+      "status": {
+        "pendingReschedule": "Pending Request",
+        "rescheduled": "Rescheduled",
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "technician": "Technician: {{name}}",
+      "requestReschedule": "Request Reschedule",
+      "viewAppointments": "View Appointments"
+    },
+    "serviceRequest": {
+      "title": "Request New Service",
+      "form": {
+        "serviceType": "Service Type *",
+        "specificServiceType": "Specific Service Type *",
+        "selectService": "Select service type",
+        "urgency": "Urgency",
+        "description": "Problem Description *",
+        "descriptionPlaceholder": "Please describe the pest problem or service needed...",
+        "preferredDate": "Preferred Date (optional)",
+        "preferredDatePlaceholder": "YYYY-MM-DD",
+        "preferredTime": "Preferred Time (optional)",
+        "preferredTimePlaceholder": "HH:MM",
+        "addPhotos": "Add Photos (Optional)",
+        "addMorePhotos": "Add More Photos",
+        "submit": "Submit Service Request",
+        "submitting": "Submitting...",
+        "chooseOption": "Choose option",
+        "camera": "Camera",
+        "gallery": "Gallery",
+        "note": "* Required fields. Our team will contact you within 24 hours to confirm details."
+      },
+      "specialService": {
+        "specifyPest": "Specify Pest Name *",
+        "pestPlaceholder": "e.g., Ants, Spiders, Cockroaches, etc."
+      },
+      "urgency": {
+        "low": {
+          "label": "Low Priority",
+          "description": "Schedule when convenient"
+        },
+        "normal": {
+          "label": "Normal",
+          "description": "Within 1–2 weeks"
+        },
+        "high": {
+          "label": "Urgent",
+          "description": "As soon as possible"
+        },
+        "emergency": {
+          "label": "Emergency",
+          "description": "Need immediate help"
+        }
+      },
+      "success": {
+        "title": "Request Submitted Successfully",
+        "message": "Your service request has been received. Our team will review it and contact you within 24 hours."
+      },
+      "error": {
+        "noServiceType": "Please select a service type",
+        "noSpecialSubtype": "Please select a specific service type for Special Service",
+        "noOtherPest": "Please specify the pest name for 'Other' service",
+        "noDescription": "Please provide a description of the problem",
+        "noCustomerInfo": "Customer information not available. Please try again.",
+        "submitFailed": "Failed to submit service request. Please try again."
+      }
+    },
+    "contact": {
+      "title": "Contact Us",
+      "support": "Contact Support",
+      "subtitle": "Need help? Send us an email or give us a call",
+      "phone": {
+        "title": "Call Us",
+        "button": "Call Now",
+        "number": "+30 698 624 4371",
+        "note": "Tap to call our support team directly"
+      },
+      "email": {
+        "title": "Send Email",
+        "recipient": "Email will be sent to: {{email}}",
+        "subject": "Subject",
+        "subjectPlaceholder": "Enter subject",
+        "message": "Your message",
+        "messagePlaceholder": "Type your message here...",
+        "send": "Send Email",
+        "sending": "Sending...",
+        "note": "• Your default email app will open with pre-filled content\n• Make sure to review before sending"
+      },
+      "error": {
+        "fillBoth": "Please fill in both subject and message",
+        "noEmailClient": "No email client is installed",
+        "cantOpen": "Could not open email client"
+      }
+    },
+    "account": {
+      "title": "Account Settings",
+      "security": "Security Settings",
+      "changePassword": {
+        "title": "Change Password",
+        "subtitle": "For security reasons, please update your password regularly",
+        "currentPassword": "Current Password *",
+        "currentPlaceholder": "Enter your current password",
+        "newPassword": "New Password *",
+        "newPlaceholder": "Enter new password (min. 8 characters)",
+        "confirmPassword": "Confirm New Password *",
+        "confirmPlaceholder": "Re-enter new password",
+        "updateButton": "Update Password",
+        "updating": "Updating...",
+        "note": "• Password must be at least 8 characters long\n• Use a combination of letters and numbers for better security",
+        "validation": {
+          "minLength": "Password must be at least 8 characters",
+          "mismatch": "Passwords do not match"
+        },
+        "success": "Password updated successfully",
+        "error": {
+          "allFields": "All fields are required",
+          "minLength": "Password must be at least 8 characters",
+          "mismatch": "Passwords do not match",
+          "wrongCurrent": "Your current password is wrong",
+          "updateFailed": "Failed to update password. Please try again."
+        }
+      }
+    },
+    "logout": "Logout",
+    "footer": {
+      "text": "Pestify Customer Portal",
+      "copyright": "© {{year}} Pestify. All rights reserved."
+    },
+    "modals": {
+      "notificationDetails": {
+        "title": "Notification Details",
+        "appointmentDetails": "Appointment Details",
+        "date": "Date:",
+        "time": "Time:",
+        "service": "Service:",
+        "technician": "Technician:",
+        "viewAppointments": "View Appointments",
+        "viewHistory": "View Visit History"
+      },
+      "selectService": {
+        "title": "Select Service Type"
+      },
+      "selectSpecificService": {
+        "title": "Select Specific Service"
+      },
+      "reschedule": {
+        "title": "Request Appointment Reschedule",
+        "newDate": "New Preferred Date *",
+        "newDatePlaceholder": "YYYY-MM-DD",
+        "newTime": "New Preferred Time *",
+        "newTimePlaceholder": "HH:MM",
+        "submit": "Submit Reschedule Request",
+        "submitting": "Submitting...",
+        "error": {
+          "selectBoth": "Please select both date and time",
+          "futureDate": "Please select a future date"
+        },
+        "success": {
+          "title": "Request Submitted",
+          "message": "Your reschedule request has been submitted. The admin will review it shortly."
+        }
+      },
+      "markAllRead": {
+        "title": "Mark All as Read",
+        "message": "Mark all notifications as read?",
+        "confirm": "Mark All",
+        "cancel": "Cancel"
+      },
+      "clearAll": {
+        "title": "Clear All Notifications",
+        "message": "Are you sure you want to clear all notifications?",
+        "confirm": "Clear All",
+        "cancel": "Cancel"
+      }
+    },
+    "serviceTypes": {
+      "myocide": "Myocide",
+      "disinfection": "Disinfection",
+      "insecticide": "Insecticide",
+      "special": "Special Service"
+    },
+    "specialSubtypes": {
+      "grass_cutworm": "Grass Cutworm",
+      "fumigation": "Fumigation",
+      "termites": "Termites",
+      "exclusion": "Exclusion Service",
+      "snake_repulsion": "Snake Repulsion",
+      "bird_control": "Bird Control",
+      "bed_bugs": "Bed Bugs",
+      "fleas": "Fleas",
+      "plant_protection": "Plant Protection",
+      "palm_weevil": "Palm Weevil",
+      "other": "Other"
+    },
+    "notificationTypes": {
+      "appointment_created": {
+        "title": "New Appointment Scheduled",
+        "description": "An appointment has been scheduled for you"
+      },
+      "appointment_updated": {
+        "title": "Appointment Updated",
+        "description": "Your appointment details have been updated"
+      },
+      "appointment_deleted": {
+        "title": "Appointment Cancelled",
+        "description": "An appointment has been cancelled"
+      },
+      "appointment_completed": {
+        "title": "Appointment Completed",
+        "description": "A service appointment has been completed"
+      },
+      "service_request_accepted": {
+        "title": "Service Request Accepted",
+        "description": "Your service request has been accepted"
+      },
+      "service_request_declined": {
+        "title": "Service Request Declined",
+        "description": "Your service request has been declined"
+      },
+      "reschedule_declined": {
+        "title": "Reschedule Declined",
+        "description": "Your reschedule request has been declined"
+      }
+    },
+      "visits": {
+        "loading": "Loading Visits...",
+        "title": "All Service Visits",
+        "subtitle": "Tap any visit to view full report",
+        "total": "Total",
+        "infoBanner": "Tap \"View Report\" to see details or \"Download PDF\" to save",
+        "listTitle": "All Services",
+        "listSubtitle": "Including Myocide, Disinfection, Insecticide, and Special Services",
+        "empty": {
+          "title": "No Visits Found",
+          "text": "There are no completed service visits to display yet.",
+          "refresh": "Refresh"
+        },
+        "card": {
+          "status": "Completed",
+          "dateNotAvailable": "Date not available",
+          "timeNotAvailable": "Time not available",
+          "technician": "Technician",
+          "service": "Service: {{type}}",
+          "viewReport": "View Report",
+          "downloadPDF": "Download PDF"
+        },
+        "serviceTypes": {
+          "myocide": "Myocide Service",
+          "disinfection": "Disinfection Service",
+          "insecticide": "Insecticide Service",
+          "special": "Special Service",
+          "inspection": "Inspection Service",
+          "emergency": "Emergency Service",
+          "installation": "Installation Service",
+          "followUp": "Follow-up Service",
+          "regular": "Regular Service",
+          "default": "Service"
+        },
+        "errors": {
+          "noReportId": "No report ID found for this visit",
+          "authRequired": "Authentication required. Please login again.",
+          "downloadFailed": "The report could not be downloaded.",
+          "noVisitId": "Could not find visit ID. Please try again.",
+          "loadFailed": "Failed to load visits"
+        },
+        "alerts": {
+          "downloadComplete": "Download Complete",
+          "downloadCompleteMessage": "The PDF report has been downloaded to:\n{{path}}",
+          "downloadFailed": "Download Failed"
+        },
+        "back": "Back"
+      },
+      "serviceDisplay": {
+        "special": "Special: {{name}}",
+        "specialWithSubtype": "Special: {{subtype}}"
+      }
+  },
+    "components": {
+      "addTechnicianModal": {
+        "title": "Add Technician",
+        "firstName": "First Name *",
+        "firstNamePlaceholder": "Enter first name",
+        "lastName": "Last Name *",
+        "lastNamePlaceholder": "Enter last name",
+        "age": "Age",
+        "agePlaceholder": "Enter age",
+        "username": "Username *",
+        "usernamePlaceholder": "Enter username",
+        "password": "Password *",
+        "passwordPlaceholder": "Enter password",
+        "save": "Save",
+        "back": "Back",
+        "error": {
+          "requiredFields": "All required fields must be filled"
+        }
+      },
+      "stationForms": {
+        "common": {
+          "save": "Save",
+          "cancel": "Cancel",
+          "yes": "Yes",
+          "no": "No",
+          "functional": "Functional",
+          "damaged": "Damaged",
+          "access": "Access",
+          "condition": "Condition",
+          "timeSpent": "Time spent: {{time}}",
+          "incompleteForm": "Incomplete Form",
+          "selectOption": "Select {{field}}"
+        },
+        "baitStation": {
+          "title": "Station {{id}}",
+          "baitConsumption": "Bait Consumption %",
+          "selectConsumption": "Select consumption",
+          "baitType": "Bait Type",
+          "selectBaitType": "Select bait type",
+          "dosage": "Dosage (g)",
+          "selectDosage": "Select dosage",
+          "noBaitTypes": "No bait types available",
+          "error": {
+            "consumptionRequired": "You need to log Bait Consumption % before saving",
+            "baitTypeRequired": "You need to log Bait Type before saving",
+            "dosageRequired": "You need to log Dosage (g) before saving",
+            "conditionRequired": "You need to log Condition before saving",
+            "accessRequired": "You need to log Access before saving"
+          }
+        },
+        "lightTrap": {
+          "title": "Light Trap {{id}}",
+          "mosquitoes": "Mosquitoes",
+          "lepidoptera": "Lepidoptera",
+          "drosophila": "Drosophila",
+          "flies": "Flies",
+          "others": "Others",
+          "otherPlaceholder": "Enter name and value",
+          "replaceBulb": "Replace bulb",
+          "error": {
+            "replaceBulbRequired": "You need to log Replace Bulb before saving",
+            "conditionRequired": "You need to log Condition before saving",
+            "accessRequired": "You need to log Access before saving"
+          }
+        },
+        "pheromoneTrap": {
+          "title": "Pheromone Trap {{id}}",
+          "pheromoneType": "Pheromone Type",
+          "selectPheromoneType": "Select pheromone type",
+          "replacedPheromone": "Replaced Pheromone",
+          "insectsCaptured": "Insects Captured",
+          "insectsPlaceholder": "Describe insects captured...",
+          "damaged": "Damaged",
+          "noPheromoneTypes": "No pheromone types available",
+          "error": {
+            "pheromoneTypeRequired": "You need to select Pheromone Type before saving",
+            "replacedPheromoneRequired": "You need to select Replaced Pheromone (Yes/No) before saving",
+            "damagedRequired": "You need to select Damaged (Yes/No) before saving",
+            "accessRequired": "You need to log Access before saving"
+          }
+        },
+        "atoxicStation": {
+          "title": "{{type}} {{id}}",
+          "snapTrap": "Snap Trap",
+          "multicatch": "Multicatch",
+          "capture": "Capture",
+          "rodentsCaptured": "Rodents Captured",
+          "rodentsPlaceholder": "Rodents Captured",
+          "triggered": "Triggered",
+          "replacedSurface": "Replaced Surface",
+          "error": {
+            "captureRequired": "You need to log Capture before saving",
+            "rodentsRequired": "You need to log Rodents Captured before saving",
+            "replacedSurfaceRequired": "You need to log Replaced Surface before saving",
+            "triggeredRequired": "You need to log Triggered before saving",
+            "conditionRequired": "You need to log Condition before saving",
+            "accessRequired": "You need to log Access before saving"
+          }
+        }
+      },
+      "chemicalsDropdown": {
+        "selectedChemicals": "Selected Chemicals:",
+        "clearAll": "Clear All",
+        "selectChemicals": "Select chemicals used",
+        "chemicalSelected_one": "{{count}} chemical selected",
+        "chemicalSelected_other": "{{count}} chemicals selected",
+        "availableChemicals": "Available chemicals: {{count}}",
+        "search": "Search chemicals...",
+        "noChemicalsFound": "No chemicals found",
+        "noChemicalsAvailable": "No chemicals available",
+        "tapToReload": "Tap to reload",
+        "done": "Done",
+        "addDetails": "Add Details for {{chemical}}",
+        "concentration": "Concentration (%)",
+        "concentrationPlaceholder": "e.g., 10",
+        "volume": "Volume (ml)",
+        "volumePlaceholder": "e.g., 500",
+        "save": "Save",
+        "cancel": "Cancel",
+        "error": {
+          "startServiceRequired": "Please start the service before selecting chemicals.",
+          "actionDisabled": "Start the service first",
+          "editingDisabled": "Editing is disabled"
+        },
+        "gallery": "Gallery",
+        "camera": "Camera"
+      },
+      "swipeableVisitRow": {
+        "downloadReport": "Download Report",
+        "downloadConfirm": "Download PDF report for {{service}}?",
+        "download": "Download",
+        "cancel": "Cancel",
+        "success": "Success",
+        "pdfSaved": "PDF saved to: {{path}}",
+        "downloadFailed": "Download Failed",
+        "errors": {
+          "network": "Network error. Please check your internet connection.",
+          "auth": "Authentication error. Please log in again.",
+          "notFound": "Report not found on server.",
+          "storage": "Storage permission required. Please check app permissions."
+        },
+        "appointmentId": "Appointment ID: {{id}}",
+        "unknownDate": "Unknown date",
+        "minutes": "min",
+        "serviceTypes": {
+          "myocide": "Myocide",
+          "insecticide": "Insecticide",
+          "disinfection": "Disinfection",
+          "special": "Special Service"
+        }
+      }
+    },
+
+      "technician": {
+    "common": {
+      "loading": "Loading...",
+      "back": "Back",
+      "cancel": "Cancel",
+      "save": "Save",
+      "update": "Update",
+      "delete": "Delete",
+      "edit": "Edit",
+      "confirm": "Confirm",
+      "yes": "Yes",
+      "no": "No",
+      "ok": "OK",
+      "error": "Error",
+      "success": "Success",
+      "warning": "Warning",
+      "info": "Information",
+      "minutes": "min",
+      "hours": "h",
+      "seconds": "s",
+      "notAvailable": "N/A",
+      "unknown": "Unknown",
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email",
+      "navigate": "Navigate",
+      "copyright":"© {{year}} Pestify. All rights reserved."
+    },
+    "home": {
+      "loading": "Loading Technician Dashboard...",
+      "header": {
+        "badge": "TECH",
+        "logout": "Logout"
+      },
+      "welcome": "Welcome back,",
+      "stats": {
+        "todayVisits": "Today's Visits",
+        "customers": "Customers",
+        "totalAppointments": "Total Appointments",
+        "appointments_one": "{{count}} appointment",
+        "appointments_other": "{{count}} appointments"
+      },
+      "customerSelection": {
+        "title": "Customer Selection",
+        "selectorPlaceholder": "Select a customer",
+        "noAddress": "No address available",
+        "navigateButton": "Navigate to {{name}}",
+        "editButton": "Edit Customer Profile"
+      },
+      "calendar": {
+        "title": "Schedule Calendar",
+        "legend": {
+          "allCompleted": "All completed",
+          "pending": "Pending",
+          "today": "Today"
+        }
+      },
+      "appointments": {
+        "title": "Appointments for {{date}}",
+        "empty": {
+          "title": "No Appointments",
+          "subtitle": "No appointments scheduled for this date",
+          "refresh": "Refresh"
+        },
+        "completedMessage": "This appointment has already been completed",
+        "viewDetails":"View Details",
+        "todayCount": "Appointments today",
+        "status": {
+          "cancelled": "Cancelled",
+          "completed": "Completed",
+          "scheduled": "Scheduled",
+          "loading": "Loading customer data..."
+        },
+        "serviceType": {
+          "myocide": "Myocide",
+          "disinfection": "Disinfection",
+          "insecticide": "Insecticide",
+          "special": "Special"
+        }
+      },
+      "actions": {
+        "refreshSchedule": "Refresh Schedule"
+      },
+      "footer": {
+        "system": "Pestify Technician Portal",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+    "navigation": {
+      "title": "Navigation",
+      "customerInfo": {
+        "id": "ID: {{id}}",
+        "address": "Address:",
+        "technician": "Technician:"
+      },
+      "quickNav": {
+        "button": "Start Navigation",
+        "noAddress": "No Address Available",
+        "chooseApp": "Choose Navigation App",
+        "prompt": "How would you like to navigate to {{name}}?"
+      },
+      "apps": {
+        "googleMaps": {
+          "name": "Google Maps",
+          "description": "Detailed directions & live traffic"
+        },
+        "waze": {
+          "name": "Waze",
+          "description": "Community-based traffic alerts"
+        },
+        "appleMaps": {
+          "name": "Apple Maps",
+          "description": "iOS native maps app"
+        }
+      },
+      "mapScreen": {
+        "button": "Go to Map Screen"
+      },
+      "tips": {
+        "title": "📌 Tips for Your Visit",
+        "tip1": "• Check traffic before departure",
+        "tip2": "• Bring all necessary equipment",
+        "tip3": "• Call ahead if running late",
+        "tip4": "• Save customer contact info"
+      },
+      "errors": {
+        "noAddress": "No Location",
+        "noAddressMessage": "This customer doesn't have a location saved.",
+        "appNotInstalled": "Could not open navigation app. Make sure it's installed."
+      }
+    },
+    "report": {
+      "title": "Service Report",
+      "subtitle": "Detailed service completion report",
+      "badge": "REPORT",
+      "visitOverview": {
+        "title": "Visit Overview",
+        "date": "Date",
+        "duration": "Duration",
+        "customer": "Customer",
+        "technician": "Technician",
+        "serviceType": "Service Type:"
+      },
+      "loading": "Loading report",
+      "serviceDetails": {
+        "title": "Service Details",
+        "serviceType": "Service Type:",
+        "subtype": "Subtype:",
+        "details": "Details:"
+      },
+      "chemicalsUsed": {
+        "title": "Chemicals Used"
+      },
+      "treatedAreas": {
+        "title": "Treated Areas",
+        "area": "Area",
+        "concentration": "Conc.",
+        "volume": "Volume",
+        "chemical": "Chemical",
+        "notes": "Notes"
+      },
+      "treatmentPhotos": {
+        "title": "Treatment Photos"
+      },
+      "serviceNotes": {
+        "title": "Service Notes"
+      },
+      "stationSummary": {
+        "title": "Station Summary",
+        "baitStations": "Bait Stations",
+        "multicatch": "Multicatch",
+        "snapTraps": "Snap Traps",
+        "lightTraps": "Light Traps",
+        "pheromoneTraps": "Pheromone Traps",
+        "totalStations": "Total Stations: {{count}}"
+      },
+      "stationStatus":{
+        "status": "Status",
+        "inactive": "Inactive",
+        "lowActivity": "Low Activity",
+        "active": "Active",
+        "highActivity": "High Activity",
+        "veryActive": "Very Active"
+      },
+      "stationTables": {
+        "baitStations": "Bait Stations (BS)",
+        "multicatch": "Multicatch (RM)",
+        "snapTraps": "Snap Traps (ST)",
+        "lightTraps": "Light Traps (LT)",
+        "pheromoneTraps": "Pheromone Traps (PT)",
+        "device": "Device",
+        "consumption": "Consumption",
+        "baitType": "Bait Type",
+        "dosage": "Dosage (g)",
+        "condition": "Condition",
+        "access": "Access",
+        "status": "Status",
+        "capture": "Capture",
+        "rodents": "Rodents",
+        "replaced": "Replaced",
+        "triggered": "Triggered",
+        "mosquitoes": "Mosq",
+        "lepidoptera": "Lepid",
+        "drosophila": "Drop",
+        "flies": "Flies",
+        "others": "Others",
+        "bulb": "Bulb",
+        "pheromone": "Pheromone",
+        "replacedPheromone": "Replaced",
+        "insects": "Insects",
+        "damaged": "Damaged"
+      },
+      "healthSafety": {
+        "title": "Health & Safety",
+        "materialsUsed": "Materials Used – Safety Information",
+        "baitsUsed": "Bait types used in this service:",
+        "chemicalsUsed": "Chemicals used in this service:",
+        "activeIngredient": "Active Ingredient:",
+        "firstAid": "First Aid / Antidote:",
+        "notSpecified": "Not specified",
+        "loading": "Loading safety information…"
+      },
+      "noData": {
+        "noStationData": "No station data found for this visit",
+        "noChemicals": "No chemicals used"
+      },
+      "footer": {
+        "system": "Technician's Report",
+        "id": "ID: {{id}}",
+        "version": "Version 1.1 • Date: {{date}}",
+        "copyright": "© {{year}} Pestify. All rights reserved."
+      },
+      "errors": {
+        "reportUnavailable": "Report Unavailable",
+        "retry": "Retry",
+        "goBack": "Go Back"
+      }
+    },
+    "myocide": {
+      "loading": "Loading service details...",
+      "noMaps": "No Map Image",
+      "timer": "⏱ {{time}}",
+      "editMap": "Edit Map",
+      "chooseMap": "Choose Map ▼",
+      "cancelEdit": "Cancel Edit",
+      "mapDropdown": {
+        "chooseMap": "Choose Map",
+        "mapName": "Map {{number}}"
+      },
+      "stationTypes": {
+        "baitStation": "Bait Station (BS)",
+        "multicatch": "Multicatch (RM)",
+        "snapTrap": "Snap Trap (ST)",
+        "lightTrap": "Light Trap (LT)",
+        "pheromoneTrap": "Pheromone Trap (PT)"
+      },
+      "editButtons": {
+        "add": "Add {{type}}",
+        "remove": "Remove {{type}}",
+        "save": "Save"
+      },
+      "serviceNotes": {
+        "label": "Service Notes:",
+        "placeholder": "Enter service notes here..."
+      },
+      "photos": {
+        "add": "Add Photos",
+        "addMore": "Add More Photos",
+        "view": "View Photos ({{count}})",
+        "servicePhotos": "Service Photos",
+        "close": "Close"
+      },
+      "actionButtons": {
+        "updateService": "Update Service",
+        "generateReport": "Generate Report",
+        "startWork": "▶ Start Work",
+        "finishAndSave": "Finish & Save",
+        "cancelWork": "Cancel Work",
+        "loadServiceData": "Load Service Data"
+      },
+      "alerts": {
+        "startServiceFirst": "Start Service First",
+        "startServiceRequired": "Please start the service first.",
+        "noData": "No Data",
+        "noDataMessage": "You haven't logged any station data. Please log at least one station before saving.",
+        "priceNotSet": "Price Not Set",
+        "priceNotSetMessage": "Admin has not set the service price yet. Please contact admin.",
+        "saveFailed": "Save Failed",
+        "uploadTimeout": "Upload Timeout",
+        "uploadTimeoutMessage": "The upload is taking too long. This might be due to large images. Try:\n\n• Upload fewer photos at a time\n• Use smaller images\n• Check your internet connection",
+        "tryAgain": "Try Again",
+        "cancel": "Cancel",
+        "workCancelled": "Work Cancelled",
+        "workCancelledMessage": "Session cancelled. No data was saved.",
+        "serviceUpdated": "Service Updated Successfully",
+        "serviceUpdatedMessage": "Successfully updated {{count}} station(s).",
+        "stationLogged": "{{type}}{{id}} logged successfully!"
+      },
+      "confirmations": {
+        "cancelWork": "Cancel Work Session",
+        "cancelWorkMessage": "Are you sure you want to cancel this work session? All unsaved station data will be lost.",
+        "noContinue": "No, Continue Working",
+        "yesCancel": "Yes, Cancel Work",
+        "editStation": "Edit {{type}}",
+        "editStationMessage": "Are you sure you want to edit {{type}} {{id}}?",
+        "imSure": "I'm sure"
+      }
+    },
+    "specialServices": {
+      "loading": "Loading service details...",
+      "serviceSetup": "Service Setup",
+      "serviceInProgress": "Service in Progress",
+      "customerInfo": "Customer Information",
+      "appointment": "Appointment: {{time}}",
+      "technician": "Technician: {{firstName}} {{lastName}}",
+      "service": "Service:",
+      "title": "Special Service",
+      "warning": {
+        "noServiceType": "This special service appointment doesn't have a specific service type. Please contact admin or specify the service to perform in your notes below."
+      },
+      "updateHint": "Load data",
+      "serviceProgress": "Service Progress",
+      "progress": {
+        "started": "Started",
+        "completed": "Completed"
+      },
+      "footer": "Pestify Technician Portal • Special Service Module",
+      "chemicalsUsed": "Chemicals Used",
+      "startHint": "Start service to enable",
+      "treatedAreas": "Treated Areas",
+      "areaPlaceholder": "Enter area name (e.g. Bathroom)",
+      "add": "Add",
+      "chemicalsInArea": "Chemicals in this Area",
+      "noChemicals": "No chemicals added yet",
+      "tapToAdd": "Tap on a chemical above to add it",
+      "treatmentPhotos": "Treatment Photos",
+      "serviceNotes": "Service Notes",
+      "notesPlaceholder": "Enter service notes, observations, or special instructions...",
+      "actionButtons": {
+        "startService": "Start {{type}} Service",
+        "startNoType": "Start Service (Type Not Specified)",
+        "completeService": "Complete Service",
+        "cancelService": "Cancel Service",
+        "updateService": "Update Service",
+        "generateReport": "Generate Report"
+      },
+      "areaDetails": {
+        "title": "Area Details",
+        "availableChemicals": "Available Chemicals",
+        "tapToAdd": "Tap to add to this area:",
+        "areaNotes": "Area Notes",
+        "notesPlaceholder": "Enter area-specific notes, observations, or special instructions...",
+        "cancel": "Cancel",
+        "save": "Save Area"
+      },
+      "photoUpload": {
+        "add": "Add Photos",
+        "addMore": "Add More Photos"
+      },
+      "alerts": {
+        "startServiceRequired": "Start Service Required",
+        "startServiceMessage": "Please start the service before entering data.",
+        "editMode": "Edit Service",
+        "editModeMessage": "You are now editing the completed service.",
+        "serviceStarted": "Service Started",
+        "serviceStartedMessage": "The service started for {{name}}",
+        "serviceCompleted": "Service Completed",
+        "serviceCompletedMessage": "Data saved successfully.\n\nYou can now generate a report.",
+        "serviceUpdated": "Service Updated",
+        "serviceUpdatedMessage": "Data saved successfully!\n\nYou will be navigated to Report Screen automatically.",
+        "dataNotReady": "Data Not Ready",
+        "dataNotReadyMessage": "Please wait a moment for the service data to be saved, or tap 'Update Service' first.",
+        "priceNotSet": "Price Not Set",
+        "priceNotSetMessage": "Admin has not set the service price yet. Please contact admin to set the price before completing this appointment.",
+        "missingServiceId": "Missing service ID. Cannot update.",
+        "unsavedChanges": "Unsaved Changes",
+        "unsavedChangesMessage": "You have an active service. Do you want to cancel it?",
+        "continueService": "Continue Service",
+        "cancelServiceConfirm": "Cancel Service",
+        "serviceCancelled": "Service Cancelled",
+        "serviceCancelledMessage": "Service cancelled. No data was saved."
+      },
+      "errors": {
+        "missingInfo": "Missing customer or technician information",
+        "saveFailed": "Failed to save service data",
+        "updateFailed": "Failed to update service",
+        "noVisitId": "No visit ID found to load data",
+        "noDataFound": "No data found for this service"
+      }
+    },
+    "disinfection": {
+      "title": "Disinfection Service",
+      "serviceType": "Disinfection - {{details}}",
+      "noDetails": "Disinfection Service",
+      "warning": {
+        "noDetails": "This disinfection appointment doesn't have specific details. Please contact admin or specify the treatment in your notes below."
+      },
+      "actionButtons": {
+        "startService": "Start Disinfection Service",
+        "startNoDetails": "Start Service (No Details)",
+        "completeService": "Complete Service",
+        "cancelService": "Cancel Service",
+        "updateService": "Update Service",
+        "generateReport": "Generate Report",
+        "loadData": "Load Service Data"
+      },
+      "footer": "Pestify Technician Portal • Disinfection Module"
+    },
+    "insecticide": {
+      "title": "Insecticide Service",
+      "serviceType": "Insecticide - {{details}}",
+      "noDetails": "Insecticide Service",
+      "warning": {
+        "noDetails": "This insecticide appointment doesn't have specific details. Please contact admin or specify the treatment in your notes below."
+      },
+      "actionButtons": {
+        "startService": "Start Insecticide Service",
+        "startNoDetails": "Start Service (No Details)",
+        "completeService": "Complete Service",
+        "cancelService": "Cancel Service",
+        "updateService": "Update Service",
+        "generateReport": "Generate Report",
+        "loadData": "Load Service Data"
+      },
+      "footer": "Pestify Technician Portal • Insecticide Module"
+    },
+    "stationForms": {
+      "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "yes": "Yes",
+        "no": "No",
+        "functional": "Functional",
+        "damaged": "Damaged",
+        "access": "Access",
+        "condition": "Condition",
+        "timeSpent": "Time spent: {{time}}",
+        "incompleteForm": "Incomplete Form",
+        "selectOption": "Select {{field}}"
+      },
+      "baitStation": {
+        "title": "Station {{id}}",
+        "baitConsumption": "Bait Consumption %",
+        "selectConsumption": "Select consumption",
+        "baitType": "Bait Type",
+        "selectBaitType": "Select bait type",
+        "dosage": "Dosage (g)",
+        "selectDosage": "Select dosage",
+        "noBaitTypes": "No bait types available",
+        "error": {
+          "consumptionRequired": "You need to log Bait Consumption % before saving",
+          "baitTypeRequired": "You need to log Bait Type before saving",
+          "dosageRequired": "You need to log Dosage (g) before saving",
+          "conditionRequired": "You need to log Condition before saving",
+          "accessRequired": "You need to log Access before saving"
+        }
+      },
+      "lightTrap": {
+        "title": "Light Trap {{id}}",
+        "mosquitoes": "Mosquitoes",
+        "lepidoptera": "Lepidoptera",
+        "drosophila": "Drosophila",
+        "flies": "Flies",
+        "others": "Others",
+        "otherPlaceholder": "Enter name and value",
+        "replaceBulb": "Replace bulb",
+        "enterValue": "Enter value",
+        "error": {
+          "replaceBulbRequired": "You need to log Replace Bulb before saving",
+          "conditionRequired": "You need to log Condition before saving",
+          "accessRequired": "You need to log Access before saving"
+        }
+      },
+      "pheromoneTrap": {
+        "title": "Pheromone Trap {{id}}",
+        "pheromoneType": "Pheromone Type",
+        "selectPheromoneType": "Select pheromone type",
+        "replacedPheromone": "Replaced Pheromone",
+        "insectsCaptured": "Insects Captured",
+        "insectsPlaceholder": "Describe insects captured...",
+        "damaged": "Damaged",
+        "noPheromoneTypes": "No pheromone types available",
+        "error": {
+          "pheromoneTypeRequired": "You need to select Pheromone Type before saving",
+          "replacedPheromoneRequired": "You need to select Replaced Pheromone (Yes/No) before saving",
+          "damagedRequired": "You need to select Damaged (Yes/No) before saving",
+          "accessRequired": "You need to log Access before saving"
+        }
+      },
+      "atoxicStation": {
+        "title": "{{type}} {{id}}",
+        "snapTrap": "Snap Trap",
+        "multicatch": "Multicatch",
+        "capture": "Capture",
+        "rodentsCaptured": "Rodents Captured",
+        "rodentsPlaceholder": "Rodents Captured",
+        "triggered": "Triggered",
+        "replacedSurface": "Replaced Surface",
+        "error": {
+          "captureRequired": "You need to log Capture before saving",
+          "rodentsRequired": "You need to log Rodents Captured before saving",
+          "replacedSurfaceRequired": "You need to log Replaced Surface before saving",
+          "triggeredRequired": "You need to log Triggered before saving",
+          "conditionRequired": "You need to log Condition before saving",
+          "accessRequired": "You need to log Access before saving"
+        }
+      }
+    }
+  },
+
+  "language": {
+    "en": "EN",
+    "gr": "GR"
+  }
+}

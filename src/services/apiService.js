@@ -1,10 +1,9 @@
-// apiService.js 
+// apiService.js - Android with FULL iOS functionality
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { normalizeAppointment } from "./normalizeAppointment";
 
 export const API_BASE_URL = 
   "https://field-inspections-backend-production.up.railway.app/api";
-
 
 let authToken = null;
 
@@ -20,23 +19,9 @@ let authToken = null;
   }
 })();
 
-
 async function getEnhancedKPIs() {
-  console.log("📊 Fetching enhanced KPIs from backend...");
-  
   try {
     const result = await request("GET", "/statistics/kpis/enhanced");
-    
-    console.log("📊 Enhanced KPIs RAW API response:", result);
-    console.log("📊 Enhanced KPIs parsed:", {
-      success: result?.success,
-      hasKPIData: !!result?.kpiData,
-      retentionRate: result?.kpiData?.retentionRate,
-      visitFrequency: result?.kpiData?.visitFrequency,
-      revenueGrowth: result?.kpiData?.revenueGrowth,
-      customerGrowth: result?.kpiData?.customerGrowth
-    });
-    
     return result;
   } catch (error) {
     console.error("❌ Failed to get enhanced KPIs:", error);
@@ -48,16 +33,8 @@ async function getEnhancedKPIs() {
 }
 
 async function getTopPerformance() {
-  console.log("🏆 Fetching top performance data...");
-  
   try {
     const result = await request("GET", "/statistics/kpis/top-performance");
-    
-    console.log("🏆 Top performance response:", {
-      success: result?.success,
-      hasData: !!result?.performanceData
-    });
-    
     return result;
   } catch (error) {
     console.error("❌ Failed to get top performance:", error);
@@ -69,15 +46,12 @@ async function getTopPerformance() {
 }
 
 async function getRetentionRate(customerId = null) {
-  console.log("📈 Fetching retention rate...");
-  
   try {
     const endpoint = customerId 
       ? `/statistics/kpis/retention-rate?customerId=${customerId}`
       : `/statistics/kpis/retention-rate`;
     
     const result = await request("GET", endpoint);
-    
     return result;
   } catch (error) {
     console.error("❌ Failed to get retention rate:", error);
@@ -89,15 +63,12 @@ async function getRetentionRate(customerId = null) {
 }
 
 async function getVisitFrequency(customerId = null) {
-  console.log("📈 Fetching visit frequency...");
-  
   try {
     const endpoint = customerId 
       ? `/statistics/kpis/visit-frequency?customerId=${customerId}`
       : `/statistics/kpis/visit-frequency`;
     
     const result = await request("GET", endpoint);
-    
     return result;
   } catch (error) {
     console.error("❌ Failed to get visit frequency:", error);
@@ -114,10 +85,8 @@ async function setAuthToken(token) {
   try {
     if (token) {
       await AsyncStorage.setItem('authToken', token);
-      console.log("🔑 Token saved to AsyncStorage");
     } else {
       await AsyncStorage.removeItem('authToken');
-      console.log("🔑 Token removed from AsyncStorage");
     }
   } catch (error) {
     console.error("❌ Failed to save token to storage:", error);
@@ -129,7 +98,6 @@ async function clearAuthToken() {
   authToken = null;
   try {
     await AsyncStorage.removeItem('authToken');
-    console.log("🔑 Token cleared from storage");
   } catch (error) {
     console.error("❌ Failed to clear token:", error);
   }
@@ -142,8 +110,6 @@ function getCurrentToken() {
 
 // Helper function to verify token with backend
 async function verifyTokenWithBackend(token) {
-  console.log("🔍 Verifying token with backend...");
-  
   try {
     const response = await fetch(`${API_BASE_URL}/verify-token`, {
       method: 'POST',
@@ -154,7 +120,6 @@ async function verifyTokenWithBackend(token) {
     });
     
     const result = await response.json();
-    console.log("🔍 Token verification result:", result);
     return result;
   } catch (error) {
     console.error("❌ Token verification failed:", error);
@@ -164,10 +129,6 @@ async function verifyTokenWithBackend(token) {
 
 // Generic request wrapper
 async function request(method, endpoint, body = null) {
-  // Debug: Show current token state
-  console.log(`🔑 Current token state for ${endpoint}:`, authToken ? "PRESENT" : "MISSING");
-  console.log(`🌐 API CALL: ${method} ${API_BASE_URL}${endpoint}`);
-  
   const options = {
     method,
     headers: {
@@ -176,18 +137,13 @@ async function request(method, endpoint, body = null) {
     },
   };
 
-  console.log(`📤 Headers for ${endpoint}:`, options.headers);
-
   if (body) options.body = JSON.stringify(body);
 
   try {
-    console.log(`🌐 API Request: ${method} ${API_BASE_URL}${endpoint}`, body ? { body } : '');
-    
     const res = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
     // Get the raw text first
     const text = await res.text();
-    console.log(`📥 RAW RESPONSE for ${endpoint}:`, text.substring(0, 300));
     
     let json;
     try {
@@ -196,12 +152,6 @@ async function request(method, endpoint, body = null) {
       console.warn(`⚠️ Could not parse JSON for ${endpoint}:`, text);
       json = null;
     }
-
-    console.log(`📥 API Response for ${endpoint}:`, { 
-      status: res.status, 
-      ok: res.ok,
-      data: json 
-    });
 
     if (!res.ok) {
       return { 
@@ -242,18 +192,14 @@ const apiService = {
 
   async getTotalRequestsToday() {
     try {
-      console.log("📊 Fetching TOTAL requests created today...");
-      
       // Try the new endpoint for total count
       const result = await request("GET", "/customer-requests/today-total-count");
       
       if (result?.success) {
-        console.log(`✅ Total requests today: ${result.count}`);
         return result;
       }
       
       // Fallback to the old endpoint
-      console.log("🔄 Falling back to pending-only count...");
       const pendingResult = await getTodayCustomerRequestsCount();
       return pendingResult;
       
@@ -265,11 +211,8 @@ const apiService = {
 
   async getTotalRequestsCreatedToday() {
     try {
-      console.log("📊 Fetching TOTAL requests created today...");
-      
       // Use the working method instead of direct endpoint
       return await this.getTotalRequestsToday();
-      
     } catch (error) {
       console.error("❌ Error getting total requests today:", error);
       return { success: false, count: 0, error: error.message };
@@ -277,14 +220,50 @@ const apiService = {
   },
 
   // Customer Requests
-  async submitCustomerRequest(requestData) {
-    console.log("📤 Submitting customer request:", requestData);
-    
-    const result = await request("POST", "/customer-requests", requestData);
-    
-    console.log("📥 Customer request response:", result);
-    
-    return result;
+  async submitCustomerRequest(requestData, isMultipart = false) {
+    try {
+      const headers = {
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+      };
+
+      const response = await fetch(`${API_BASE_URL}/customer-requests`, {
+        method: "POST",
+        headers: isMultipart
+          ? headers // DO NOT set Content-Type for multipart
+          : { 
+              ...headers,
+              "Content-Type": "application/json"
+            },
+        body: isMultipart
+          ? requestData
+          : JSON.stringify(requestData)
+      });
+
+      const text = await response.text();
+      let json;
+
+      try {
+        json = text ? JSON.parse(text) : null;
+      } catch {
+        json = null;
+      }
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: json?.error || `Request failed with status ${response.status}`
+        };
+      }
+
+      return json || { success: true };
+
+    } catch (error) {
+      console.error("❌ Submit customer request error:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   },
 
   async getCustomerRequests(status = null) {
@@ -292,19 +271,17 @@ const apiService = {
     return request("GET", endpoint);
   },
 
-  // Update the getTodayCustomerRequestsCount method in apiService.js
-async getTodayCustomerRequestsCount() {
-  // Add cache-busting parameter
-  const timestamp = Date.now();
-  const res = await request("GET", `/admin/customer-requests/today-count?t=${timestamp}`);
+  async getTodayCustomerRequestsCount() {
+    // Add cache-busting parameter
+    const timestamp = Date.now();
+    const res = await request("GET", `/admin/customer-requests/today-count?t=${timestamp}`);
 
-  if (!res || res.success === false) {
-    return { success: false, count: 0 };
-  }
+    if (!res || res.success === false) {
+      return { success: false, count: 0 };
+    }
 
-  return res;
-},
-
+    return res;
+  },
 
   async updateCustomerRequestStatus(requestId, status, appointmentId = null, notes = null) {
     return request("PUT", `/customer-requests/${requestId}/status`, {
@@ -319,31 +296,18 @@ async getTodayCustomerRequestsCount() {
   },
 
   async submitRescheduleRequest(rescheduleData) {
-    console.log("📤 Submitting reschedule request:", rescheduleData);
-    
     const result = await request("POST", "/customer/reschedule-request", rescheduleData);
-    
-    console.log("📥 Reschedule request response:", result);
-    
     return result;
   },
 
   async updateRescheduleStatus(appointmentId, payload) {
-    console.log("🔄 updateAppointmentRescheduleStatus CALLED with:", {
-      appointmentId,
-      payload
-    });
-
     try {
       const result = await request(
         "PUT",
         `/appointments/${appointmentId}/reschedule-status`,
         payload
       );
-
-      console.log("✅ Reschedule status update response:", result);
       return result;
-
     } catch (error) {
       console.error("❌ Reschedule status update failed:", error);
       return {
@@ -356,16 +320,7 @@ async getTodayCustomerRequestsCount() {
   // NOTIFICATION ENDPOINTS
   async getCustomerNotifications() {
     try {
-      console.log("📢 Fetching customer notifications from API...");
-      
       const result = await request("GET", "/customer/notifications");
-      
-      console.log("📢 Notifications API response:", {
-        success: result?.success,
-        count: result?.notifications?.length || 0,
-        unreadCount: result?.unreadCount || 0
-      });
-      
       return result;
     } catch (error) {
       console.error("❌ Failed to fetch notifications:", error);
@@ -392,17 +347,10 @@ async getTodayCustomerRequestsCount() {
   async cancelAppointment(appointmentId) {
     return request("PUT", `/appointments/${appointmentId}/cancel`);
   },
+
   // LOGIN
   async login(email, password) {
-    console.log("🔐 Attempting login for:", email);
-    
     const result = await request("POST", "/login", { email, password });
-
-    console.log("🔑 Login result:", {
-      success: result?.success,
-      role: result?.role,
-      hasToken: !!result?.token
-    });
 
     if (!result || !result.success) {
       return result;
@@ -414,13 +362,10 @@ async getTodayCustomerRequestsCount() {
       
       // Verify token was set
       const currentToken = getCurrentToken();
-      console.log("✅ Token set in apiService:", currentToken ? "YES" : "NO");
       
       // Test the token immediately
       if (currentToken) {
-        console.log("🔍 Testing token with backend...");
         const verification = await verifyTokenWithBackend(currentToken);
-        console.log("🔍 Token verification result:", verification.success ? "✅ VALID" : "❌ INVALID");
         
         if (!verification.success) {
           console.error("❌ Token is invalid! Clearing...");
@@ -461,12 +406,9 @@ async getTodayCustomerRequestsCount() {
 
     return { success: false, error: "Invalid credentials" };
   },
+
   async getCustomerStats() {
-    console.log("📊 API: Getting customer stats...");
-
     const res = await request("GET", "/customers/stats");
-
-    console.log("📥 Customer stats API response:", res);
 
     // Handle failure
     if (!res || res.success === false) {
@@ -482,14 +424,69 @@ async getTodayCustomerRequestsCount() {
     console.warn("⚠️ Unexpected customer stats response format:", res);
     return { stats: [] };
   },
+
+  // SERVICE LOG SUBMISSION WITH MULTIPART SUPPORT
+  async submitServiceLog(formData) {
+    try {
+      const headers = {
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+      };
+      // Note: Don't set Content-Type header when using FormData
+      // The browser will set it automatically with the correct boundary
+
+      // Create an AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
+      const response = await fetch(`${API_BASE_URL}/service-logs`, {
+        method: "POST",
+        headers, // No Content-Type here - let browser set it
+        body: formData,
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      const text = await response.text();
+      
+      let json;
+      try {
+        json = text ? JSON.parse(text) : null;
+      } catch {
+        json = null;
+      }
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: json?.error || `Request failed with status ${response.status}`
+        };
+      }
+
+      return json || { success: true };
+
+    } catch (error) {
+      console.error("❌ Service log upload error:", error);
+      
+      // Handle abort/timeout errors
+      if (error.name === 'AbortError') {
+        return {
+          success: false,
+          error: "Upload timeout - please try again with fewer or smaller images"
+        };
+      }
+      
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
   // CUSTOMERS
   async getCustomers() {
-    console.log("🌐 API: Getting customers...");
-    
     // Try the generic endpoint
     const res = await request("GET", "/customers");
-
-    console.log("📥 Raw customers API response:", res);
     
     // If request returns an error object
     if (res && res.success === false) {
@@ -501,21 +498,15 @@ async getTodayCustomerRequestsCount() {
     let customersArray = [];
     
     if (Array.isArray(res)) {
-      console.log("✅ Direct array response");
       customersArray = res;
     } else if (res && Array.isArray(res.data)) {
-      console.log("✅ Using res.data array");
       customersArray = res.data;
     } else if (res && Array.isArray(res.customers)) {
-      console.log("✅ Using res.customers array");
       customersArray = res.customers;
     } else if (res && res.success && res.data && Array.isArray(res.data)) {
-      console.log("✅ Using res.success.data array");
       customersArray = res.data;
     }
-    
-    console.log(`✅ Found ${customersArray.length} customers`);
-    
+
     // Format customers consistently
     const formattedCustomers = customersArray.map(c => ({
       customerId: String(c.customerId ?? c.id ?? c.customer_id ?? ''),
@@ -526,8 +517,6 @@ async getTodayCustomerRequestsCount() {
       complianceValidUntil: c.complianceValidUntil ?? c.compliance_valid_until ?? null,
       maps: Array.isArray(c.maps) ? c.maps : []
     }));
-    
-    console.log("✅ Formatted customers:", formattedCustomers.length);
     
     return formattedCustomers;
   },
@@ -541,59 +530,39 @@ async getTodayCustomerRequestsCount() {
   },
 
   async updateCustomer(id, data) {
-    console.log("📝 Updating customer:", id, data);
-    
     return request("PUT", `/customers/${id}`, data);
   },
 
   async getCustomerDetails(id) {
-    console.log("🔍 Getting customer details for:", id);
-    
     const result = await request("GET", `/customers/${id}`);
-    
-    console.log("📥 Customer details response:", {
-      success: result?.success,
-      hasData: !!result?.data,
-      customerId: result?.data?.customerId || result?.customerId
-    });
-    
     return result;
   },
+
   async getCustomerVisits(customerId) {
-  if (!customerId) {
-    console.warn("⚠️ getCustomerVisits called without customerId");
-    return [];
-  }
+    if (!customerId) {
+      console.warn("⚠️ getCustomerVisits called without customerId");
+      return [];
+    }
 
-  console.log("📋 Fetching ADMIN customer visits for:", customerId);
+    const res = await request(
+      "GET",
+      `/appointments/customer/${customerId}`
+    );
 
-  const res = await request(
-    "GET",
-    `/appointments/customer/${customerId}`
-  );
+    if (!res || res.success !== true) {
+      console.warn("⚠️ getCustomerVisits failed:", res);
+      return [];
+    }
 
-  console.log("📥 getCustomerVisits response:", res);
-
-  if (!res || res.success !== true) {
-    console.warn("⚠️ getCustomerVisits failed:", res);
-    return [];
-  }
-
-  return Array.isArray(res.visits) ? res.visits : [];
-},
-
+    return Array.isArray(res.visits) ? res.visits : [];
+  },
 
   async deleteCustomer(id) {
     return request("DELETE", `/customers/${id}`);
   },
 
   async getCustomerWithMaps(id) {
-    console.log("📱 getCustomerWithMaps called for id:", id);
-    
     const result = await request("GET", `/customers/${id}`);
-    
-    console.log("📱 getCustomerWithMaps RAW API result:", result);
-    console.log("📱 getCustomerWithMaps success check:", result?.success);
     
     // Handle errors - FIXED: Only return null if result is null or undefined
     if (!result) {
@@ -621,17 +590,14 @@ async getTodayCustomerRequestsCount() {
     // Case 1: Direct structure {success: true, data: {...}}
     if (result.data && typeof result.data === 'object' && result.data.customerId) {
       customerData = result.data;
-      console.log("✅ Using direct structure (result.data)");
     }
     // Case 2: Data is nested {data: {data: {...}}}
     else if (result.data && result.data.data && result.data.data.customerId) {
       customerData = result.data.data;
-      console.log("⚠️ Using nested structure (result.data.data)");
     }
     // Case 3: Response IS the customer data {customerId: ...}
     else if (result.customerId) {
       customerData = result;
-      console.log("✅ Using result as customer data");
     }
     // Case 4: Invalid structure
     else {
@@ -642,13 +608,7 @@ async getTodayCustomerRequestsCount() {
         customer: null
       };
     }
-    
-    console.log("✅ Extracted customer data:", {
-      customerId: customerData.customerId,
-      customerName: customerData.customerName,
-      mapsCount: customerData.maps ? customerData.maps.length : 0
-    });
-    
+
     // Ensure maps is always an array
     let maps = customerData.maps;
     
@@ -678,44 +638,21 @@ async getTodayCustomerRequestsCount() {
       maps: maps
     };
     
-    console.log("✅ Fixed customer data:", {
-      customerId: fixedCustomer.customerId,
-      customerName: fixedCustomer.customerName,
-      mapsCount: fixedCustomer.maps.length,
-      mapsIsArray: Array.isArray(fixedCustomer.maps)
-    });
-    
     // CRITICAL FIX: Return the correct structure
     return fixedCustomer; // ← Return JUST the customer object, not wrapped
   },
 
   // TECHNICIANS
   async getTechnicians() {
-    console.log("🌐 API: Getting technicians...");
-    
     const res = await request("GET", "/admin/technicians");
-
-    console.log("📥 Technicians API response:", {
-      success: res?.success,
-      type: typeof res,
-      isArray: Array.isArray(res),
-      hasTechnicians: !!res?.technicians,
-      techniciansType: typeof res?.technicians,
-      techniciansIsArray: Array.isArray(res?.technicians),
-      fullResponse: res
-    });
-
     if (!res) return [];
     
     // Handle different response formats
     if (Array.isArray(res)) {
-      console.log("✅ Technicians response is direct array");
       return res;
     } else if (res.technicians && Array.isArray(res.technicians)) {
-      console.log("✅ Technicians found in .technicians property");
       return res.technicians;
     } else if (res.success && Array.isArray(res.data)) {
-      console.log("✅ Technicians found in .data property");
       return res.data;
     } else if (res.success === false) {
       console.error("❌ Technicians API returned error:", res.error);
@@ -750,12 +687,6 @@ async getTodayCustomerRequestsCount() {
   // APPOINTMENT METHODS
   async rescheduleAppointment(appointmentId, rescheduleData) {
     try {
-      console.log("🔄 Rescheduling appointment:", {
-        appointmentId,
-        newDate: rescheduleData.requestedDate,
-        newTime: rescheduleData.requestedTime
-      });
-      
       const updatePayload = {
         date: rescheduleData.requestedDate,
         time: rescheduleData.requestedTime,
@@ -765,9 +696,6 @@ async getTodayCustomerRequestsCount() {
       };
       
       const result = await request("PUT", `/appointments/${appointmentId}/reschedule`, updatePayload);
-      
-      console.log("🔄 Reschedule appointment result:", result);
-      
       return result;
       
     } catch (error) {
@@ -777,15 +705,6 @@ async getTodayCustomerRequestsCount() {
   },
 
   async createAppointment(payload) {
-    console.log("📤 FULL PAYLOAD received by createAppointment:", payload);
-    
-    // 🚨 ADD THIS DEBUG LOG:
-    console.log("🔍 DEBUG API - servicePrice in payload:", {
-      hasServicePrice: 'servicePrice' in payload,
-      servicePriceValue: payload.servicePrice,
-      servicePriceType: typeof payload.servicePrice
-    });
-
     const appointmentData = {
       technicianId: payload.technicianId,
       customerId: payload.customerId || null,
@@ -803,19 +722,12 @@ async getTodayCustomerRequestsCount() {
 
     if (payload.compliance_valid_until) {
       appointmentData.compliance_valid_until = payload.compliance_valid_until;
-      console.log(
-        "✅ DEBUG API - Added compliance_valid_until:",
-        payload.compliance_valid_until
-      );
     }
 
     // 🚨 CRITICAL: Make sure this is UNCOMMENTED
     if (payload.servicePrice !== undefined) {
       appointmentData.servicePrice = payload.servicePrice;
-      console.log("✅ DEBUG API - Added servicePrice to appointmentData:", payload.servicePrice);
-    } else {
-      console.log("❌ DEBUG API - servicePrice is undefined in payload!");
-    }
+    } 
 
     if (payload.insecticideDetails) {
       appointmentData.insecticideDetails = payload.insecticideDetails;
@@ -824,9 +736,6 @@ async getTodayCustomerRequestsCount() {
     if (payload.disinfection_details) {
       appointmentData.disinfection_details = payload.disinfection_details;
     }
-
-    console.log("🔍 DEBUG API - Final appointmentData:", appointmentData);
-    
     const result = await request("POST", "/appointments", appointmentData);
     
     return result;
@@ -839,12 +748,7 @@ async getTodayCustomerRequestsCount() {
   async getAppointments(params = {}) {
     const query = new URLSearchParams(params).toString();
     const endpoint = query ? `/appointments?${query}` : `/appointments`;
-
-    console.log("🔍 Fetching appointments with params:", params);
-    
     const res = await request("GET", endpoint);
-    
-    console.log("📊 Raw appointments response from request():", res);
     
     let appointmentsArray;
     
@@ -859,14 +763,10 @@ async getTodayCustomerRequestsCount() {
       appointmentsArray = [];
     }
     
-    console.log(`✅ Extracted ${appointmentsArray.length} appointments`);
-    
     return appointmentsArray.map(normalizeAppointment);
   },
 
   async updateAppointment(appointmentData) {
-    console.log("📝 Updating appointment:", appointmentData);
-  
     // Handle both formats: appointmentData can be an object with id property OR separate id and updates
     let appointmentId;
     let payload;
@@ -884,11 +784,6 @@ async getTodayCustomerRequestsCount() {
       console.error("❌ Invalid appointmentData format:", appointmentData);
       return { success: false, error: "Invalid appointment data format" };
     }
-    
-    console.log("🔍 DEBUG API - updateAppointment called with:", {
-      appointmentId,
-      payload
-    });
 
     if (!appointmentId) {
       console.error("❌ No appointment ID provided");
@@ -900,13 +795,10 @@ async getTodayCustomerRequestsCount() {
       `/appointments/${appointmentId}`,
       payload
     );
-
-    console.log("📥 Update appointment result:", result);
     return result;
   },
 
   async deleteAppointment(appointmentId) {
-    console.log("🗑️ Deleting appointment:", appointmentId);
     return request("DELETE", `/appointments/${appointmentId}`);
   },
 
@@ -915,8 +807,6 @@ async getTodayCustomerRequestsCount() {
       console.error("❌ No customerId provided");
       return [];
     }
-    
-    console.log(`📅 Getting appointments for customer: ${customerId}`);
     
     try {
       const response = await request("GET", `/appointments?customerId=${customerId}`);
@@ -938,47 +828,31 @@ async getTodayCustomerRequestsCount() {
 
   // MATERIALS (bait types + chemicals)
   async getBaitTypes() {
-    console.log("🌐 API: Getting bait types...");
-    
     try {
       const res = await request("GET", "/materials/bait-types");
 
-      console.log("📥 Bait Types API RAW RESPONSE:", {
-        response: res,
-        type: typeof res,
-        isArray: Array.isArray(res),
-        hasBaitTypes: !!res?.baitTypes,
-        hasSuccess: res?.success,
-        fullResponse: JSON.stringify(res, null, 2)
-      });
-
       // 🚨 FIX: Your backend returns {success: true, baitTypes: [...]}
       if (res?.success === true && Array.isArray(res.baitTypes)) {
-        console.log("✅ Found baitTypes array:", res.baitTypes.length);
         return res.baitTypes; // Return the array directly
       }
       
       // Alternative format: direct array
       if (Array.isArray(res)) {
-        console.log("✅ Response is direct array:", res.length);
         return res;
       }
       
       // Alternative format: {baitTypes: [...]} without success
       if (Array.isArray(res?.baitTypes)) {
-        console.log("✅ Found baitTypes in object:", res.baitTypes.length);
         return res.baitTypes;
       }
       
       // Alternative format: {success: true, data: [...]}
       if (res?.success === true && Array.isArray(res.data)) {
-        console.log("✅ Found data array:", res.data.length);
         return res.data;
       }
       
       // Alternative format: {success: true, types: [...]}
       if (res?.success === true && Array.isArray(res.types)) {
-        console.log("✅ Found types array:", res.types.length);
         return res.types;
       }
       
@@ -996,29 +870,16 @@ async getTodayCustomerRequestsCount() {
   },
 
   async getChemicals() {
-    console.log("🌐 API: Getting chemicals...");
-    
     const res = await request("GET", "/materials/chemicals");
-
-    console.log("📥 Chemicals API response:", {
-      success: res?.success,
-      hasChemicals: !!res?.chemicals,
-      chemicalsType: typeof res?.chemicals,
-      chemicalsIsArray: Array.isArray(res?.chemicals),
-      fullResponse: res
-    });
 
     if (!res) return [];
     
     // Handle different response formats
     if (Array.isArray(res)) {
-      console.log("✅ Chemicals response is direct array");
       return res;
     } else if (res.chemicals && Array.isArray(res.chemicals)) {
-      console.log("✅ Chemicals found in .chemicals property");
       return res.chemicals;
     } else if (res.success && Array.isArray(res.data)) {
-      console.log("✅ Chemicals found in .data property");
       return res.data;
     } else if (res.success === false) {
       console.error("❌ Chemicals API returned error:", res.error);
@@ -1045,17 +906,8 @@ async getTodayCustomerRequestsCount() {
   // CUSTOMER ENDPOINTS
   async getCustomerDashboard() {
     try {
-      console.log("📊 Getting customer dashboard...");
-      
       const result = await request("GET", "/customer/dashboard");
-      
-      console.log("📊 Dashboard API response:", {
-        success: result?.success,
-        hasNextAppointment: !!result?.nextAppointment,
-        nextAppointmentDate: result?.nextAppointment?.date,
-        upcomingCount: result?.upcomingAppointments?.length || 0
-      });
-      
+
       if (result?.success) {
         return result;
       } else {
@@ -1092,12 +944,6 @@ async getTodayCustomerRequestsCount() {
       
       appointmentDate.setHours(0, 0, 0, 0);
       
-      console.log("📅 Date validation:", {
-        appointmentDate: appointmentDate.toISOString(),
-        today: today.toISOString(),
-        isValid: appointmentDate >= today
-      });
-      
       return {
         valid: appointmentDate >= today,
         isToday: appointmentDate.getTime() === today.getTime(),
@@ -1114,21 +960,12 @@ async getTodayCustomerRequestsCount() {
     return request("POST", `/customers/${customerId}/create-login`, data);
   },
 
-  // In apiService.js - changeCustomerPassword method
   async changeCustomerPassword(currentPassword, newPassword) {
     try {
-      console.log("🔐 API: Changing customer password...");
-      
       const response = await request("POST", "/customer/change-password", {
         currentPassword,
         newPassword
       });
-      
-      console.log("🔐 Password change API response:", {
-        success: response?.success,
-        error: response?.error
-      });
-      
       return response;
     } catch (error) {
       console.error("❌ Change password API error:", error);
@@ -1146,18 +983,8 @@ async getTodayCustomerRequestsCount() {
       console.warn("⚠️ getCustomerActualVisits called without customerId");
       return [];
     }
-
-    console.log("📋 Fetching ACTUAL visits for:", customerId);
-
     try {
       const res = await request("GET", `/visits/customer/${customerId}`);
-
-      console.log("📥 getCustomerActualVisits response:", {
-        success: res?.success,
-        count: res?.visits?.length || 0,
-        hasVisits: !!res?.visits
-      });
-
       if (!res || res.success !== true) {
         console.warn("⚠️ getCustomerActualVisits failed:", res?.error);
         return [];
@@ -1173,82 +1000,65 @@ async getTodayCustomerRequestsCount() {
 
   // Logging methods
   async logBaitStation(data) {
-  console.log("🚨 logBaitStation received data:", data);
-
-  const stationData = {
-    timestamp: data.timestamp,
-    customerId: data.customerId,
-    customerName: data.customerName || '',
-    stationId: data.stationId,
-    stationType: "BS", // Make sure this is always "BS"
-    consumption: data.consumption || '',
-    baitType: data.baitType || '',
-    condition: data.condition || '',
-    access: data.access || '',
-    technicianId: data.technicianId,
-    technicianName: data.technicianName || '',
-    appointmentId: data.appointmentId || '',
-    visitId: data.visitId,
-    isVisitSummary: false
-  };
-
-  console.log("📦 Sending stationData to backend:", stationData);
-
-  // 🚨 FIX: Use the correct endpoint for saving stations
-  // Try multiple endpoints to find the right one
-  try {
-    // First try /station-logs (most logical)
-    console.log("🔄 Trying /station-logs endpoint...");
-    const result = await request("POST", "/station-logs", stationData);
+    const stationData = {
+      timestamp: data.timestamp,
+      customerId: data.customerId,
+      customerName: data.customerName || '',
+      stationId: data.stationId,
+      stationType: "BS", // Make sure this is always "BS"
+      consumption: data.consumption || '',
+      baitType: data.baitType || '',
+      condition: data.condition || '',
+      access: data.access || '',
+      technicianId: data.technicianId,
+      technicianName: data.technicianName || '',
+      appointmentId: data.appointmentId || '',
+      visitId: data.visitId,
+      isVisitSummary: false
+    };
     
-    if (result?.success) {
-      console.log("✅ Station saved via /station-logs");
-      return result;
+    // 🚨 FIX: Use the correct endpoint for saving stations
+    // Try multiple endpoints to find the right one
+    try {
+      // First try /station-logs (most logical)
+      const result = await request("POST", "/station-logs", stationData);
+      
+      if (result?.success) {
+        return result;
+      }
+    } catch (error) {
+      console.warn("⚠️ /station-logs failed, trying /log-station...");
     }
-  } catch (error) {
-    console.warn("⚠️ /station-logs failed, trying /log-station...");
-  }
-  
-  try {
-    // Try /log-station (alternative)
-    const result = await request("POST", "/log-station", stationData);
-    if (result?.success) {
-      console.log("✅ Station saved via /log-station");
-      return result;
+    
+    try {
+      // Try /log-station (alternative)
+      const result = await request("POST", "/log-station", stationData);
+      if (result?.success) {
+        return result;
+      }
+    } catch (error) {
+      console.warn("⚠️ /log-station failed, trying /log...");
     }
-  } catch (error) {
-    console.warn("⚠️ /log-station failed, trying /log...");
-  }
-  
-  // Last resort: try /log with different structure
-  try {
-    const fallbackData = {
-      ...stationData,
-      action: 'station-log',
-      serviceType: 'myocide'
-    };
-    const result = await request("POST", "/log", fallbackData);
-    console.log("📥 /log fallback response:", result);
-    return result;
-  } catch (error) {
-    console.error("❌ All endpoints failed:", error);
-    return { 
-      success: false, 
-      error: "No endpoint available to save station data" 
-    };
-  }
-},
+    
+    // Last resort: try /log with different structure
+    try {
+      const fallbackData = {
+        ...stationData,
+        action: 'station-log',
+        serviceType: 'myocide'
+      };
+      const result = await request("POST", "/log", fallbackData);
+      return result;
+    } catch (error) {
+      console.error("❌ All endpoints failed:", error);
+      return { 
+        success: false, 
+        error: "No endpoint available to save station data" 
+      };
+    }
+  },
 
   async logService(serviceData) {
-    console.log("📱 Sending service completion:", {
-      customerId: serviceData.customerId,
-      serviceType: serviceData.serviceType,
-      technicianId: serviceData.technicianId,
-      visitId: serviceData.visitId,
-      insecticideDetails: serviceData.insecticideDetails, // Log this
-      otherPestName: serviceData.otherPestName // Log this too
-    });
-
     const formattedChemicals = serviceData.chemicalsUsed?.map(chem => {
       if (typeof chem === 'string') {
         return { name: chem, concentration: '', volume: '' };
@@ -1275,7 +1085,6 @@ async getTodayCustomerRequestsCount() {
     const result = await request("POST", "/log-service", formattedData);
     
     if (result?.success) {
-      console.log("✅ Service logged to backend successfully");
       return result;
     } else {
       console.error("❌ Failed to log service:", result?.error);
@@ -1284,79 +1093,37 @@ async getTodayCustomerRequestsCount() {
   },
 
   async getServiceLogByVisitId(visitId) {
-    console.log("🔍 Fetching service log for visitId:", visitId);
-    
     try {
-      // Try the service-logs endpoint first
-      const result = await this.request("GET", `/service-logs/${visitId}`);
-      
-      console.log("📥 Service logs endpoint response:", {
-        success: result?.success,
-        hasLog: !!result?.log,
-        hasReport: !!result?.report,
-        dataType: typeof result
+      const response = await fetch(`${API_BASE_URL}/service-logs/${visitId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
       });
       
-      if (result?.success && result.log) {
-        console.log("✅ Service log found in service-logs endpoint");
-        return result;
+      const text = await response.text();
+
+      let data;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (e) {
+        console.error("❌ Failed to parse response:", e);
+        return { success: false, error: "Invalid response format" };
       }
       
-      console.log("🔄 Trying reports endpoint as fallback...");
-      const reportResult = await this.request("GET", `/reports/visit/${visitId}`);
-      
-      console.log("📥 Reports endpoint response:", {
-        success: reportResult?.success,
-        hasReport: !!reportResult?.report,
-        dataType: typeof reportResult
-      });
-      
-      if (reportResult?.success && reportResult.report) {
-        console.log("✅ Found service log in reports");
+      if (!response.ok) {
         return {
-          success: true,
-          log: reportResult.report,
-          report: reportResult.report
+          success: false,
+          error: data?.error || `HTTP ${response.status}`
         };
       }
       
-      // 🚨 NEW: Try visits endpoint for myocide data
-      console.log("🔄 Trying visits endpoint...");
-      try {
-        const visitResult = await this.request("GET", `/visits/${visitId}`);
-        console.log("📥 Visits endpoint response:", visitResult);
-        
-        if (visitResult?.success && visitResult.visit) {
-          console.log("✅ Found visit data");
-          
-          // Format visit data as a service log
-          const formattedLog = {
-            visit_id: visitResult.visit.id,
-            customer_name: visitResult.visit.customer_name,
-            technician_name: visitResult.visit.technician_name,
-            start_time: visitResult.visit.start_time,
-            duration: visitResult.visit.duration,
-            service_type: 'myocide',
-            work_type: visitResult.visit.work_type,
-            notes: visitResult.visit.notes,
-            created_at: visitResult.visit.created_at,
-            updated_at: visitResult.visit.updated_at
-          };
-          
-          return {
-            success: true,
-            log: formattedLog,
-            report: formattedLog
-          };
-        }
-      } catch (visitError) {
-        console.warn("⚠️ Visits endpoint failed:", visitError.message);
-      }
-      
-      console.log("❌ No service log found for visitId:", visitId);
+      // Ensure data has the expected structure
       return {
-        success: false,
-        error: "Service log not found"
+        success: true,
+        log: data.log || data.report || data,
+        report: data.report || data.log || data
       };
       
     } catch (error) {
@@ -1369,31 +1136,12 @@ async getTodayCustomerRequestsCount() {
   },
 
   async getCustomerVisitHistory() {
-    console.log("📋 Getting customer visit history...");
-    
-    try {
-      const result = await request("GET", "/customer/visits");
-      
-      console.log("📥 Customer visit history response:", {
-        success: result?.success,
-        count: result?.visits?.length || 0,
-        hasVisits: !!result?.visits
-      });
-      
-      return result;
-    } catch (error) {
-      console.error("❌ Failed to get customer visit history:", error);
-      return {
-        success: false,
-        error: error.message,
-        visits: []
-      };
-    }
+    // Use the correct path with /visits prefix
+    const result = await request("GET", "/visits/customer/portal/visits");
+    return result;
   },
 
   async getVisitByAppointmentId(appointmentId) {
-    console.log("🔍 Resolving visitId for appointmentId:", appointmentId);
-
     if (!appointmentId) {
       return { success: false, visitId: null };
     }
@@ -1447,14 +1195,8 @@ async getTodayCustomerRequestsCount() {
   },
 
   async requestReschedule(appointmentId, data) {
-    console.log("🔄 Requesting reschedule for appointment:", appointmentId);
-    console.log("📤 Reschedule data:", data);
-    
     try {
       const result = await request("PUT", `/appointments/${appointmentId}/reschedule`, data);
-      
-      console.log("📥 Reschedule request response:", result);
-      
       return result;
     } catch (error) {
       console.error("❌ Error requesting reschedule:", error);
@@ -1486,9 +1228,6 @@ async getTodayCustomerRequestsCount() {
   },
 
   async saveMapStations(mapId, stations) {
-    console.log("📍 Saving stations for map:", mapId);
-    console.log("📦 Stations data:", stations);
-    
     return request("PUT", `/maps/${mapId}/stations`, { stations });
   },
 
@@ -1499,27 +1238,10 @@ async getTodayCustomerRequestsCount() {
       action: 'complete-visit'
     };
     
-    console.log("📤 Sending complete visit data:", {
-      visitSummary: {
-        ...visitSummary,
-        startTime: new Date(visitSummary.startTime).toISOString(),
-        endTime: new Date(visitSummary.endTime).toISOString()
-      },
-      stationsCount: stations.length,
-      stationsSample: stations.slice(0, 3)
-    });
-    
     try {
       // Try the correct endpoint
       const result = await request("POST", "/visits/log-complete", completeData);
-      
-      console.log("📥 /visits/log-complete response:", {
-        success: result?.success,
-        visitId: result?.visitId,
-        message: result?.message,
-        fullResponse: result
-      });
-      
+
       if (!result) {
         throw new Error("No response from server");
       }
@@ -1558,8 +1280,6 @@ async getTodayCustomerRequestsCount() {
         
         // Try alternative: Fallback to old /log endpoint
         try {
-          console.log("🔄 Trying fallback to /log endpoint...");
-          
           const visitData = {
             ...visitSummary,
             isVisitSummary: true,
@@ -1570,8 +1290,7 @@ async getTodayCustomerRequestsCount() {
           };
           
           const fallbackResult = await request("POST", "/log", visitData);
-          console.log("📥 /log fallback response:", fallbackResult);
-          
+
           if (fallbackResult?.success) {
             return {
               success: true,
@@ -1589,14 +1308,10 @@ async getTodayCustomerRequestsCount() {
   },
 
   async debugAppointment(id) {
-    console.log("🔍 Debugging appointment:", id);
-    
     const getResult = await request("GET", `/appointments/${id}`);
-    console.log("🔍 GET appointment result:", getResult);
-    
+
     try {
       const debugResult = await request("GET", `/api/debug/appointment/${id}`);
-      console.log("🔍 Debug endpoint result:", debugResult);
       return debugResult;
     } catch (error) {
       console.log("ℹ️ No debug endpoint available");
@@ -1604,6 +1319,7 @@ async getTodayCustomerRequestsCount() {
     
     return getResult;
   },
+
   async submitPasswordRecovery(email) {
     return request("POST", "/customer-requests", {
       customerEmail: email,
@@ -1612,16 +1328,16 @@ async getTodayCustomerRequestsCount() {
       type: "password_recovery"
     });
   },
+
   async resetCustomerPassword(requestId, newPassword) {
     return request("POST", "/admin/reset-customer-password", {
       requestId,
       newPassword
     });
   },
+
   async getRevenueByCustomer(customerId) {
     if (!customerId) return { total_revenue: 0, appointment_count: 0 };
-
-    console.log("💰 Fetching revenue for customer:", customerId);
 
     const res = await request(
       "GET",
@@ -1635,32 +1351,25 @@ async getTodayCustomerRequestsCount() {
 
     return res.data || { total_revenue: 0, appointment_count: 0 };
   },
+
   async softDeleteCustomer(id) {
-    console.log("🗑️ Soft deleting customer:", id);
-    console.log("🔍 Making DELETE request to:", `/customers/${id}`);
     const result = await request("DELETE", `/customers/${id}`);
-    console.log("📥 Soft delete response:", result);
     return result;
   },
 
   // RESTORE customer
   async restoreCustomer(id) {
-    console.log("🔄 Restoring customer:", id);
     return request("POST", `/customers/${id}/restore`);
   },
 
   // GET deleted customers
   async getDeletedCustomers() {
-    console.log("📋 Getting deleted customers...");
     return request("GET", "/customers/deleted");
   },
 
   // PERMANENTLY DELETE customer
   async permanentDeleteCustomer(id) {
-    console.log("💀 Permanently deleting customer:", id);
-    console.log("🔍 Making DELETE request to:", `/customers/${id}/permanent`);
     const result = await request("DELETE", `/customers/${id}/permanent`);
-    console.log("📥 Permanent delete response:", result);
     return result;
   },
 };

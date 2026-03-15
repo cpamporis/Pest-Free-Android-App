@@ -1,3 +1,4 @@
+// LightTrapForm.js
 import React, { useState } from "react";
 import {
   View,
@@ -10,6 +11,7 @@ import {
   Alert,
   StyleSheet
 } from "react-native";
+import i18n from "../services/i18n";
 
 function LightTrapForm({
   stationId,
@@ -64,17 +66,26 @@ function LightTrapForm({
 
     // REQUIRED TOGGLES ONLY
     if (!replaceBulb) {
-      Alert.alert("Incomplete Form", "You need to log Replace Bulb before saving");
+      Alert.alert(
+        i18n.t("components.stationForms.common.incompleteForm"),
+        i18n.t("components.stationForms.lightTrap.error.replaceBulbRequired")
+      );
       return;
     }
 
     if (!condition) {
-      Alert.alert("Incomplete Form", "You need to log Condition before saving");
+      Alert.alert(
+        i18n.t("components.stationForms.common.incompleteForm"),
+        i18n.t("components.stationForms.lightTrap.error.conditionRequired")
+      );
       return;
     }
 
     if (!access) {
-      Alert.alert("Incomplete Form", "You need to log Access before saving");
+      Alert.alert(
+        i18n.t("components.stationForms.common.incompleteForm"),
+        i18n.t("components.stationForms.lightTrap.error.accessRequired")
+      );
       return;
     }
 
@@ -104,7 +115,6 @@ function LightTrapForm({
 
   React.useEffect(() => {
     if (access === "No") {
-      console.log("🔄 Resetting LT form because access is 'No'");
       setMosquitoes("");
       setLepidoptera("");
       setDrosophila("");
@@ -120,7 +130,9 @@ function LightTrapForm({
     <Modal transparent animationType="fade" visible>
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.title}>Light Trap {stationId}</Text>
+          <Text style={styles.title}>
+            {i18n.t("components.stationForms.lightTrap.title", { id: stationId })}
+          </Text>
 
           <ScrollView showsVerticalScrollIndicator={false}>
             {[
@@ -132,20 +144,25 @@ function LightTrapForm({
               <View key={label}>
                 <Text style={[
                   styles.label,
-                  access === "No" && styles.disabledLabel  // Add this
-                ]}>{label} :</Text>
+                  access === "No" && styles.disabledLabel
+                ]}>
+                  {label === "Mosquitoes" ? i18n.t("components.stationForms.lightTrap.mosquitoes") :
+                   label === "Lepidoptera" ? i18n.t("components.stationForms.lightTrap.lepidoptera") :
+                   label === "Drosophila" ? i18n.t("components.stationForms.lightTrap.drosophila") :
+                   i18n.t("components.stationForms.lightTrap.flies")} :
+                </Text>
                 <TextInput
                   style={[
                     styles.input,
-                    access === "No" && styles.disabledInput  // Add this
+                    access === "No" && styles.disabledInput
                   ]}
                   keyboardType="numeric"
-                  placeholder="Enter value"
+                  placeholder={i18n.t("components.stationForms.lightTrap.enterValue") || "Enter value"}
                   value={value}
                   onChangeText={(text) => {
-                    if (access !== "No") setter(text);  // Add this condition
+                    if (access !== "No") setter(text);
                   }}
-                  editable={access !== "No"}  // Add this
+                  editable={access !== "No"}
                 />
               </View>
             ))}
@@ -153,35 +170,35 @@ function LightTrapForm({
             {/* Others */}
             <Text style={[
               styles.label,
-              access === "No" && styles.disabledLabel  // Add this
-            ]}>Others :</Text>
+              access === "No" && styles.disabledLabel
+            ]}>{i18n.t("components.stationForms.lightTrap.others")} :</Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TextInput
                 style={[
                   styles.input, 
                   { flex: 1 },
-                  access === "No" && styles.disabledInput  // Add this
+                  access === "No" && styles.disabledInput
                 ]}
-                placeholder="Enter name and value"
+                placeholder={i18n.t("components.stationForms.lightTrap.otherPlaceholder")}
                 value={otherInput}
                 onChangeText={(text) => {
-                  if (access !== "No") setOtherInput(text);  // Add this condition
+                  if (access !== "No") setOtherInput(text);
                 }}
-                editable={access !== "No"}  // Add this
+                editable={access !== "No"}
               />
               <TouchableOpacity 
                 style={[
                   styles.addBtn,
-                  access === "No" && styles.disabledAddBtn  // Add this
+                  access === "No" && styles.disabledAddBtn
                 ]} 
                 onPress={() => {
-                  if (access !== "No") addOther();  // Add this condition
+                  if (access !== "No") addOther();
                 }}
-                disabled={access === "No"}  // Add this
+                disabled={access === "No"}
               >
                 <Text style={[
                   styles.addText,
-                  access === "No" && styles.disabledText  // Add this
+                  access === "No" && styles.disabledText
                 ]}>+</Text>
               </TouchableOpacity>
             </View>
@@ -189,15 +206,15 @@ function LightTrapForm({
             {others.map((o, i) => (
               <Text key={i} style={[
                 styles.otherItem,
-                access === "No" && styles.disabledText  // Add this
+                access === "No" && styles.disabledText
               ]}>• {o}</Text>
             ))}
 
             {/* Replace Bulb */}
             <Text style={[
               styles.label,
-              access === "No" && styles.disabledLabel  // Add this
-            ]}>Replace bulb</Text>
+              access === "No" && styles.disabledLabel
+            ]}>{i18n.t("components.stationForms.lightTrap.replaceBulb")}</Text>
             <View style={styles.row}>
               {["Yes", "No"].map(v => (
                 <TouchableOpacity
@@ -205,17 +222,19 @@ function LightTrapForm({
                   style={[
                     styles.toggle, 
                     replaceBulb === v && styles.active,
-                    access === "No" && styles.disabledToggle  // Add this
+                    access === "No" && styles.disabledToggle
                   ]}
                   onPress={() => {
-                    if (access !== "No") setReplaceBulb(v);  // Add this condition
+                    if (access !== "No") setReplaceBulb(v);
                   }}
-                  disabled={access === "No"}  // Add this
+                  disabled={access === "No"}
                 >
                   <Text style={[
                     replaceBulb === v && styles.activeText,
-                    access === "No" && styles.disabledText  // Add this
-                  ]}>{v}</Text>
+                    access === "No" && styles.disabledText
+                  ]}>
+                    {v === "Yes" ? i18n.t("components.stationForms.common.yes") : i18n.t("components.stationForms.common.no")}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -223,8 +242,8 @@ function LightTrapForm({
             {/* Condition */}
             <Text style={[
               styles.label,
-              access === "No" && styles.disabledLabel  // Add this
-            ]}>Condition</Text>
+              access === "No" && styles.disabledLabel
+            ]}>{i18n.t("components.stationForms.common.condition")}</Text>
             <View style={styles.row}>
               {["Functional", "Damaged"].map(v => (
                 <TouchableOpacity
@@ -232,23 +251,27 @@ function LightTrapForm({
                   style={[
                     styles.toggle, 
                     condition === v && styles.active,
-                    access === "No" && styles.disabledToggle  // Add this
+                    access === "No" && styles.disabledToggle
                   ]}
                   onPress={() => {
-                    if (access !== "No") setCondition(v);  // Add this condition
+                    if (access !== "No") setCondition(v);
                   }}
-                  disabled={access === "No"}  // Add this
+                  disabled={access === "No"}
                 >
                   <Text style={[
                     condition === v && styles.activeText,
-                    access === "No" && styles.disabledText  // Add this
-                  ]}>{v}</Text>
+                    access === "No" && styles.disabledText
+                  ]}>
+                    {v === "Functional" 
+                      ? i18n.t("components.stationForms.common.functional") 
+                      : i18n.t("components.stationForms.common.damaged")}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             {/* Access */}
-            <Text style={styles.label}>Access</Text>
+            <Text style={styles.label}>{i18n.t("components.stationForms.common.access")}</Text>
             <View style={styles.row}>
               {["Yes", "No"].map(v => (
                 <TouchableOpacity
@@ -259,7 +282,9 @@ function LightTrapForm({
                   ]}
                   onPress={() => setAccess(v)}
                 >
-                  <Text style={access === v && styles.activeText}>{v}</Text>
+                  <Text style={access === v && styles.activeText}>
+                    {v === "Yes" ? i18n.t("components.stationForms.common.yes") : i18n.t("components.stationForms.common.no")}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -267,10 +292,10 @@ function LightTrapForm({
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.save} onPress={handleSave} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Save</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>{i18n.t("components.stationForms.common.save")}</Text>}
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancel} onPress={onClose}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{i18n.t("components.stationForms.common.cancel")}</Text>
             </TouchableOpacity>
           </View>
         </View>

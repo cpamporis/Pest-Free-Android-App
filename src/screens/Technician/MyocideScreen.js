@@ -23,6 +23,10 @@ import BaitStationForm from "../../components/BaitStationForm";
 import { Dimensions } from "react-native";
 import AtoxicStationForm from "../../components/AtoxicStationForm";
 import LightTrapForm from "../../components/LTForm";
+import * as ImagePicker from "expo-image-picker"; 
+import { SafeAreaView } from "react-native-safe-area-context";
+import PheromoneTrapForm from "../../components/PheromoneTrapForm";
+import i18n from "../../services/i18n";
 
 // Real code after imports
 const { width: deviceWidth } = Dimensions.get("window");
@@ -31,29 +35,33 @@ const { width: deviceWidth } = Dimensions.get("window");
 const getStationLabel = (stationType) => {
   switch (stationType) {
     case "RM":
-      return "Multicatch";
+      return i18n.t("technician.myocide.stationTypes.multicatch");
     case "ST":
-      return "Snap Trap";
+      return i18n.t("technician.myocide.stationTypes.snapTrap");
     case "LT":
-      return "Light Trap";
+      return i18n.t("technician.myocide.stationTypes.lightTrap");
+    case "PT":
+      return i18n.t("technician.myocide.stationTypes.pheromoneTrap");
     case "BS":
     default:
-      return "Bait Station";
+      return i18n.t("technician.myocide.stationTypes.baitStation");
   }
 };
 
 const getStationColor = (type, isCompleted) => {
-  if (isCompleted) return "#bdbdbd"; // completed = faded
+  if (isCompleted) return "#bdbdbd";
 
   switch (type) {
     case "BS":
-      return "#1f9c8b"; 
+      return "#1f9c8b";
     case "RM":
-      return "#5a5a5a"; 
+      return "#5a5a5a";
     case "ST":
-      return "#0c6b5e"; 
+      return "#0c6b5e";
     case "LT":
-      return "#6d7e87"; 
+      return "#6d7e87";
+    case "PT":
+      return "#8a6bbf"; // pick any distinct color you like
     default:
       return "#1f9c8b";
   }
@@ -68,25 +76,17 @@ const getMarkerSize = (label) => {
 
 const markAppointmentCompleted = async (appointmentId, visitId, sessionRef) => {
   if (!appointmentId) return;
-  
-  console.log("💾 Marking appointment completed with visitId:", {
-    appointmentId,
-    visitId
-  });
 
   try {
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(appointmentId);
     
     if (isUUID && visitId) { // Make sure visitId exists
-      console.log("✅ Updating appointment with visit_id:", visitId);
-      
+
       const updateResult = await apiService.updateAppointment({
         id: appointmentId,
         status: "completed",
         visitId: visitId // This will set the visit_id column
       });
-      
-      console.log("💾 Appointment update result:", updateResult);
       
       // ✅ ADD THIS: Handle price errors like Disinfection screen does
       if (!updateResult?.success) {
@@ -95,20 +95,16 @@ const markAppointmentCompleted = async (appointmentId, visitId, sessionRef) => {
         // Check if it's a price error
         if (updateResult?.error?.includes('Service price must be set')) {
           Alert.alert(
-            "Price Not Set",
-            "Admin has not set the service price yet. Please contact admin to set the price before completing this appointment.",
-            [{ text: "OK" }]
+            i18n.t("technician.myocide.alerts.priceNotSet"),
+            i18n.t("technician.myocide.alerts.priceNotSetMessage"),
+            [{ text: i18n.t("technician.common.ok") }]
           );
           return; // Stop here if price error
         }
       }
-    } else {
-      console.log("ℹ️ Skipping appointment update - not a UUID:", appointmentId);
-    }
-
+    } 
     // Always update the session object
     if (sessionRef && typeof sessionRef === 'object') {
-      console.log("🔄 Updating session object status to 'completed'");
       sessionRef.status = "completed";
       sessionRef.visitId = visitId || sessionRef.visitId;
       
@@ -133,36 +129,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
   const [sessionVisitId, setSessionVisitId] = useState(
     session?.visitId ?? null
   );
-
-  console.log("=== 🚨 MyocideScreen DEBUG ===");
-  console.log("📱 Received props:", {
-    customerExists: !!customer,
-    customerName: customer?.customerName,
-    customerId: customer?.customerId,
-    sessionExists: !!session,
-    session: {
-      appointmentId: session?.appointmentId,
-      status: session?.status,
-      visitId: sessionVisitId,
-      fromAppointment: session?.fromAppointment,
-      serviceType: session?.serviceType
-    },
-    technicianExists: !!technician,
-    technicianName: technician?.name
-  });
-  
-  // Log the session object in detail
-  if (session) {
-    console.log("📋 Full session object:", JSON.stringify(session, null, 2));
-  }
-
-    // Add this near the top of your MapScreen function
-  console.log("🔍 SESSION DATA FOR REPORT:", {
-    sessionVisitId: sessionVisitId,
-    hasSession: !!session,
-    sessionType: session?.fromAppointment ? "appointment" : "manual",
-    appointmentId: session?.appointmentId
-  });
   
   const [selectedMap, setSelectedMap] = useState(null);
   const [stations, setStations] = useState([]);
@@ -186,6 +152,21 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
   const [hasViewedReport, setHasViewedReport] = useState(false);
   const [hasGeneratedReport, setHasGeneratedReport] = useState(false);
   const [notes, setNotes] = useState('');
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [reportImages, setReportImages] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const removeNewImage = (index) => {
+    setReportImages(prev => prev.filter((_, i) => i !== index));
+  };
+  const dragStartRef = useRef({});
+  const removeExistingImage = (index) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const totalPhotos = useMemo(() => {
+  return (reportImages?.length || 0) + (existingImages?.length || 0);
+}, [reportImages, existingImages]);
   const [customerWithMaps, setCustomerWithMaps] = useState(null);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
   const customerMaps = useMemo(() => {
@@ -222,20 +203,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     Boolean(session?.fromAppointment) &&
     session?.serviceType === "myocide" &&
     session?.status !== "completed";
-
-  console.log("📊 Edit flags:", {
-    isCompletedAppointment,
-    canEditCompletedVisit,
-    sessionVisitId: sessionVisitId,
-    isEditCompletedVisit
-  });
-
-  console.log("⚡ Calculated flags:", {
-    isCompletedAppointment,
-    canEditCompletedVisit,
-    hasVisitId: !!sessionVisitId
-  });
-
   const normalizedCustomer = useMemo(() => {
     if (!customer) return null;
 
@@ -253,15 +220,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
   // Log the first map details
   if (Array.isArray(customerMaps) && customerMaps.length > 0) {
     const firstMap = customerMaps[0];
-
-    console.log("🔍 FIRST MAP DETAILS:", {
-      name: firstMap?.name,
-      image: firstMap?.image,
-      imageType: typeof firstMap?.image,
-      mapId: firstMap?.mapId,
-      hasStations: Array.isArray(firstMap?.stations),
-      stationCount: firstMap?.stations?.length || 0
-    });
   }
 
   // In your useEffect that checks for completed visits, make sure it always runs:
@@ -277,7 +235,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
       (isEditCompletedVisit && session?.status === "completed");  // Already in edit mode
 
     if (shouldEditCompletedVisit) {
-      console.log("✅ Setting edit mode for completed visit");
       setIsEditCompletedVisit(true);
       setServiceCompleted(true);
       setServiceStarted(true);
@@ -300,7 +257,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
   useEffect(() => {
     // If session has no visitId and status is not completed, clear any old visitIdRef
     if (!sessionVisitId && session?.status !== "completed") {
-      console.log("🧹 Clearing old visitIdRef for new appointment");
       setIsEditCompletedVisit(false);
       setServiceCompleted(false);
       setServiceStarted(false);
@@ -335,7 +291,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
 
   useEffect(() => {
     if (canEditCompletedVisit) {
-      console.log("✏️ Editing completed visit:", session.visitId);
       setIsEditCompletedVisit(true);
     }
   }, [canEditCompletedVisit]);
@@ -352,48 +307,15 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     };
   }, []);
 
-  // Add this useEffect to debug
-  useEffect(() => {
-    console.log("🔍 DEBUG - MyocideScreen state:", {
-      loggedStationsCount: loggedStations.length,
-      loggedStations: loggedStations.map(s => `${s.stationType}${s.stationId}`),
-      sessionVisitId: sessionVisitId,
-      isEditCompletedVisit,
-      selectedStation: selectedStation
-    });
-  }, [loggedStations, sessionVisitId, isEditCompletedVisit]);
-
-  useEffect(() => {
-    console.log("🔍 STATE DEBUG:", {
-      isEditCompletedVisit,
-      serviceCompleted,
-      serviceStarted,
-      timerActive,
-      workStarted,
-      showSaveCancel,
-      sessionStatus: session?.status,
-      sessionVisitId: sessionVisitId
-    });
-  }, [isEditCompletedVisit, serviceCompleted, serviceStarted, timerActive, workStarted, showSaveCancel, session?.status, sessionVisitId]);
 
   // In your useEffect where you load customer data:
   useEffect(() => {
     const loadCustomerData = async () => {
       if (!normalizedCustomer?.customerId) return;
-      console.log("🔍 Loading customer data for:", normalizedCustomer.customerId);
-
       setLoadingCustomer(true);
       
       try {
         const customerData = await apiService.getCustomerWithMaps(normalizedCustomer.customerId);
-        
-        console.log("✅ Customer data loaded:", {
-          customerId: customerData?.customerId,
-          customerName: customerData?.customerName,
-          mapsCount: customerData?.maps?.length || 0,
-          mapsIsArray: Array.isArray(customerData?.maps),
-          fullData: customerData
-        });
         
         if (!customerData || !customerData.customerId) {
           console.error("❌ Invalid customer data returned:", customerData);
@@ -403,17 +325,11 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
         // Ensure maps is always an array
         const safeCustomer = {
           ...customerData,
-          maps: Array.isArray(customerData.maps) 
-            ? customerData.maps 
-            : (customerData.maps === "no maps" ? [] : [])
+          customerId: customerData.customerId || customerData.id,
+          customerName: customerData.customerName || customerData.customer_name,
+          maps: Array.isArray(customerData.maps) ? customerData.maps : []
         };
-        
-        console.log("✅ Setting customerWithMaps:", {
-          customerId: safeCustomer.customerId,
-          customerName: safeCustomer.customerName,
-          mapsCount: safeCustomer.maps.length
-        });
-        
+
         setCustomerWithMaps(safeCustomer);
         
       } catch (error) {
@@ -431,6 +347,125 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     loadCustomerData();
   }, [normalizedCustomer?.customerId]);
 
+useEffect(() => {
+  const loadExistingVisitData = async () => {
+    if (isEditCompletedVisit && sessionVisitId && loggedStations.length === 0) {
+      try {
+        setLoading(true);
+        
+        // Try getServiceLogByVisitId instead of getVisitReport
+        const response = await apiService.getServiceLogByVisitId(sessionVisitId);
+        // Check different possible response structures
+        let reportData = null;
+        
+        if (response?.success && response.log) {
+          reportData = response.log;
+        } else if (response?.success && response.report) {
+          reportData = response.report;
+        } else if (response?.data) {
+          reportData = response.data;
+        } else if (response?.report) {
+          reportData = response.report;
+        }
+
+        if (reportData) {
+          setServiceStarted(true);
+          
+          // Load existing images
+          let parsedImages = [];
+
+          if (reportData?.images) {
+            parsedImages = reportData.images;
+          }
+
+          // Handle postgres string "{file.jpg,file2.jpg}"
+          if (typeof parsedImages === "string") {
+            parsedImages = parsedImages
+              .replace(/[{}"]/g, "")
+              .split(",")
+              .map(i => i.trim())
+              .filter(Boolean);
+          }
+
+          // Handle single filename
+          if (typeof parsedImages === "object" && !Array.isArray(parsedImages)) {
+            parsedImages = [parsedImages];
+          }
+
+          // Ensure array
+          if (!Array.isArray(parsedImages)) {
+            parsedImages = [];
+          }
+          setExistingImages(parsedImages);
+          
+          // Check where stations are stored - could be in stations or treated_areas
+          let stationsArray = [];
+          
+          if (reportData.stations && reportData.stations.length > 0) {
+            stationsArray = reportData.stations;
+          } else if (reportData.treated_areas && reportData.treated_areas.length > 0) {
+            // For myocide, stations might be in treated_areas
+            stationsArray = reportData.treated_areas;
+          }
+          
+          // Load stations data
+          if (stationsArray.length > 0) {
+            // Transform database stations to loggedStations format
+            const transformedStations = stationsArray.map(station => ({
+              stationId: station.station_id || station.station_number || station.id,
+              stationType: station.station_type || station.type || "BS",
+              capture: station.capture,
+              rodentsCaptured: station.rodents_captured || station.rodentsCaptured,
+              triggered: station.triggered,
+              replacedSurface: station.replaced_surface || station.replacedSurface,
+              consumption: station.consumption,
+              baitType: station.bait_type || station.baitType,
+              mosquitoes: station.mosquitoes,
+              lepidoptera: station.lepidoptera,
+              drosophila: station.drosophila,
+              flies: station.flies,
+              others: station.others,
+              replaceBulb: station.replace_bulb || station.replaceBulb,
+              condition: station.condition,
+              access: station.access,
+              dosage_g: station.dosage_g,
+              pheromoneType: station.pheromone_type || station.pheromoneType,
+              replacedPheromone: station.replaced_pheromone || station.replacedPheromone,
+              insectsCaptured: station.insects_captured || station.insectsCaptured,
+              damaged: station.damaged
+            }));
+            
+            setLoggedStations(transformedStations);
+          } 
+          
+          // Load notes
+          if (reportData.notes) {
+            setNotes(reportData.notes);
+          }
+          
+          // Load duration if available
+          if (reportData.duration) {
+            setElapsedTime(reportData.duration * 1000); // Convert seconds to milliseconds
+          }
+          
+        } 
+      } catch (error) {
+        console.error("❌ Failed to load existing visit data:", error);
+        Alert.alert(
+          i18n.t("technician.common.error"),
+          i18n.t("technician.specialServices.errors.noDataFound") || "Failed to load existing service data. You can still edit but previous data may not appear."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+  
+  if (isEditCompletedVisit && sessionVisitId) {
+    loadExistingVisitData();
+  }
+}, [isEditCompletedVisit, sessionVisitId]);
+
 
 // Use customerWithMaps instead of customer
 
@@ -438,8 +473,8 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
 
     if (!isAppointmentSession) {
       Alert.alert(
-        "No Active Appointment",
-        "Start Work is only available when opening a scheduled Myocide appointment."
+        i18n.t("technician.common.info") || "No Active Appointment",
+        i18n.t("technician.myocide.alerts.startServiceRequired") || "Start Work is only available when opening a scheduled Myocide appointment."
       );
       return;
     }
@@ -447,7 +482,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     if (timerActive) return;
 
     // Clear any old data when starting new work
-    console.log("🧹 Starting new work - clearing old data");
     setLoggedStations([]); // Clear old stations
     setIsEditCompletedVisit(false); // Ensure not in edit mode
     setServiceCompleted(false); // Not completed yet
@@ -478,18 +512,14 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
   };
     
   const handleGenerateReport = async () => {
-    console.log("📄 Generate Report pressed");
 
     if (!sessionVisitId) {
       Alert.alert(
-        "Error",
-        "Visit ID is missing. Please save the service first."
+        i18n.t("technician.common.error"),
+        i18n.t("technician.specialServices.errors.noVisitId") || "Visit ID is missing. Please save the service first."
       );
       return;
     }
-
-    console.log("✅ Navigating to report with visitId:", sessionVisitId);
-
     onGenerateReport({
       visitId: sessionVisitId,
       serviceType: "myocide"
@@ -499,119 +529,213 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     setHasGeneratedReport(true);
   };
 
-  const handleSaveAll = async () => {
-    console.log("🔍 handleSaveAll called, isEditCompletedVisit:", isEditCompletedVisit);
-    console.log("📊 Total logged stations:", loggedStations.length);
+  const appendImagesToFormData = (formData, images) => {
+    if (!Array.isArray(images)) return;
 
-    // 🚨 ADD THIS FILTER: Remove stations without data
-    const stationsToSend = loggedStations.filter(station => {
-      // Always include stations with "No access"
-      if (station.access === "No") return true;
-      
-      // Include stations with any valid data
-      const hasData = 
-        station.capture !== undefined ||
-        station.consumption !== undefined ||
-        station.mosquitoes !== undefined ||
-        station.condition !== undefined;
-      
-      return hasData;
+    images.forEach((img, index) => {
+      if (!img?.uri) return;
+
+      const uri =
+        Platform.OS === "ios"
+          ? img.uri.replace("file://", "")
+          : img.uri;
+
+      const name =
+        img.fileName ||
+        img.name ||
+        `photo_${Date.now()}_${index}.jpg`;
+
+      const type = "image/jpeg";
+
+      formData.append("images", {
+        uri,
+        name,
+        type,
+      });
     });
+  };
 
-    console.log(`📤 Sending ${stationsToSend.length} stations to backend (filtered from ${loggedStations.length})`);
-    console.log("✅ Valid stations:", stationsToSend.map(s => `${s.stationType}${s.stationId}`));
 
+// In MyocideScreen.js - Update the handleSaveAll function
+
+  const handleSaveAll = async () => {
+    // Transform stations to the format expected by the backend
+    const stationsToSend = loggedStations.map(station => ({
+      station_id: station.stationId,
+      station_number: station.stationId,
+      station_type: station.stationType,
+      consumption: station.consumption,
+      bait_type: station.baitType,
+      capture: station.capture,
+      rodents_captured: station.rodentsCaptured,
+      triggered: station.triggered,
+      replaced_surface: station.replacedSurface,
+      condition: station.condition,
+      access: station.access,
+      dosage_g: station.dosage_g,
+      // LT fields
+      mosquitoes: station.mosquitoes,
+      lepidoptera: station.lepidoptera,
+      drosophila: station.drosophila,
+      flies: station.flies,
+      others: station.others,
+      replace_bulb: station.replaceBulb,
+      // PT fields (NEW)
+      pheromone_type: station.pheromoneType,
+      replaced_pheromone: station.replacedPheromone,
+      insects_captured: station.insectsCaptured,
+      damaged: station.damaged
+    }));
+    
     // Check if we have any stations to send
     if (stationsToSend.length === 0) {
       Alert.alert(
-        "No Data",
-        "You haven't logged any station data. Please log at least one station before saving.",
-        [{ text: "OK" }]
+        i18n.t("technician.myocide.alerts.noData"),
+        i18n.t("technician.myocide.alerts.noDataMessage"),
+        [{ text: i18n.t("technician.common.ok") }]
       );
       return;
     }
 
     stopTimer();
 
+    // Generate a visitId if not exists
+    const generatedVisitId = sessionVisitId || `myocide_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // 🚨 FIX: Convert elapsedTime from milliseconds to seconds
+    const durationInSeconds = Math.floor(elapsedTime / 1000);
+    
     const visitSummary = {
+      serviceType: "myocide",
       startTime,
       endTime: Date.now(),
-      duration: elapsedTime,
-      customerId: effectiveCustomer.customerId,
-      customerName: effectiveCustomer.customerName,
+      duration: durationInSeconds,  // Now in seconds, not milliseconds
+      customerId: effectiveCustomer?.customerId,
+      customerName: effectiveCustomer?.customerName,
       technicianId: technician?.id,
-      technicianName: technician?.name,
+      technicianName: technician?.name || `${technician?.firstName || ''} ${technician?.lastName || ''}`.trim(),
       appointmentId: session?.appointmentId,
       workType: isEditCompletedVisit
         ? "Updated Visit"
         : (session?.fromAppointment ? "Scheduled Appointment" : "Manual Visit"),
-      visitId: sessionVisitId || null,
+      visitId: generatedVisitId,
+      logId: generatedVisitId,
       notes: notes || ""
     };
 
-    console.log("📋 Visit summary for save:", visitSummary);
-    console.log("📤 Stations to send:", JSON.stringify(stationsToSend, null, 2));
+    // Validate required fields
+    if (!visitSummary.technicianName) {
+      console.error("❌ Missing technicianName", { technician });
+      Alert.alert(i18n.t("technician.common.error"), i18n.t("technician.specialServices.errors.missingInfo"));
+      return;
+    }
 
     try {
-      // ✅ Use filtered stations
-      const result = await apiService.logCompleteVisit(visitSummary, stationsToSend);
-      
-      console.log("📥 API Response:", result); // Add this for debugging
+      const formData = new FormData();
 
-      if (!result?.success) {
-        console.error("❌ Save failed, API response:", result);
-        throw new Error(result?.error || "Save failed - no success flag");
+      // 🔥 FIX FOR ANDROID: Create a properly structured data object and stringify it completely
+      const requestData = {
+        visitSummary: {
+          ...visitSummary,
+          customerId: effectiveCustomer?.customerId,
+          service_type: "myocide"
+        },
+        stations: stationsToSend
+      };
+
+      // On Android, we need to stringify the entire object
+      formData.append("data", JSON.stringify(requestData));
+
+      // Add new images - limit to prevent timeout
+      const MAX_IMAGES = 5;
+      const imagesToUpload = reportImages.slice(0, MAX_IMAGES);
+      
+      if (reportImages.length > MAX_IMAGES) {
+        Alert.alert(
+          i18n.t("technician.common.warning"),
+          i18n.t("technician.myocide.alerts.uploadTimeoutMessage") || "Only the first 5 images will be uploaded. Please save and upload additional images separately."
+        );
       }
 
+      imagesToUpload.forEach((img, index) => {
+        if (!img?.uri) return;
+
+        const uri = Platform.OS === "ios" ? img.uri.replace("file://", "") : img.uri;
+        const name = img.fileName || img.name || `photo_${Date.now()}_${index}.jpg`;
+        const type = "image/jpeg";
+        
+        formData.append("images", {
+          uri,
+          name,
+          type,
+        });
+      });
+
+      // Add existing images as JSON string
+      formData.append("existingImages", JSON.stringify(existingImages));
+      
+      // Show loading indicator
+      setSaving(true);
+
+      const result = await apiService.submitServiceLog(formData);
+
+      if (!result?.success) {
+        throw new Error(result?.error || i18n.t("technician.myocide.alerts.saveFailed"));
+      }
+
+      // Success handling...
       if (result?.visitId) {
-        console.log("✅ Saving backend visitId:", result.visitId);
         session.visitId = result.visitId;
         setSessionVisitId(result.visitId);
 
-        // 🔥 CRITICAL FIX: Update the appointment in the database
         if (session.appointmentId) {
-          // ✅ FIXED: Remove servicePrice - technicians don't handle prices
-          // Just like Disinfection screen, only send status and visitId
           await apiService.updateAppointment({
             id: session.appointmentId,
             status: "completed",
             visitId: result.visitId
           });
-          
-          console.log("💾 Appointment updated with visitId:", result.visitId);
-        }
-
-        // Also update raw appointment in memory
-        if (session.rawAppointment) {
-          session.rawAppointment.visitId = result.visitId;
-          session.rawAppointment.visit_id = result.visitId; // Use correct column name
-          session.rawAppointment.status = "completed";
         }
       }
 
       await handleSaveResponse(result);
+
     } catch (error) {
       console.error("❌ Error in handleSaveAll:", error);
       
-      // ✅ ADD THIS: Handle price errors like Disinfection screen
-      if (error.message?.includes('Service price must be set')) {
+      setSaving(false);
+      
+      // Check if it's a timeout error
+      if (error.message?.includes('Network request failed') || error.message?.includes('timeout')) {
         Alert.alert(
-          "Price Not Set",
-          "Admin has not set the service price yet. Please contact admin to set the price before completing this appointment.",
-          [{ text: "OK" }]
+          i18n.t("technician.myocide.alerts.uploadTimeout"),
+          i18n.t("technician.myocide.alerts.uploadTimeoutMessage"),
+          [
+            { text: i18n.t("technician.myocide.alerts.tryAgain"), onPress: () => handleSaveAll() },
+            { text: i18n.t("technician.myocide.alerts.cancel"), style: "cancel" }
+          ]
+        );
+      } else if (error.message?.includes('Service price must be set')) {
+        Alert.alert(
+          i18n.t("technician.myocide.alerts.priceNotSet"),
+          i18n.t("technician.myocide.alerts.priceNotSetMessage"),
+          [{ text: i18n.t("technician.common.ok") }]
         );
       } else {
-        Alert.alert("Error", error.message || "Failed to save data");
+        Alert.alert(
+          i18n.t("technician.myocide.alerts.saveFailed"), 
+          error.message || i18n.t("technician.myocide.alerts.saveFailed"),
+          [{ text: i18n.t("technician.common.ok") }]
+        );
       }
+    } finally {
+      setSaving(false);
     }
   };
 
-
   const handleSaveResponse = async (result, isEdit = false) => {
-    console.log("✅ handleSaveResponse result:", result);
 
     if (!result) {
-      Alert.alert("Error", "No response from server");
+      Alert.alert(i18n.t("technician.common.error"), i18n.t("technician.myocide.alerts.saveFailed"));
       return;
     }
 
@@ -632,11 +756,15 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
 
     const message =
       `${isEdit ? "✅ SERVICE UPDATED\n" : "✅ WORK COMPLETED\n"}` +
-      `Duration: ${formatTime(elapsedTime)}\n` +
-      `Stations logged: ${stationSummary}\n\n` +
-      `\nData saved successfully!`;
+      `${i18n.t("technician.report.visitOverview.duration")}: ${formatTime(elapsedTime)}\n` +
+      `${i18n.t("technician.report.stationSummary.totalStations", { count: loggedStations.length })}: ${stationSummary}\n\n` +
+      `${i18n.t("technician.myocide.alerts.serviceUpdatedMessage", { count: loggedStations.length })}`;
 
-    Alert.alert(isEdit ? "Service Updated" : "Work Completed", message, [{ text: "OK" }]);
+    Alert.alert(
+      isEdit ? i18n.t("technician.myocide.actionButtons.updateService") : i18n.t("technician.common.success"), 
+      message, 
+      [{ text: i18n.t("technician.common.ok") }]
+    );
 
     if (session) {
       session.status = "completed";
@@ -658,15 +786,15 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
 
   const handleCancelWork = () => {
     Alert.alert(
-      "Cancel Work Session",
-      "Are you sure you want to cancel this work session? All unsaved station data will be lost.",
+      i18n.t("technician.myocide.confirmations.cancelWork"),
+      i18n.t("technician.myocide.confirmations.cancelWorkMessage"),
       [
         { 
-          text: "No, Continue Working", 
+          text: i18n.t("technician.myocide.confirmations.noContinue"), 
           style: "cancel" 
         },
         { 
-          text: "Yes, Cancel Work", 
+          text: i18n.t("technician.myocide.confirmations.yesCancel"), 
           style: "destructive",
           onPress: () => {
             stopTimer();
@@ -687,14 +815,78 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
 
             
             Alert.alert(
-              "Work Cancelled", 
-              "Session cancelled. No data was saved.",
-              [{ text: "OK", onPress: () => {} }]
+              i18n.t("technician.myocide.alerts.workCancelled"),
+              i18n.t("technician.myocide.alerts.workCancelledMessage"),
+              [{ text: i18n.t("technician.common.ok"), onPress: () => {} }]
             );
           }
         }
       ]
     );
+  };
+
+  // ---------------- IMAGE FUNCTIONS ----------------
+  const pickImagesFromGallery = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permission.status !== "granted") {
+        Alert.alert("Permission required", "Gallery permission is required.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsMultipleSelection: true,
+        quality: 0.8
+      });
+
+      if (!result.canceled) {
+        setReportImages(prev => [...prev, ...result.assets]);
+      }
+
+    } catch (error) {
+      console.error("Gallery error:", error);
+    }
+  };
+
+  const captureImages = async () => {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (permission.status !== "granted") {
+        Alert.alert("Permission required", "Camera permission is required.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        quality: 0.8
+      });
+
+      if (!result.canceled) {
+        setReportImages(prev => [...prev, ...result.assets]);
+      }
+
+    } catch (error) {
+      console.error("Camera error:", error);
+    }
+  };
+
+  const openImageChooser = () => {
+    if (!serviceStarted && !serviceCompleted) {
+      Alert.alert(
+        i18n.t("technician.myocide.alerts.startServiceFirst"),
+        i18n.t("technician.myocide.alerts.startServiceRequired")
+      );
+      return;
+    }
+
+    Alert.alert(i18n.t("technician.myocide.photos.add"), i18n.t("common.chooseOption") || "Choose source", [
+      { text: i18n.t("components.chemicalsDropdown.camera") || "Camera", onPress: captureImages },
+      { text: i18n.t("components.chemicalsDropdown.gallery") || "Gallery", onPress: pickImagesFromGallery },
+      { text: i18n.t("common.cancel"), style: "cancel" }
+    ]);
   };
 
   // New useEffect for image loading - UPDATED
@@ -709,87 +901,12 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     setImageError(false);
   }, [selectedMap]);
 
-  // Debug useEffect - add this
-  useEffect(() => {
-    console.log("🔍 DEBUG selectedMap:", {
-      exists: !!selectedMap,
-      image: selectedMap?.image,
-      imageError: imageError,
-      currentImageUri: currentImageUri,
-      customerMapsLength: customerMaps.length
-    });
-    
-    if (selectedMap) {
-      console.log("🔍 Full selectedMap object:", JSON.stringify(selectedMap, null, 2));
-    }
-  }, [selectedMap, imageError, currentImageUri]);
-
-  // Debug customer data
-  useEffect(() => {
-    console.log("👤 Customer data:", {
-      customerId: customer?.customerId,
-      customerName: customer?.customerName,
-      mapsCount: customerMaps.length,
-      firstMapImage: customerMaps[0]?.image
-    });
-  }, [customer]);
-
-  // Add this with your other useEffect hooks
-  useEffect(() => {
-    console.log("🔍 ARRAY COMPARISON DEBUG:", {
-      stationsCount: stations.length,
-      loggedStationsCount: loggedStations.length,
-      stations: stations.map(s => `${s.type || "BS"}${s.id}`),
-      loggedStations: loggedStations.map(s => `${s.stationType || "BS"}${s.stationId || "?"}`),
-      loggedStationsData: loggedStations.map(s => ({
-        type: s.stationType,
-        id: s.stationId,
-        capture: s.capture,
-        rodentsCaptured: s.rodentsCaptured,
-        consumption: s.consumption
-      }))
-    });
-  }, [stations, loggedStations]);
-
-  // Add this useEffect to debug the data
-  useEffect(() => {
-    console.log("🔍 CUSTOMER DATA DEBUG:", {
-      customerId: customer?.customerId,
-      customerName: customer?.customerName,
-      mapsLoaded: !!customer?.maps,
-      mapsCount: customer?.maps?.length || 0,
-      firstMap: customer?.maps?.[0] ? {
-        mapId: customer.maps[0].mapId,
-        name: customer.maps[0].name,
-        stationsCount: customer.maps[0].stations?.length || 0,
-        stations: customer.maps[0].stations || []
-      } : 'none',
-      secondMap: customer?.maps?.[1] ? {
-        mapId: customer.maps[1].mapId,
-        name: customer.maps[1].name,
-        stationsCount: customer.maps[1].stations?.length || 0
-      } : 'none'
-    });
-    
-    // Also check the customerMaps computed value
-    console.log("🔍 CUSTOMER MAPS (computed):", {
-      count: customerMaps.length,
-      maps: customerMaps.map(m => ({
-        mapId: m.mapId,
-        name: m.name,
-        stationsCount: m.stations?.length || 0
-      }))
-    });
-  }, [customer, customerMaps]);
-
   useEffect(() => {
     const getVisitIdFromAppointment = async () => {
       if (session?.appointmentId && !sessionVisitId && session?.status === "completed") {
-        console.log("🔍 Getting visitId for appointment:", session.appointmentId);
         try {
           const visitId = await apiService.getVisitIdByAppointmentId(session.appointmentId);
           if (visitId) {
-            console.log("✅ Found visitId:", visitId);
             setSessionVisitId(visitId);
             if (session) {
               session.visitId = visitId;
@@ -804,32 +921,13 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     getVisitIdFromAppointment();
   }, [session?.appointmentId, session?.status, sessionVisitId]);
 
-  // Add this at the top of your MapScreen after the useEffects
-  console.log("🔍 MAPSCREEN STATE:", {
-    hasCustomer: !!customer,
-    hasCustomerWithMaps: !!customerWithMaps,
-    loadingCustomer,
-    customerId: customer?.customerId,
-    customerMapsCount: customerMaps.length,
-    effectiveCustomerId: effectiveCustomer?.customerId,
-    effectiveCustomerName: effectiveCustomer?.customerName,
-    effectiveCustomerMaps: effectiveCustomer?.maps?.length || 0
-  });
-
-  // Also update your earlier debug log
-  console.log("🔍 RAW CUSTOMER DATA from backend:", {
-    customerId: effectiveCustomer?.customerId, // ← Change to effectiveCustomer
-    customerName: effectiveCustomer?.customerName, // ← Change to effectiveCustomer
-    maps: effectiveCustomer?.maps ? JSON.stringify(effectiveCustomer.maps) : 'no maps'
-  });
-
   // In MyocideScreen.js - buildMyocideReportContext function
   const buildMyocideReportContext = () => {
     if (!sessionVisitId) {
       Alert.alert(
-        "Cannot Generate Report",
-        "No visit ID found. Please save the service first.",
-        [{ text: "OK" }]
+        i18n.t("technician.common.error"),
+        i18n.t("technician.specialServices.errors.noVisitId") || "No visit ID found. Please save the service first.",
+        [{ text: i18n.t("technician.common.ok") }]
       );
       return null;
     }
@@ -839,8 +937,8 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
       customerName: effectiveCustomer.customerName,
       technicianName: technician
         ? `${technician.firstName} ${technician.lastName}`
-        : "N/A",
-      serviceTypeName: "Myocide Service",
+        : i18n.t("technician.common.notAvailable"),
+      serviceTypeName: i18n.t("technician.report.stationSummary.baitStations") || "Myocide Service",
       stationCounts: loggedStations.reduce(
         (acc, s) => {
           acc[s.stationType] = (acc[s.stationType] || 0) + 1;
@@ -851,11 +949,33 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     };
   };
 
+  const buildExistingImageUrl = (img) => {
+    if (!img) return null;
+
+    let value = String(img).trim().replace(/[{}"]/g, "");
+
+    // If multiple full URLs were concatenated, keep the last one
+    const matches = value.match(/https?:\/\/[^ ]+/g);
+    if (matches && matches.length > 0) {
+      value = matches[matches.length - 1];
+    }
+
+    // From full URL -> filename
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+      value = value.split("?")[0];
+      value = value.substring(value.lastIndexOf("/") + 1);
+    }
+
+    // From /uploads/file -> filename
+    if (value.includes("/uploads/")) {
+      value = value.substring(value.lastIndexOf("/") + 1);
+    }
+
+    return `${SERVER_BASE_URL}/uploads/${value}`;
+  };
+
   // In MyocideScreen.js - Update upsertLoggedStation
   const upsertLoggedStation = (stationData) => {
-    console.log("🚨 ====== upsertLoggedStation CALLED ======");
-    console.log("🚨 FULL stationData received:", JSON.stringify(stationData, null, 2));
-    
     // Ensure stationType is included
     if (!stationData.stationType) {
       stationData.stationType = selectedStation?.type || "BS";
@@ -890,9 +1010,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
         condition: null
       } : {})
     };
-
-    console.log("✅ Normalized station data:", normalized);
-
     setLoggedStations(prev => {
       const index = prev.findIndex(
         s =>
@@ -903,17 +1020,17 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
       if (index !== -1) {
         const updated = [...prev];
         updated[index] = normalized;
-        console.log("🔄 Updated existing station in loggedStations");
         return updated;
       }
-
-      console.log("➕ Added new station to loggedStations");
       return [...prev, normalized];
     });
 
     Alert.alert(
-      "Success",
-      `${normalized.stationType}${normalized.stationId} logged successfully!`
+      i18n.t("technician.common.success"),
+      i18n.t("technician.myocide.alerts.stationLogged", { 
+        type: normalized.stationType, 
+        id: normalized.stationId 
+      })
     );
   };
 
@@ -936,23 +1053,23 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     }
     
     // Check if station has any valid data OR access is "No"
-    const hasData = 
+    const hasData =
       foundStation.access === "No" ||
-      foundStation.capture !== null && foundStation.capture !== undefined ||
-      foundStation.consumption !== null && foundStation.consumption !== undefined ||
-      foundStation.mosquitoes !== null && foundStation.mosquitoes !== undefined ||
-      foundStation.condition !== null && foundStation.condition !== undefined;
-    
-    console.log("🔍 isStationCompleted check:", {
-      stationId,
-      stationType,
-      found: true,
-      access: foundStation.access,
-      capture: foundStation.capture,
-      hasData,
-      isAccessNo: foundStation.access === "No"
-    });
-    
+      foundStation.access === "no" ||
+
+      // BS / RM / ST
+      (foundStation.capture !== null && foundStation.capture !== undefined) ||
+      (foundStation.consumption !== null && foundStation.consumption !== undefined) ||
+      (foundStation.condition !== null && foundStation.condition !== undefined) ||
+
+      // LT
+      (foundStation.mosquitoes !== null && foundStation.mosquitoes !== undefined) ||
+
+      // PT (NEW)
+      (foundStation.pheromoneType !== null && foundStation.pheromoneType !== undefined && foundStation.pheromoneType !== "") ||
+      (foundStation.replacedPheromone !== null && foundStation.replacedPheromone !== undefined) ||
+      (foundStation.insectsCaptured !== null && foundStation.insectsCaptured !== undefined && String(foundStation.insectsCaptured).trim() !== "") ||
+      (foundStation.damaged !== null && foundStation.damaged !== undefined);
     return hasData;
   };
 
@@ -960,18 +1077,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     const station = loggedStations.find(s => 
       s.stationId === stationId && s.stationType === stationType
     );
-    
-    console.log("🔍 DEBUG Station Data:", {
-      stationId,
-      stationType,
-      exists: !!station,
-      data: station,
-      access: station?.access,
-      capture: station?.capture,
-      condition: station?.condition,
-      isAccessNo: station?.access === "No"
-    });
-    
     return station;
   };
 
@@ -986,9 +1091,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
 
     setSaving(true);
     try {
-      console.log("💾 Saving station locations for map:", selectedMap.mapId);
-      console.log("📍 Stations to save:", stations);
-
       // Format stations for backend
       const stationsToSave = stations.map(st => ({
         id: st.id,
@@ -996,81 +1098,76 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
         x: st.x,
         y: st.y
       }));
-
-      console.log("📤 Sending to backend:", {
-        mapId: selectedMap.mapId,
-        stationsCount: stationsToSave.length,
-        stations: stationsToSave
-      });
-
       // Save to SQL using new endpoint
       const result = await apiService.saveMapStations(selectedMap.mapId, stationsToSave);
 
-      if (result && result.success) {
-        console.log("✅ Save successful:", result);
-        
+      if (result && result.success) {     
         // Immediately refresh the customer data to see if stations were saved
         try {
-          console.log("🔄 Refreshing customer data...");
           const freshCustomerData = await apiService.getCustomerWithMaps(effectiveCustomer.customerId);
-          
-          console.log("🔄 Fresh customer data:", {
-            mapsCount: freshCustomerData.maps?.length,
-            stationsInFirstMap: freshCustomerData.maps?.[0]?.stations?.length || 0
-          });
           
           setCustomerWithMaps(freshCustomerData);
         } catch (refreshError) {
           console.error("❌ Error refreshing:", refreshError);
         }
 
-        Alert.alert("Saved", "Station locations saved to database!");
+        Alert.alert(i18n.t("common.success"), i18n.t("technician.myocide.editButtons.save") + " " + i18n.t("common.success"));
         setEditMode(false);
         setAddingStation(false);
         setRemovingStation(false);
       } else {
         console.error("❌ Save failed:", result);
-        Alert.alert("Error", result?.error || "Failed to save stations");
+        Alert.alert(i18n.t("common.error"), result?.error || i18n.t("technician.myocide.alerts.saveFailed"));
       }
 
     } catch (error) {
       console.error("❌ Save stations error:", error);
-      Alert.alert("Error", error.message || "Failed to save stations.");
+      Alert.alert(i18n.t("common.error"), error.message || i18n.t("technician.myocide.alerts.saveFailed"));
     } finally {
       setSaving(false);
     }
   };
 
-  const startDrag = (id, gestureX, gestureY) => {
-    const newStations = stations.map((s) =>
-      s.id === id
-        ? {
-            ...s,
-            x: Math.max(0, Math.min(1, (gestureX - offsetX) / (deviceWidth * scale))),
-            y: Math.max(0, Math.min(1, (gestureY - offsetY) / (deviceWidth * scale)))
-          }
-        : s
+  const handleDragStart = (id, type) => {
+    const st = stations.find(s => s.id === id && (s.type || "BS") === type);
+    if (!st) return;
+
+    dragStartRef.current = {
+      id,
+      type,
+      startX: st.x,
+      startY: st.y
+    };
+  };
+
+  const handleDragMove = (evt) => {
+    const { translationX, translationY } = evt.nativeEvent;
+    const drag = dragStartRef.current;
+
+    if (!drag?.id) return;
+
+    const deltaX = translationX / (deviceWidth * scale);
+    const deltaY = translationY / (deviceWidth * scale);
+
+    const newX = Math.max(0, Math.min(1, drag.startX + deltaX));
+    const newY = Math.max(0, Math.min(1, drag.startY + deltaY));
+
+    setStations(prev =>
+      prev.map(st =>
+        st.id === drag.id && (st.type || "BS") === drag.type
+          ? { ...st, x: newX, y: newY }
+          : st
+      )
     );
-    setStations(newStations);
   };
 
   const debugStationCompletion = () => {
-    console.log("🔍 DEBUG Station Completion Status:");
     
     stations.forEach(st => {
       const isCompleted = isStationCompleted(st.id, st.type || "BS");
       const stationData = loggedStations.find(s => 
         s.stationId === st.id && s.stationType === (st.type || "BS")
       );
-      
-      console.log(`   ${st.type || "BS"}${st.id}:`, {
-        isCompleted,
-        hasData: !!stationData,
-        access: stationData?.access,
-        capture: stationData?.capture,
-        consumption: stationData?.consumption,
-        mosquitoes: stationData?.mosquitoes
-      });
     });
   };
 
@@ -1081,133 +1178,157 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
   };
   
   const handleUpdateService = async () => {
-    console.log("🔄 Updating service without timer");
     
-    console.log("📊 All logged stations:", loggedStations.map(s => ({
-      type: s.stationType,
-      id: s.stationId,
-      access: s.access,
-      hasData: s.access === "No" || s.capture || s.consumption || s.mosquitoes
-    })));
+    // Ensure technician name is available
+    const technicianName = technician?.name || 
+                          `${technician?.firstName || ''} ${technician?.lastName || ''}`.trim();
     
-    // 🚨 CRITICAL: Include stations with "No access" as valid changes
-    const stationsToSend = loggedStations.filter(station => {
-      // ALWAYS include stations with "No access"
-      if (station.access === "No") {
-        console.log(`✅ Including station ${station.stationType}${station.stationId} with "No access"`);
-        return true;
-      }
-      
-      // Include stations with any valid data
-      if (station.stationType === "RM" || station.stationType === "ST") {
-        const hasData = station.capture !== undefined && station.capture !== null;
-        if (hasData) console.log(`✅ Including atoxic station ${station.stationType}${station.stationId} with capture: ${station.capture}`);
-        return hasData;
-      }
-      if (station.stationType === "BS") {
-        const hasData = station.consumption !== undefined || station.baitType !== undefined;
-        if (hasData) console.log(`✅ Including BS station ${station.stationId} with data`);
-        return hasData;
-      }
-      if (station.stationType === "LT") {
-        const hasData = station.mosquitoes !== undefined || 
-                      station.lepidoptera !== undefined || 
-                      station.drosophila !== undefined || 
-                      station.flies !== undefined;
-        if (hasData) console.log(`✅ Including LT station ${station.stationId} with data`);
-        return hasData;
-      }
-      return false;
-    });
-
-    console.log(`📤 Sending ${stationsToSend.length} stations for update`);
-    console.log("✅ Valid stations:", stationsToSend.map(s => `${s.stationType}${s.stationId}`));
-
+    if (!technicianName) {
+      console.error("❌ Missing technicianName", { technician });
+      Alert.alert(i18n.t("technician.common.error"), i18n.t("technician.specialServices.errors.missingInfo"));
+      return;
+    }
+    
+    // Transform stations to the format expected by the backend
+    const stationsToSend = loggedStations.map(station => ({
+      station_id: station.stationId,
+      station_number: station.stationId,
+      station_type: station.stationType,
+      consumption: station.consumption,
+      bait_type: station.baitType,
+      capture: station.capture,
+      rodents_captured: station.rodentsCaptured,
+      triggered: station.triggered,
+      replaced_surface: station.replacedSurface,
+      condition: station.condition,
+      access: station.access,
+      dosage_g: station.dosage_g,
+      // LT fields
+      mosquitoes: station.mosquitoes,
+      lepidoptera: station.lepidoptera,
+      drosophila: station.drosophila,
+      flies: station.flies,
+      others: station.others,
+      replace_bulb: station.replaceBulb,
+      // PT fields (NEW)
+      pheromone_type: station.pheromoneType,
+      replaced_pheromone: station.replacedPheromone,
+      insects_captured: station.insectsCaptured,
+      damaged: station.damaged
+    }));
+    
     if (stationsToSend.length === 0) {
       Alert.alert(
-        "No Valid Changes",
-        "You haven't logged any valid station data. Please log at least one station with data before updating.",
-        [{ text: "OK" }]
+        i18n.t("technician.common.warning"),
+        i18n.t("technician.myocide.alerts.noDataMessage"),
+        [{ text: i18n.t("technician.common.ok") }]
       );
       return;
     }
 
+    // Generate visitId if not exists
+    const generatedVisitId = sessionVisitId || `myocide_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Calculate duration in seconds
+    const durationInSeconds = Math.floor(elapsedTime / 1000);
+    
     const visitSummary = {
-      startTime,
+      serviceType: "myocide",
+      startTime: startTime || Date.now() - 3600000, // Default to 1 hour ago if not set
       endTime: Date.now(),
-      duration: elapsedTime,
-      customerId: effectiveCustomer.customerId,
-      customerName: effectiveCustomer.customerName,
+      duration: durationInSeconds,
+      customerId: effectiveCustomer?.customerId,
+      customerName: effectiveCustomer?.customerName,
       technicianId: technician?.id,
-      technicianName: technician?.name,
+      technicianName: technicianName,
       appointmentId: session?.appointmentId,
       workType: isEditCompletedVisit ? "Updated Visit" : "Scheduled Appointment",
-      visitId: sessionVisitId || null,
+      visitId: generatedVisitId,
+      logId: generatedVisitId,
       notes: notes || ''
     };
 
     try {
-      const result = await apiService.logCompleteVisit(visitSummary, stationsToSend);
+      const formData = new FormData();
 
-      if (result?.success && result.visitId) {
-        console.log("✅ Persisting visitId in session:", result.visitId);
+      // 🔥 FIX FOR ANDROID: Create a properly structured data object and stringify it completely
+      const requestData = {
+        visitSummary: {
+          ...visitSummary,
+          customerId: effectiveCustomer?.customerId,
+          service_type: "myocide"
+        },
+        stations: stationsToSend
+      };
+
+      // On Android, we need to stringify the entire object
+      formData.append("data", JSON.stringify(requestData));
+
+      // Add new images
+      reportImages.forEach((img, index) => {
+        if (!img?.uri) return;
+
+        const uri = Platform.OS === "ios" ? img.uri.replace("file://", "") : img.uri;
+        const name = img.fileName || img.name || `photo_${Date.now()}_${index}.jpg`;
+        const type = "image/jpeg";
+
+        formData.append("images", {
+          uri,
+          name,
+          type,
+        });
+      });
+
+      // Add existing images as JSON string
+      formData.append("existingImages", JSON.stringify(existingImages));
+
+      setSaving(true);
+      const result = await apiService.submitServiceLog(formData);
+
+      if (!result?.success) {
+        throw new Error(result?.error || i18n.t("technician.myocide.alerts.saveFailed"));
+      }
+      
+      if (result?.visitId) {
         session.visitId = result.visitId;
         setSessionVisitId(result.visitId);
         
-        // 🔥 CRITICAL: Update the appointment in the database
         if (session?.appointmentId) {
-          console.log("💾 Updating appointment with visitId:", result.visitId);
-          
-          // ✅ FIX: Remove servicePrice - technicians don't handle prices
           await apiService.updateAppointment({
             id: session.appointmentId,
             status: "completed",
             visitId: result.visitId
-            // 🚨 REMOVED: servicePrice: finalPrice
           });
         }
-        
-        // Also update raw appointment
-        if (session.rawAppointment) {
-          session.rawAppointment.visitId = result.visitId;
-          session.rawAppointment.visit_id = result.visitId;
-          session.rawAppointment.status = "completed";
-        }
       }
-      
-      if (!result?.success) {
-        throw new Error(result?.error || "Failed to update service");
-      }
-
-      console.log("✅ Service updated:", result);
       
       // Set service as completed to show Generate Report button
       setServiceCompleted(true);
       setWorkStarted(false);
       setTimerActive(false);
-      
       setHasGeneratedReport(false);
       setIsEditCompletedVisit(true);
       
       Alert.alert(
-        "Service Updated Successfully",
-        `Successfully updated ${stationsToSend.length} station(s).`,
-        [{ text: "OK" }]
+        i18n.t("technician.myocide.alerts.serviceUpdated"),
+        i18n.t("technician.myocide.alerts.serviceUpdatedMessage", { count: stationsToSend.length }),
+        [{ text: i18n.t("technician.common.ok") }]
       );
 
     } catch (error) {
       console.error("❌ Update service error:", error);
       
-      // ✅ ADD THIS: Handle price errors like Disinfection screen
       if (error.message?.includes('Service price must be set')) {
         Alert.alert(
-          "Price Not Set",
-          "Admin has not set the service price yet. Please contact admin to set the price before completing this appointment.",
-          [{ text: "OK" }]
+          i18n.t("technician.myocide.alerts.priceNotSet"),
+          i18n.t("technician.myocide.alerts.priceNotSetMessage"),
+          [{ text: i18n.t("technician.common.ok") }]
         );
       } else {
-        Alert.alert("Error", error.message || "Failed to update service");
+        Alert.alert(i18n.t("technician.common.error"), error.message || i18n.t("technician.myocide.alerts.saveFailed"));
       }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1218,7 +1339,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
   useEffect(() => {
     const refreshData = () => {
       if (isEditCompletedVisit && sessionVisitId) {
-        console.log("🔄 Refreshing data after returning from ReportScreen");
         setRefreshKey(prev => prev + 1);
       }
     };
@@ -1227,66 +1347,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     refreshData();
   }, [isEditCompletedVisit, sessionVisitId]);
 
-  // In MyocideScreen.js - Add this useEffect to load existing data
-  useEffect(() => {
-    const loadExistingVisitData = async () => {
-      if (isEditCompletedVisit && sessionVisitId && loggedStations.length === 0) {
-        console.log("🔄 Loading existing visit data for editing:", sessionVisitId);
-        
-        try {
-          const report = await apiService.getVisitReport(sessionVisitId);
-          
-          if (report?.success && report.report?.stations) {
-            console.log("📥 Loaded stations from database:", report.report.stations.length);
-            
-            // Transform database stations to loggedStations format
-            const transformedStations = report.report.stations.map(station => ({
-              stationId: station.station_id || station.station_number,
-              stationType: station.station_type,
-              capture: station.capture,
-              rodentsCaptured: station.rodents_captured,
-              triggered: station.triggered,
-              replacedSurface: station.replaced_surface,
-              consumption: station.consumption,
-              baitType: station.bait_type,
-              mosquitoes: station.mosquitoes,
-              lepidoptera: station.lepidoptera,
-              drosophila: station.drosophila,
-              flies: station.flies,
-              others: station.others,
-              replaceBulb: station.replace_bulb,
-              condition: station.condition,
-              access: station.access,
-              dosage_g: station.dosage_g 
-            }));
-            
-            console.log("🔄 Setting loggedStations from database:", 
-              transformedStations.map(s => `${s.stationType}${s.stationId}`));
-            
-            // CRITICAL: Set the loggedStations state
-            setLoggedStations(transformedStations);
-            
-            // Also update sessionVisitId if needed
-            if (!sessionVisitId && report.report.visitId) {
-              setSessionVisitId(report.report.visitId);
-              if (session) {
-                session.visitId = report.report.visitId;
-              }
-            }
-          } else {
-            console.log("⚠️ No stations found in report");
-          }
-        } catch (error) {
-          console.error("❌ Failed to load existing visit data:", error);
-        }
-      }
-    };
-    
-    // Also load data when sessionVisitId changes
-    if (isEditCompletedVisit && sessionVisitId) {
-      loadExistingVisitData();
-    }
-  }, [isEditCompletedVisit, sessionVisitId, loggedStations.length, refreshKey]);
 
   const handleMapPress = (evt) => {
     if (!addingStation || !selectedMap) return;
@@ -1309,7 +1369,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
-        <Text style={{ marginTop: 10 }}>Loading customer maps…</Text>
+        <Text style={{ marginTop: 10 }}>{i18n.t("technician.common.loading")}</Text>
       </View>
     );
   }
@@ -1326,7 +1386,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
           {/* Keep the top buttons for navigation */}
           <View style={styles.topButtons}>
             <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-              <Text style={styles.backBtnText}>← Back</Text>
+              <Text style={styles.backBtnText}>← {i18n.t("technician.common.back")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1352,10 +1412,8 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                     <TouchableOpacity 
                       style={{backgroundColor: '#1f9c8d', padding: 10, borderRadius: 5, marginTop: 10}}
                       onPress={() => {
-                        console.log("Testing image URL:", currentImageUri);
                         fetch(currentImageUri)
                           .then(res => {
-                            console.log("Image fetch result:", res.status, res.statusText);
                             Alert.alert("Image Test", `Status: ${res.status} ${res.statusText}`);
                           })
                           .catch(err => {
@@ -1390,7 +1448,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                   source={{ uri: currentImageUri }}
                   style={{width: 200, height: 200, alignSelf: 'center', borderWidth: 1, borderColor: '#ccc'}}
                   onError={(e) => {
-                    console.log("❌ Image error in debug:", e.nativeEvent.error);
                     Alert.alert("Image Error", e.nativeEvent.error);
                   }}
                   onLoad={() => console.log("✅ Image loaded in debug!")}
@@ -1422,11 +1479,11 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                   setRemovingStation(false);
                 }}
               >
-                <Text style={styles.backBtnText}>Cancel Edit</Text>
+                <Text style={styles.backBtnText}>{i18n.t("technician.myocide.cancelEdit")}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-                <Text style={styles.backBtnText}>← Back</Text>
+                <Text style={styles.backBtnText}>← {i18n.t("technician.common.back")}</Text>
               </TouchableOpacity>
             )}
 
@@ -1434,7 +1491,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
             {timerActive && (
               <View style={styles.timerContainer}>
                 <Text style={styles.timerText}>
-                  ⏱ {formatTime(elapsedTime)}
+                  {i18n.t("technician.myocide.timer", { time: formatTime(elapsedTime) })}
                 </Text>
               </View>
             )}
@@ -1445,7 +1502,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                 style={styles.editBtnTop} 
                 onPress={() => setEditMode(true)}
               >
-                <Text style={styles.editBtnText}>Edit Map</Text>
+                <Text style={styles.editBtnText}>{i18n.t("technician.myocide.editMap")}</Text>
               </TouchableOpacity>
             )}
 
@@ -1453,7 +1510,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
               style={styles.chooseMapBtn}
               onPress={() => setShowMapDropdown(!showMapDropdown)}
             >
-              <Text style={styles.backBtnText}>Choose Map ▼</Text>
+              <Text style={styles.backBtnText}>{i18n.t("technician.myocide.chooseMap")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1465,7 +1522,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                   style={styles.mapDropdownItem}
                   onPress={() => handleMapSelect(map)}
                 >
-                  <Text>{map.name || `Map ${index + 1}`}</Text> 
+                  <Text>{map.name || i18n.t("technician.myocide.mapDropdown.mapName", { number: index + 1 })}</Text> 
                 </TouchableOpacity>
               ))}
             </View>
@@ -1500,11 +1557,11 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                       />
                     ) : (
                       <View style={styles.placeholderImage}>
-                        <Text>No Map Image</Text>
+                        <Text>{i18n.t("technician.myocide.noMaps")}</Text>
                       </View>
                     )}
                     {stations.map((st, index) => {            
-                      const uniqueKey = `${st.type || "BS"}_${st.id}_${index}`;
+                      const uniqueKey = `${st.type || "BS"}_${st.id}`;
                       
                       const left = st.x * deviceWidth * scale;
                       const top = st.y * deviceWidth * scale;
@@ -1512,10 +1569,8 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                       return (
                         <View key={uniqueKey} style={styles.markerWrapper}> 
                           <PanGestureHandler
-                            onGestureEvent={(evt) =>
-                              editMode &&
-                              startDrag(st.id, evt.nativeEvent.x, evt.nativeEvent.y)
-                            }
+                            onBegan={() => handleDragStart(st.id, st.type || "BS")}
+                            onGestureEvent={handleDragMove}
                           >
                             <Animated.View
                               style={[
@@ -1526,12 +1581,6 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                                   
                                   // DEBUG: Check if station is completed
                                   const isCompletedValue = isStationCompleted(st.id, st.type || "BS");
-                                  console.log(`🎯 Marker ${st.type || "BS"}${st.id} opacity check:`, {
-                                    stationId: st.id,
-                                    stationType: st.type,
-                                    isCompleted: isCompletedValue,
-                                    opacity: isCompletedValue ? 0.4 : 1
-                                  });
 
                                   return {
                                     left,
@@ -1560,19 +1609,13 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                                   alignItems: "center"
                                 }}
                                 onPress={() => {
-                                  const stationType = st.type || "BS";
-                                  
-                                  console.log("🚨 Station clicked:", {
-                                    stationId: st.id,
-                                    stationType: stationType
-                                  });
+                                  const stationType = st.type || "BS";                               
                                   
                                   // Debug the station data
                                   debugStationData(st.id, stationType);
                                   
                                   // EDIT MODE (for completed visits)
                                   if (isEditCompletedVisit) {
-                                    console.log("🚨 Setting selectedStation for edit mode");
                                     setSelectedStation({ id: st.id, type: stationType });
                                     return;
                                   }
@@ -1582,12 +1625,15 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                                     if (isStationCompleted(st.id, stationType)) {
                                       const stationLabel = getStationLabel(stationType);
                                       Alert.alert(
-                                        `Edit ${stationLabel}`,
-                                        `Are you sure you want to edit ${stationLabel} ${st.id}?`,
+                                        i18n.t("technician.myocide.confirmations.editStation", { type: stationLabel }),
+                                        i18n.t("technician.myocide.confirmations.editStationMessage", { 
+                                          type: stationLabel, 
+                                          id: st.id 
+                                        }),
                                         [
-                                          { text: "Cancel", style: "cancel" },
+                                          { text: i18n.t("common.cancel"), style: "cancel" },
                                           {
-                                            text: "I'm sure",
+                                            text: i18n.t("technician.myocide.confirmations.imSure"),
                                             style: "destructive",
                                             onPress: () =>
                                               setSelectedStation({ id: st.id, type: stationType }),
@@ -1611,7 +1657,10 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
 
                                   // Not working yet
                                   if (!workStarted && !editMode) {
-                                    Alert.alert("Info", "Start work first to log station data");
+                                    Alert.alert(
+                                      i18n.t("technician.common.info"), 
+                                      i18n.t("technician.myocide.alerts.startServiceRequired")
+                                    );
                                   }
                                 }}
                               >
@@ -1655,12 +1704,14 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                 >
                   <Text style={styles.editBtnText}>
                     {editStationType === "BS"
-                      ? "Bait Station (BS) ▼"
+                      ? `${i18n.t("technician.myocide.stationTypes.baitStation")} ▼`
                       : editStationType === "RM"
-                      ? "Multicatch (RM) ▼"
+                      ? `${i18n.t("technician.myocide.stationTypes.multicatch")} ▼`
                       : editStationType === "ST"
-                      ? "Snap Trap (ST) ▼"
-                      : "Light Trap (LT) ▼"}
+                      ? `${i18n.t("technician.myocide.stationTypes.snapTrap")} ▼`
+                      : editStationType === "LT"
+                      ? `${i18n.t("technician.myocide.stationTypes.lightTrap")} ▼`
+                      : `${i18n.t("technician.myocide.stationTypes.pheromoneTrap")} ▼`}
                   </Text>
                 </TouchableOpacity>
 
@@ -1670,28 +1721,35 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                       style={styles.mapDropdownItem}
                       onPress={() => { setEditStationType("BS"); setShowTypeDropdown(false); }}
                     >
-                      <Text>Bait Station (BS)</Text>
+                      <Text>{i18n.t("technician.myocide.stationTypes.baitStation")}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       style={styles.mapDropdownItem}
                       onPress={() => { setEditStationType("RM"); setShowTypeDropdown(false); }}
                     >
-                      <Text>Multicatch (RM)</Text>
+                      <Text>{i18n.t("technician.myocide.stationTypes.multicatch")}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       style={styles.mapDropdownItem}
                       onPress={() => { setEditStationType("ST"); setShowTypeDropdown(false); }}
                     >
-                      <Text>Snap Trap (ST)</Text>
+                      <Text>{i18n.t("technician.myocide.stationTypes.snapTrap")}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       style={styles.mapDropdownItem}
                       onPress={() => { setEditStationType("LT"); setShowTypeDropdown(false); }}
                     >
-                      <Text>Light Trap (LT)</Text>
+                      <Text>{i18n.t("technician.myocide.stationTypes.lightTrap")}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.mapDropdownItem}
+                      onPress={() => { setEditStationType("PT"); setShowTypeDropdown(false); }}
+                    >
+                      <Text>{i18n.t("technician.myocide.stationTypes.pheromoneTrap")}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -1705,13 +1763,12 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                   disabled={saving}
                 >
                   <Text style={styles.editBtnText}>
-                    {editStationType === "BS"
-                      ? "Add BS"
-                      : editStationType === "RM"
-                      ? "Add RM"
-                      : editStationType === "ST"
-                      ? "Add ST"
-                      : "Add LT"}
+                    {i18n.t("technician.myocide.editButtons.add", { 
+                      type: editStationType === "BS" ? "BS" : 
+                            editStationType === "RM" ? "RM" :
+                            editStationType === "ST" ? "ST" :
+                            editStationType === "LT" ? "LT" : "PT"
+                    })}
                   </Text>
                 </TouchableOpacity>
 
@@ -1721,13 +1778,12 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                   disabled={saving}
                 >
                   <Text style={styles.editBtnText}>
-                    {editStationType === "BS"
-                      ? "Remove BS"
-                      : editStationType === "RM"
-                      ? "Remove RM"
-                      : editStationType === "ST"
-                      ? "Remove ST"
-                      : "Remove LT"}
+                    {i18n.t("technician.myocide.editButtons.remove", { 
+                      type: editStationType === "BS" ? "BS" : 
+                            editStationType === "RM" ? "RM" :
+                            editStationType === "ST" ? "ST" :
+                            editStationType === "LT" ? "LT" : "PT"
+                    })}
                   </Text>
                 </TouchableOpacity>
 
@@ -1739,36 +1795,9 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                   {saving ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.editBtnText}>Save</Text>
+                    <Text style={styles.editBtnText}>{i18n.t("technician.myocide.editButtons.save")}</Text>
                   )}
                 </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {/* STATUS INDICATORS - Show when service is started */}
-          {serviceStarted && (
-            <View style={styles.statusContainerBottom}>
-              <View style={styles.statusItem}>
-                <View style={[
-                  styles.statusIndicator,
-                  serviceStarted ? styles.statusActive : styles.statusInactive
-                ]}>
-                  <Text style={styles.statusText}>1</Text>
-                </View>
-                <Text style={styles.statusLabel}>Started</Text>
-              </View>
-              
-              <View style={styles.statusConnector} />
-              
-              <View style={styles.statusItem}>
-                <View style={[
-                  styles.statusIndicator,
-                  serviceCompleted ? styles.statusActive : styles.statusInactive
-                ]}>
-                  <Text style={styles.statusText}>2</Text>
-                </View>
-                <Text style={styles.statusLabel}>Completed</Text>
               </View>
             </View>
           )}
@@ -1776,7 +1805,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
           {/* === ADDED SERVICE NOTES SECTION === */}
           {serviceStarted && (
             <View style={styles.notesContainer}>
-              <Text style={styles.notesLabel}>Service Notes:</Text>
+              <Text style={styles.notesLabel}>{i18n.t("technician.myocide.serviceNotes.label")}</Text>
               <TextInput
                 style={[styles.notesInput, !serviceStarted && styles.disabledInput]}
                 multiline
@@ -1784,19 +1813,47 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                 onChangeText={(text) => {
                   if (!serviceStarted) {
                     Alert.alert(
-                      "Start Service Required",
-                      "Please start the service before adding notes.",
-                      [{ text: "OK" }]
+                      i18n.t("technician.myocide.alerts.startServiceFirst"),
+                      i18n.t("technician.myocide.alerts.startServiceRequired"),
+                      [{ text: i18n.t("technician.common.ok") }]
                     );
                     return;
                   }
                   setNotes(text);
                 }}
-                placeholder="Enter service notes here..."
+                placeholder={i18n.t("technician.myocide.serviceNotes.placeholder")}
                 editable={serviceStarted}
                 numberOfLines={4}
                 textAlignVertical="top"
               />
+            </View>
+          )}
+
+          {/* PHOTO BUTTON */}
+            {serviceStarted && (
+  <TouchableOpacity
+    style={styles.primaryBtn}
+    onPress={openImageChooser}
+  >
+    <Text style={styles.primaryText}>
+      {reportImages.length > 0 
+        ? i18n.t("technician.myocide.photos.addMore") 
+        : i18n.t("technician.myocide.photos.add")}
+    </Text>
+  </TouchableOpacity>
+)}
+
+          {/* VIEW PHOTOS BUTTON */}
+          {serviceStarted && totalPhotos > 0 && (
+            <View style={{ alignItems: "center", paddingHorizontal: 20, marginTop: 10}}>
+              <TouchableOpacity
+                style={styles.saveWorkButton}
+                onPress={() => setShowPhotoViewer(true)}
+              >
+                <Text style={styles.saveWorkButtonText}>
+                  {i18n.t("technician.myocide.photos.view", { count: totalPhotos })}
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -1808,7 +1865,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                 style={styles.primaryBtn}
                 onPress={handleUpdateService}
               >
-                <Text style={styles.primaryText}>Update Service</Text>
+                <Text style={styles.primaryText}>{i18n.t("technician.myocide.actionButtons.updateService")}</Text>
               </TouchableOpacity>
             )}
 
@@ -1818,7 +1875,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                 style={styles.secondaryBtn}
                 onPress={handleGenerateReport}
               >
-                <Text style={styles.primaryText}>Generate Report</Text>
+                <Text style={styles.primaryText}>{i18n.t("technician.myocide.actionButtons.generateReport")}</Text>
               </TouchableOpacity>
             )}
 
@@ -1833,7 +1890,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                   style={styles.primaryBtn}
                   onPress={startTimer}
                 >
-                  <Text style={styles.primaryText}>▶ Start Work</Text>
+                  <Text style={styles.primaryText}>{i18n.t("technician.myocide.actionButtons.startWork")}</Text>
                 </TouchableOpacity>
               )}
             
@@ -1844,14 +1901,14 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                   style={styles.saveWorkButton}
                   onPress={handleSaveAll}
                 >
-                  <Text style={styles.saveWorkButtonText}>Finish & Save</Text>
+                  <Text style={styles.saveWorkButtonText}>{i18n.t("technician.myocide.actionButtons.finishAndSave")}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
                   style={styles.cancelWorkBtn}
                   onPress={handleCancelWork}
                 >
-                  <Text style={styles.cancelWorkText}>Cancel Work</Text>
+                  <Text style={styles.cancelWorkText}>{i18n.t("technician.myocide.actionButtons.cancelWork")}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1941,8 +1998,93 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
                   onClose={() => setSelectedStation(null)}
                 />
               )}
+
+              {selectedStation.type === "PT" && (
+                <PheromoneTrapForm
+                  stationId={selectedStation.id}
+                  technician={technician}
+                  timerData={isEditCompletedVisit ? null : {
+                    startTime,
+                    elapsedTime,
+                    visitId: sessionVisitId,
+                  }}
+                  onStationLogged={(stationData) => {
+                    upsertLoggedStation({
+                      ...stationData,
+                      stationType: "PT",
+                      timestamp: isEditCompletedVisit ? new Date().toISOString() : undefined
+                    });
+                  }}
+                  existingStationData={
+                    loggedStations.find(
+                      s => s.stationId === selectedStation.id && s.stationType === "PT"
+                    ) || null
+                  }
+                  onClose={() => setSelectedStation(null)}
+                />
+              )}
             </View>
           )}
+          {showPhotoViewer && (
+  <SafeAreaView style={styles.photoViewer}>
+
+    <View style={styles.photoViewerHeader}>
+      <Text style={styles.photoViewerTitle}>{i18n.t("technician.myocide.photos.servicePhotos")}</Text>
+
+      <TouchableOpacity onPress={() => setShowPhotoViewer(false)}>
+        <Text style={styles.closeText}>{i18n.t("technician.myocide.photos.close")}</Text>
+      </TouchableOpacity>
+    </View>
+
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={styles.photoScrollContainer}
+      showsVerticalScrollIndicator={true}
+    >
+      {(existingImages || []).map((img, index) => {
+
+        const imageUri = buildExistingImageUrl(img);
+
+        return (
+          <View key={`existing-${index}`} style={styles.photoWrapper}>
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.viewerImage}
+              resizeMode="cover"
+              onError={(e) =>
+                console.log("❌ Image load error:", imageUri, e.nativeEvent?.error)
+              }
+            />
+
+            <TouchableOpacity
+              style={styles.deletePhotoBtn}
+              onPress={() => removeExistingImage(index)}
+            >
+              <Text style={styles.deletePhotoText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      })}
+
+      {(reportImages || []).map((img, index) => (
+        <View key={`new-${index}`} style={styles.photoWrapper}>
+          <Image
+            source={{ uri: img.uri }}
+            style={styles.viewerImage}
+          />
+
+          <TouchableOpacity
+            style={styles.deletePhotoBtn}
+            onPress={() => removeNewImage(index)}
+          >
+            <Text style={styles.deletePhotoText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+    </ScrollView>
+
+  </SafeAreaView>
+)}
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -1983,59 +2125,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   timerText: { color: "#fff", fontWeight: "bold" },
-
-  // Status Indicators Styles - Positioned at bottom
-  statusContainerBottom: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 10,
-    paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    position: 'absolute',
-    bottom: 280, 
-    left: 20,
-    right: 20,
-    zIndex: 10,
-  },
-  statusItem: {
-    alignItems: 'center',
-    paddingHorizontal: 15,
-  },
-  statusIndicator: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  statusInactive: {
-    backgroundColor: '#e9ecef',
-    borderWidth: 2,
-    borderColor: '#dee2e6',
-  },
-  statusActive: {
-    backgroundColor: '#1f9c8d',
-    borderWidth: 2,
-    borderColor: '#1a8c7d',
-  },
-  statusText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  statusLabel: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  statusConnector: {
-    width: 40,
-    height: 2,
-    backgroundColor: '#e9ecef',
-  },
 
   startButtonText: { color: "#fff", fontWeight: "bold" },
 
@@ -2169,24 +2258,22 @@ const styles = StyleSheet.create({
   },
 
   primaryBtn: {
-    backgroundColor: '#1f9c8d',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 12,
-    alignItems: 'center',
-    width: '100%', // Make it full width
-    marginHorizontal: 20, // Add horizontal margin
-  },
+  backgroundColor: '#1f9c8d',
+  padding: 16,
+  borderRadius: 8,
+  marginTop: 12,
+  alignItems: 'center',
+  marginHorizontal: 20
+},
 
   secondaryBtn: {
-    backgroundColor: '#0f6a61',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 10,
-    alignItems: 'center',
-    width: '100%', // Make it full width
-    marginHorizontal: 20, // Add horizontal margin
-  },
+  backgroundColor: '#0f6a61',
+  padding: 16,
+  borderRadius: 8,
+  marginTop: 10,
+  alignItems: 'center',
+  marginHorizontal: 20
+},
 
   primaryText: { 
     color: '#fff', 
@@ -2269,6 +2356,65 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     pointerEvents: "box-none",
+  },
+  photoViewer: {
+  flex: 1,
+  backgroundColor: "#fff",
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 9999
+},
+
+  photoViewerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderColor: "#eee"
+  },
+
+  photoViewerTitle: {
+    fontSize: 18,
+    fontWeight: "bold"
+  },
+
+  closeText: {
+    color: "#1f9c8d",
+    fontWeight: "bold",
+    fontSize: 16
+  },
+
+  viewerImage: {
+    width: "100%",
+    height: 250,
+    borderRadius: 12,
+    marginBottom: 15
+  },
+  photoWrapper: {
+    marginBottom: 15,
+    position: "relative"
+  },
+
+  deletePhotoBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+
+  deletePhotoText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16
   },
 });
 export default MapScreen;
