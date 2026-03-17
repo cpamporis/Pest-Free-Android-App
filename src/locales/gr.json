@@ -403,6 +403,7 @@
         "copyright": "© {{year}} Pestify. Με την επιφύλαξη παντός δικαιώματος."
       }
     },
+    
     "customerProfile": {
       "loading": "Φόρτωση προφίλ πελάτη...",
       "header": {
@@ -440,14 +441,77 @@
         "baitStation": "Δολωματικός Σταθμός",
         "rodentMonitor": "Παγίδα Multicatch",
         "stickyTrap": "Παγίδα Snap",
-        "lightTrap": "Παγίδα Φωτός"
+        "lightTrap": "Παγίδα Φωτός",
+        "pheromoneTrap": "Φερομονική Παγίδα"
       },
       "serviceHistory": {
         "title_one": "Ιστορικό Υπηρεσιών ({{count}})",
         "title_other": "Ιστορικό Υπηρεσιών ({{count}})",
         "noServices": "Δεν έχουν καταγραφεί υπηρεσίες",
-        "service_one": "Υπηρεσία",
-        "service_other": "Υπηρεσίες"
+        "service_one": "υπηρεσία",
+        "service_other": "υπηρεσίες"
+      },
+      "charts": {
+        "title": "Ανάλυση Υπηρεσιών",
+        "latestService": "Τελευταία Επίσκεψη",
+        "periodComparison": "Σύγκριση Περιόδων",
+        "monthlyActivity": "Μηνιαία Δραστηριότητα",
+        "change": "Μεταβολή",
+        "peakMonths": "Κορυφαίοι Μήνες",
+         "deviceTypes": {
+          "baitStation": "Δολωματικός Σταθμός",
+          "rodentMulticatch": "Παγίδα Multicatch",
+          "snapTrap": "Παγίδα Snap",
+          "lightTrap": "Παγίδα Φωτός",
+          "pheromoneTrap": "Φερομονική Παγίδα"
+        },
+        "filters": {
+          "deviceType": "Τύπος Συσκευής",
+          "period": "Περίοδος",
+          "year": "Έτος"
+        },
+        "periods": {
+          "oneMonth": "1 Μήνας",
+          "threeMonths": "3 Μήνες",
+          "sixMonths": "6 Μήνες",
+          "twelveMonths": "12 Μήνες"
+        },
+        "baitStations": {
+          "consumption": "Κατανάλωση Δολώματος ανά Σταθμό"
+        },
+        "rodentMonitors": {
+          "rodents": "Συλλήψεις Τρωκτικών"
+        },
+        "snapTraps": {
+          "rodents": "Συλλήψεις Τρωκτικών"
+        },
+        "lightTraps": {
+          "insectBreakdown": "Ανάλυση Εντόμων"
+        },
+        "pheromoneTraps": {
+          "insectsPerTrap": "Έντομα ανά Παγίδα"
+        },
+        "topStations": {
+          "title": "Κορυφαίοι 10 Πιο Ενεργοί Σταθμοί",
+          "station": "Σταθμός %{id}",
+          "fullConsumption": "100% Κατανάλωση",
+          "avgConsumption": "Μέση Κατανάλωση",
+          "times": "φορές"
+        },
+        "months": {
+          "jan": "Ιαν",
+          "feb": "Φεβ",
+          "mar": "Μαρ",
+          "apr": "Απρ",
+          "may": "Μαϊ",
+          "jun": "Ιουν",
+          "jul": "Ιουλ",
+          "aug": "Αυγ",
+          "sep": "Σεπ",
+          "oct": "Οκτ",
+          "nov": "Νοε",
+          "dec": "Δεκ"
+        }
       },
       "footer": {
         "system": "Προβολή Προφίλ Πελάτη",
@@ -455,6 +519,7 @@
         "copyright": "© {{year}} Pestify. Με την επιφύλαξη παντός δικαιώματος."
       }
     },
+
     "customerRequests": {
       "loading": "Φόρτωση Αιτημάτων Πελατών...",
       "header": {

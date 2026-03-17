@@ -445,9 +445,10 @@
         "title_other": "Stations Summary ({{count}})",
         "noStations": "No stations recorded",
         "baitStation": "Bait Station",
-        "rodentMonitor": "Rodent Monitor",
-        "stickyTrap": "Sticky Trap",
-        "lightTrap": "Light Trap"
+        "rodentMonitor": "Rodent Multicatch",
+        "stickyTrap": "Snap Trap",
+        "lightTrap": "Light Trap",
+        "pheromoneTrap": "Pheromone Trap"
       },
       "serviceHistory": {
         "title_one": "Service History ({{count}})",
@@ -456,12 +457,74 @@
         "service_one": "service",
         "service_other": "services"
       },
+      "charts": {
+        "title": "Service Analytics",
+        "latestService": "Latest Service",
+        "periodComparison": "Period Comparison",
+        "monthlyActivity": "Monthly Activity",
+        "change": "Change",
+        "peakMonths": "Peak Months",
+        "deviceTypes": {
+          "baitStation": "Bait Station",
+          "rodentMulticatch": "Rodent Multicatch",
+          "snapTrap": "Snap Trap",
+          "lightTrap": "Light Trap",
+          "pheromoneTrap": "Pheromone Trap"
+        },
+        "filters": {
+          "deviceType": "Device Type",
+          "period": "Period",
+          "year": "Year"
+        },
+        "periods": {
+          "oneMonth": "1 Month",
+          "threeMonths": "3 Months",
+          "sixMonths": "6 Months",
+          "twelveMonths": "12 Months"
+        },
+        "baitStations": {
+          "consumption": "Bait Consumption by Station"
+        },
+        "rodentMonitors": {
+          "rodents": "Rodents Captured"
+        },
+        "snapTraps": {
+          "rodents": "Rodents Captured"
+        },
+        "lightTraps": {
+          "insectBreakdown": "Insect Breakdown"
+        },
+        "pheromoneTraps": {
+          "insectsPerTrap": "Insects per Trap"
+        },
+        "topStations": {
+          "title": "Top 10 Most Active Bait Stations",
+          "station": "Station %{id}",
+          "fullConsumption": "100% Consumption",
+          "avgConsumption": "Avg Consumption",
+          "times": "times"
+        }
+      },
+      "months": {
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "may": "May",
+        "jun": "Jun",
+        "jul": "Jul",
+        "aug": "Aug",
+        "sep": "Sep",
+        "oct": "Oct",
+        "nov": "Nov",
+        "dec": "Dec"
+      },
       "footer": {
         "system": "Customer Profile Display",
         "version": "Version 1.1 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
-    },
+   },
 
     "customerRequests": {
       "loading": "Loading Customer Requests...",
