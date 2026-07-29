@@ -47,9 +47,9 @@ export default function LoginScreen({
       return;
     }
 
-    if (result.role === "admin") {
+    if (result.role === "admin" || result.role === "super_admin") {
       await apiService.setAuthToken(result.token);
-      onAdminLogin();
+      onAdminLogin(result.role); 
       return;
     }
 

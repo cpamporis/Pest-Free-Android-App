@@ -52,6 +52,7 @@ export default function AdminHomeScreen({ onLogout }) {
   const [showStatistics, setShowStatistics] = useState(false);
   const [showCalendarPreview, setShowCalendarPreview] = useState(false); //temporary
   const [showInlineCalendar, setShowInlineCalendar] = useState(true);
+  const [usage, setUsage] = useState(null);
 
 
   useEffect(() => {
@@ -117,6 +118,11 @@ export default function AdminHomeScreen({ onLogout }) {
         setTodayCustomerRequests(0);
       }
 
+      const usageRes = await apiService.getOrganizationUsage();
+      if (usageRes?.success) {
+        setUsage(usageRes);
+      }
+
     } catch (error) {
       console.error("Failed to fetch data:", error);
       setTodayCustomerRequests(0); // Reset on error
@@ -139,6 +145,17 @@ export default function AdminHomeScreen({ onLogout }) {
     setRefreshing(true);
     loadAllData().finally(() => {
       setRefreshing(false);
+    });
+  };
+
+  const getSubscriptionPlanName = (plan) => {
+    const planKey = String(plan || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+
+    return i18n.t(`admin.home.subscription.plans.${planKey}`, {
+      defaultValue: String(plan || "").toUpperCase()
     });
   };
 
@@ -206,6 +223,73 @@ export default function AdminHomeScreen({ onLogout }) {
             </Text>
           </View>
         </View>
+
+        {usage && (
+                  <View style={styles.subscriptionCard}>
+        
+                    {/* PLAN HEADER */}
+                    <View style={styles.subscriptionHeader}>
+                      <Text style={styles.subscriptionPlan}>
+                        {i18n.t("admin.home.subscription.plan", {
+                          plan: getSubscriptionPlanName(usage.subscriptionPlan)
+                        })}
+                      </Text>
+        
+                      <View style={styles.subscriptionBadge}>
+                        <Text style={styles.subscriptionBadgeText}>
+                          {i18n.t("admin.home.subscription.active")}
+                        </Text>
+                      </View>
+                    </View>
+        
+                    {/* CUSTOMERS */}
+                    <Text style={styles.subscriptionLabel}>
+                      {i18n.t("admin.home.subscription.customers", {
+                        used: usage.customers.used,
+                        max: usage.customers.max
+                      })}
+                    </Text>
+        
+                    <View style={styles.subscriptionBarContainer}>
+                      <View
+                        style={[
+                          styles.subscriptionBarFill,
+                          {
+                            width: `${(usage.customers.used / usage.customers.max) * 100}%`,
+                            backgroundColor:
+                              usage.customers.used >= usage.customers.max
+                                ? "#e74c3c"
+                                : "#1f9c8b"
+                          }
+                        ]}
+                      />
+                    </View>
+        
+                    {/* TECHNICIANS */}
+                    <Text style={[styles.subscriptionLabel, { marginTop: 10 }]}>
+                      {i18n.t("admin.home.subscription.technicians", {
+                        used: usage.technicians.used,
+                        max: usage.technicians.max
+                      })}
+                    </Text>
+        
+                    <View style={styles.subscriptionBarContainer}>
+                      <View
+                        style={[
+                          styles.subscriptionBarFill,
+                          {
+                            width: `${(usage.technicians.used / usage.technicians.max) * 100}%`,
+                            backgroundColor:
+                              usage.technicians.used >= usage.technicians.max
+                                ? "#e74c3c"
+                                : "#1f9c8b"
+                          }
+                        ]}
+                      />
+                    </View>
+        
+                  </View>
+                )}
 
         {/* QUICK STATS CARDS */}
         <View style={styles.sectionHeader}>
@@ -923,5 +1007,69 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f0f0f0",
     elevation: 3
+  },
+  subscriptionCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 24,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
+  },
+
+  subscriptionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  subscriptionPlan: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2c3e50",
+  },
+
+  subscriptionBadge: {
+    backgroundColor: "#e9f7f6",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+
+  subscriptionBadgeText: {
+    color: "#1f9c8b",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+
+  subscriptionBarContainer: {
+    height: 8,
+    backgroundColor: "#ecf0f1",
+    borderRadius: 6,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+
+  subscriptionBarFill: {
+    height: "100%",
+    backgroundColor: "#1f9c8b",
+  },
+
+  subscriptionText: {
+    fontSize: 12,
+    color: "#666",
+  },
+  subscriptionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2c3e50",
+    marginBottom: 4,
   },
 });

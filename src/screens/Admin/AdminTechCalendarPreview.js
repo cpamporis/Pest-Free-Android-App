@@ -38,6 +38,30 @@ export default function AdminTechCalendarPreview() {
     { id: "emergency", label: i18n.t("admin.schedule.appointmentCategory.emergency") },
     { id: "contract_service", label: i18n.t("admin.schedule.appointmentCategory.contract_service") },
   ];
+  const WEEKDAY_KEYS = [
+  "sun",
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat"
+];
+
+const MONTH_KEYS = [
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "may",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "oct",
+  "nov",
+  "dec"
+];
   const horizontalScrollRef = useRef(null);
 
   useEffect(() => {
@@ -412,6 +436,8 @@ const getSpecialServiceLabel = (subtype) => {
       return i18n.t("serviceTypes.insecticide");
     case 'disinfection':
       return i18n.t("serviceTypes.disinfection");
+      case 'certificate':
+        return i18n.t("serviceTypes.certificate");
     case 'special':
       if (!specialSubtype) return i18n.t("serviceTypes.special");
       
@@ -493,6 +519,15 @@ const getSpecialServiceLabel = (subtype) => {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
     return d;
+  }
+
+  function formatWeekDate(date, includeYear = false) {
+    const month = i18n.t(`months.${MONTH_KEYS[date.getMonth()]}`);
+    const day = date.getDate();
+
+    return includeYear
+      ? `${month} ${day}, ${date.getFullYear()}`
+      : `${month} ${day}`;
   }
 
   function formatDateLocal(date) {
@@ -612,17 +647,10 @@ const getSpecialServiceLabel = (subtype) => {
               <MaterialIcons name="today" size={16} color="#fff" />
               <Text style={styles.currentWeekText} numberOfLines={1}>
                 {i18n.t("admin.calendar.navigation.weekOf", {
-                  start: weekStart.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  }),
-                  end: addDays(weekStart, 6).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })
+                  start: formatWeekDate(weekStart),
+                  end: formatWeekDate(addDays(weekStart, 6), true)
                 })}
-              </Text>
+                              </Text>
             </TouchableOpacity>
           </View>
 
@@ -751,7 +779,7 @@ const getSpecialServiceLabel = (subtype) => {
                       ]}
                     >
                       <Text style={styles.dayName}>
-                        {day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+                        {i18n.t(`weekdays.short.${WEEKDAY_KEYS[day.getDay()]}`)}
                       </Text>
                       <Text style={[
                         styles.dayDate,
@@ -760,7 +788,7 @@ const getSpecialServiceLabel = (subtype) => {
                         {day.getDate()}
                       </Text>
                       <Text style={styles.dayMonth}>
-                        {day.toLocaleDateString('en-US', { month: 'short' })}
+                        {i18n.t(`months.${MONTH_KEYS[day.getMonth()]}`)}
                       </Text>
                     </View>
                   );

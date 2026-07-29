@@ -50,9 +50,63 @@ const requestAndroidStoragePermission = async () => {
   return true; // iOS
 };
 
+function normalizeCustomerSearch(value) {
+  const text = String(value ?? "").trim().toLocaleLowerCase();
+
+  return typeof text.normalize === "function"
+    ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    : text;
+}
+
+function filterCustomersBySearch(customers, searchText) {
+  const customerList = Array.isArray(customers) ? customers : [];
+  const query = normalizeCustomerSearch(searchText);
+
+  if (!query) return customerList;
+
+  return customerList.filter((customer) =>
+    [
+      customer.customerName,
+      customer.customerId,
+      customer.address,
+      customer.email,
+      customer.telephone,
+      customer.tin,
+      customer.ama,
+    ].some((value) => normalizeCustomerSearch(value).includes(query))
+  );
+}
+
+function getCustomerSearchCopy() {
+  const locale = String(
+    i18n.locale ||
+    i18n.language ||
+    i18n.getLocale?.() ||
+    ""
+  ).toLocaleLowerCase();
+
+  const isGreek = locale.startsWith("el") || locale.startsWith("gr");
+
+  return {
+    placeholder: isGreek
+      ? "Αναζήτηση πελάτη..."
+      : "Search customer...",
+    noResults: isGreek
+      ? "Δεν βρέθηκαν πελάτες."
+      : "No customers found.",
+  };
+}
 /* ===================== EXISTING MODALS ===================== */
 
-function CustomerSelectModal({ title, subtitle, customers, onClose, onSelect }) {
+function CustomerSelectModal({ title, subtitle, customers, onClose, onSelect, searchable = false }) {
+  const [searchText, setSearchText] = useState("");
+
+  const filteredCustomers = filterCustomersBySearch(
+    customers,
+    searchText
+  );
+
+  const customerSearchCopy = getCustomerSearchCopy();
   return (
     <Modal animationType="slide" transparent visible>
       <SafeAreaView style={styles.modalSafeArea}>
@@ -69,36 +123,75 @@ function CustomerSelectModal({ title, subtitle, customers, onClose, onSelect }) 
                 {!!subtitle && <Text style={styles.modalSub}>{subtitle}</Text>}
               </View>
 
-              <ScrollView style={styles.selectList} showsVerticalScrollIndicator={false}>
-                {customers.map((c) => (
+              {searchable && (
+              <View style={styles.customerSearchContainer}>
+                <MaterialIcons name="search" size={20} color="#666" />
+
+                <TextInput
+                  style={styles.customerSearchInput}
+                  placeholder={customerSearchCopy.placeholder}
+                  placeholderTextColor="#999"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+
+                {!!searchText && (
                   <TouchableOpacity
-                    key={c.customerId}
-                    style={styles.selectItem}
-                    onPress={() => onSelect(c)}
+                    style={styles.customerSearchClearButton}
+                    onPress={() => setSearchText("")}
                     activeOpacity={0.7}
                   >
-                    <View style={styles.selectItemIcon}>
-                      <FontAwesome5 name="building" size={16} color="#1f9c8b" />
-                    </View>
-                    <View style={styles.selectItemContent}>
-                      <Text style={styles.selectItemTitle}>
-                        {c.customerName}
-                      </Text>
-                      <View style={styles.selectItemMeta}>
-                        <Text style={styles.selectItemId}>
-                          {i18n.t("admin.customers.selectModal.id", { id: c.customerId })}
-                        </Text>
-                        {!!c.address && (
-                          <View key="address-meta" style={{ flexDirection: "row", alignItems: "center" }}>
-                            <Text style={styles.selectItemDot}>•</Text>
-                            <Text style={styles.selectItemSub}>{c.address}</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                    <MaterialIcons name="chevron-right" size={20} color="#ccc" />
+                    <MaterialIcons name="close" size={18} color="#666" />
                   </TouchableOpacity>
-                ))}
+                )}
+              </View>
+            )}
+
+              <ScrollView
+                style={styles.selectList}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {filteredCustomers.length === 0 ? (
+                  <View style={styles.customerSearchEmpty}>
+                    <MaterialIcons name="search" size={30} color="#ccc" />
+                    <Text style={styles.customerSearchEmptyText}>
+                      {customerSearchCopy.noResults}
+                    </Text>
+                  </View>
+                ) : (
+                  filteredCustomers.map((c) => (
+                    <TouchableOpacity
+                      key={c.customerId}
+                      style={styles.selectItem}
+                      onPress={() => onSelect(c)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.selectItemIcon}>
+                        <FontAwesome5 name="building" size={16} color="#1f9c8b" />
+                      </View>
+                      <View style={styles.selectItemContent}>
+                        <Text style={styles.selectItemTitle}>
+                          {c.customerName}
+                        </Text>
+                        <View style={styles.selectItemMeta}>
+                          <Text style={styles.selectItemId}>
+                            {i18n.t("admin.customers.selectModal.id", { id: c.customerId })}
+                          </Text>
+                          {!!c.address && (
+                            <View key="address-meta" style={{ flexDirection: "row", alignItems: "center" }}>
+                              <Text style={styles.selectItemDot}>•</Text>
+                              <Text style={styles.selectItemSub}>{c.address}</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <MaterialIcons name="chevron-right" size={20} color="#ccc" />
+                    </TouchableOpacity>
+                  ))
+                )}
               </ScrollView>
 
               <TouchableOpacity 
@@ -126,6 +219,8 @@ function AddCustomerModal({ onClose, onSave }) {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [telephone, setTelephone] = useState("");
+  const [tin, setTin] = useState("");
+  const [ama, setAma] = useState("");
 
   // Map upload states
   const [showMapUpload, setShowMapUpload] = useState(false);
@@ -183,6 +278,8 @@ function AddCustomerModal({ onClose, onSave }) {
         address: address.trim(),
         email: email.trim(),
         telephone: telephone.trim(),
+        tin: tin.trim(),
+        ama: ama.trim(),
         maps: []
       };
 
@@ -364,6 +461,38 @@ function AddCustomerModal({ onClose, onSave }) {
                 />
               </View>
 
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>
+                  {i18n.t("admin.customers.addModal.tin")}
+                </Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder={i18n.t("admin.customers.addModal.tinPlaceholder")}
+                  placeholderTextColor="#999"
+                  keyboardType="number-pad"
+                  value={tin}
+                  onChangeText={setTin}
+                  editable={!loading}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>
+                  {i18n.t("admin.customers.addModal.ama")}
+                </Text>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder={i18n.t("admin.customers.addModal.amaPlaceholder")}
+                  placeholderTextColor="#999"
+                  keyboardType="number-pad"
+                  value={ama}
+                  onChangeText={setAma}
+                  editable={!loading}
+                />
+              </View>
+
                 <Text style={styles.sectionTitle}>{i18n.t("admin.customers.addModal.loginAccount")}</Text>
                 <Text style={styles.sectionDescription}>
                   {i18n.t("admin.customers.addModal.loginDesc")}
@@ -540,7 +669,8 @@ function EditCustomerModal({ customer, onClose, onSave }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [telephone, setTelephone] = useState("");
-
+  const [tin, setTin] = useState("");
+const [ama, setAma] = useState("");
   
   // Map upload states
   const [showMapUpload, setShowMapUpload] = useState(false);
@@ -571,6 +701,8 @@ function EditCustomerModal({ customer, onClose, onSave }) {
         setAddress(fresh.address || "");
         setEmail(fresh.email || "");
         setTelephone(fresh.telephone || "");
+        setTin(fresh.tin || "");
+        setAma(fresh.ama || "");
         setCustomerMaps(fresh.maps || []);
       } catch (e) {
         console.error("❌ Failed to load customer:", e);
@@ -725,7 +857,9 @@ function EditCustomerModal({ customer, onClose, onSave }) {
         customerName: customerName.trim(),
         address: address.trim(),
         email: email.trim(),
-        telephone: telephone.trim()
+        telephone: telephone.trim(),
+        tin: tin.trim(),
+        ama: ama.trim()
       };
 
       await onSave(updateData);
@@ -809,6 +943,38 @@ function EditCustomerModal({ customer, onClose, onSave }) {
                     keyboardType="phone-pad"
                     value={telephone}
                     onChangeText={setTelephone}
+                    editable={!loading}
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>
+                    {i18n.t("admin.customers.addModal.tin")}
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    placeholder={i18n.t("admin.customers.addModal.tinPlaceholder")}
+                    placeholderTextColor="#999"
+                    keyboardType="number-pad"
+                    value={tin}
+                    onChangeText={setTin}
+                    editable={!loading}
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>
+                    {i18n.t("admin.customers.addModal.ama")}
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    placeholder={i18n.t("admin.customers.addModal.amaPlaceholder")}
+                    placeholderTextColor="#999"
+                    keyboardType="number-pad"
+                    value={ama}
+                    onChangeText={setAma}
                     editable={!loading}
                   />
                 </View>
@@ -1031,10 +1197,13 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
   const [deletedCustomers, setDeletedCustomers] = useState([]);
   const [showDeletedCustomers, setShowDeletedCustomers] = useState(false);
   const [showCustomerList, setShowCustomerList] = useState(true);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [usage, setUsage] = useState(null);
   
 
   useEffect(() => {
     loadCustomers();
+    loadUsage();
   }, []);
 
   useEffect(() => {
@@ -1057,6 +1226,18 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
     console.log("📄 Passing through report data:");
     // Let CustomerProfile handle everything
   };
+
+  const loadUsage = async () => {
+      try {
+        const res = await apiService.getOrganizationUsage();
+  
+        if (res.success) {
+          setUsage(res);
+        }
+      } catch (err) {
+        console.error("❌ Usage load error:", err);
+      }
+    };
 
   async function loadCustomers() {
     setLoading(true);
@@ -1107,8 +1288,9 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
     }
   };
 
-  function handleAddCustomer(newCustomer) {
+  async function handleAddCustomer(newCustomer) {
     setCustomers(prev => [newCustomer, ...prev]);
+    await loadUsage(); 
   }
 
   async function handleEditCustomer(data) {
@@ -1225,6 +1407,13 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
     0
   );
 
+  const filteredCustomers = filterCustomersBySearch(
+    customers,
+    customerSearch
+  );
+
+  const customerSearchCopy = getCustomerSearchCopy();
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -1271,6 +1460,39 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
             </Text>
           </View>
         </View>
+
+        {usage && (
+                  <View style={styles.subscriptionCard}>
+                    
+                    <View style={styles.subscriptionHeader}>
+                      <Text style={styles.subscriptionPlan}>
+                        {usage.subscriptionPlan.toUpperCase()} PLAN
+                      </Text>
+        
+                      <View style={styles.subscriptionBadge}>
+                        <Text style={styles.subscriptionBadgeText}>
+                          {usage.customers.used}/{usage.customers.max}
+                        </Text>
+                      </View>
+                    </View>
+        
+                    <View style={styles.subscriptionBarContainer}>
+                      <View
+                        style={[
+                          styles.subscriptionBarFill,
+                          {
+                            width: `${(usage.customers.used / usage.customers.max) * 100}%`
+                          }
+                        ]}
+                      />
+                    </View>
+        
+                    <Text style={styles.subscriptionText}>
+                      Customers used: {usage.customers.used} / {usage.customers.max}
+                    </Text>
+        
+                  </View>
+                )}
 
         {/* STATS BAR */}
         <View style={styles.statsBar}>
@@ -1321,8 +1543,27 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
 
         <View style={styles.actionsGrid}>
           <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: "#1f9c8b" }]}
-            onPress={() => setShowAdd(true)}
+            style={[
+              styles.actionCard,
+              {
+                backgroundColor:
+                  usage && usage.customers.used >= usage.customers.max
+                    ? "#ccc"
+                    : "#1f9c8b"
+              }
+            ]}
+            onPress={() => {
+              if (usage && usage.customers.used >= usage.customers.max) {
+                Alert.alert(
+                  i18n.t("limits.title"),
+                  i18n.t("limits.customersReached", {
+                    max: usage.customers.max
+                  })
+                );
+                return;
+              }
+              setShowAdd(true);
+            }}
             activeOpacity={0.7}
           >
             <MaterialIcons name="person-add" size={28} color="#fff" />
@@ -1403,7 +1644,13 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
         <View style={styles.sectionHeader}>
           <TouchableOpacity 
             style={styles.sectionTitleContainer}
-            onPress={() => setShowCustomerList(!showCustomerList)}
+            onPress={() => {
+              if (showCustomerList) {
+                setCustomerSearch("");
+              }
+
+              setShowCustomerList(!showCustomerList);
+            }}
             activeOpacity={0.7}
           >
             <MaterialIcons name="list-alt" size={20} color="#2c3e50" />
@@ -1441,59 +1688,92 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
             </TouchableOpacity>
           </View>
         ) : showCustomerList ? (
-          <View style={styles.listContainer}>
-            {customers.map((c) => (
-              <TouchableOpacity
-                key={c.customerId}
-                style={styles.customerCard}
-                activeOpacity={0.7}
-                onPress={() => {
-                  setSelectedCustomer(c);
-                  setShowCustomerProfile(true);
-                }}
-              >
-                <View style={styles.customerHeader}>
-                  <View style={styles.customerAvatar}>
-                    <FontAwesome5 name="building" size={22} color="#fff" />
-                  </View>
-                  <View style={styles.customerInfo}>
-                    <Text style={styles.customerName}>{c.customerName}</Text>
-                    <View style={styles.customerMeta}>
-                      <View style={styles.customerMetaItem}>
-                        <MaterialIcons name="fingerprint" size={12} color="#666" />
-                        <Text style={styles.customerMetaText}>
-                          {i18n.t("admin.customers.customerCard.id", { id: c.customerId })}
-                        </Text>
+          <>
+            <View style={[styles.customerSearchContainer, styles.directorySearchContainer]}>
+              <MaterialIcons name="search" size={20} color="#666" />
+              <TextInput
+                style={styles.customerSearchInput}
+                placeholder={customerSearchCopy.placeholder}
+                placeholderTextColor="#999"
+                value={customerSearch}
+                onChangeText={setCustomerSearch}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {!!customerSearch && (
+                <TouchableOpacity
+                  style={styles.customerSearchClearButton}
+                  onPress={() => setCustomerSearch("")}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="close" size={18} color="#666" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {filteredCustomers.length === 0 ? (
+              <View style={[styles.customerSearchEmpty, styles.directorySearchEmpty]}>
+                <MaterialIcons name="search" size={36} color="#ccc" />
+                <Text style={styles.customerSearchEmptyText}>
+                  {customerSearchCopy.noResults}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.listContainer}>
+                {filteredCustomers.map((c) => (
+                  <TouchableOpacity
+                    key={c.customerId}
+                    style={styles.customerCard}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setSelectedCustomer(c);
+                      setShowCustomerProfile(true);
+                    }}
+                  >
+                    <View style={styles.customerHeader}>
+                      <View style={styles.customerAvatar}>
+                        <FontAwesome5 name="building" size={22} color="#fff" />
                       </View>
-                      {c.address && (
-                        <View style={styles.customerMetaItem}>
-                          <MaterialIcons name="location-on" size={12} color="#666" />
-                          <Text style={styles.customerMetaText}>{c.address}</Text>
+                      <View style={styles.customerInfo}>
+                        <Text style={styles.customerName}>{c.customerName}</Text>
+                        <View style={styles.customerMeta}>
+                          <View style={styles.customerMetaItem}>
+                            <MaterialIcons name="fingerprint" size={12} color="#666" />
+                            <Text style={styles.customerMetaText}>
+                              {i18n.t("admin.customers.customerCard.id", { id: c.customerId })}
+                            </Text>
+                          </View>
+                          {c.address && (
+                            <View style={styles.customerMetaItem}>
+                              <MaterialIcons name="location-on" size={12} color="#666" />
+                              <Text style={styles.customerMetaText}>{c.address}</Text>
+                            </View>
+                          )}
                         </View>
-                      )}
+                      </View>
+                      <View style={styles.customerStats}>
+                        <View style={styles.customerStat}>
+                          <MaterialIcons name="map" size={14} color="#1f9c8b" />
+                          <Text style={styles.customerStatText}>{c.mapsCount}</Text>
+                        </View>
+                        <View style={styles.customerStat}>
+                          <MaterialIcons name="location-pin" size={14} color="#1f9c8b" />
+                          <Text style={styles.customerStatText}>{c.stationsCount}</Text>
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.customerStats}>
-                    <View style={styles.customerStat}>
-                      <MaterialIcons name="map" size={14} color="#1f9c8b" />
-                      <Text style={styles.customerStatText}>{c.mapsCount}</Text>
-                    </View>
-                    <View style={styles.customerStat}>
-                      <MaterialIcons name="location-pin" size={14} color="#1f9c8b" />
-                      <Text style={styles.customerStatText}>{c.stationsCount}</Text>
-                    </View>
-                  </View>
-                </View>
-                
-                {c.email && (
-                  <View style={styles.customerFooter}>
-                    <MaterialIcons name="email" size={14} color="#666" />
-                    <Text style={styles.customerEmail}>{c.email}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+                    
+                    {c.email && (
+                      <View style={styles.customerFooter}>
+                        <MaterialIcons name="email" size={14} color="#666" />
+                        <Text style={styles.customerEmail}>{c.email}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </>
         ) : null}
 
         {/* ===== DELETED CUSTOMERS SECTION ===== */}
@@ -1610,6 +1890,7 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
           title={i18n.t("admin.customers.selectModal.select", { action: i18n.t("common.edit").toLowerCase() })}
           subtitle={i18n.t("admin.customers.selectModal.choose")}
           customers={customers}
+          searchable
           onClose={() => setShowSelectForEdit(false)}
           onSelect={(c) => {
             setSelectedCustomer(c);
@@ -1655,6 +1936,7 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
           title={i18n.t("admin.customers.selectModal.select", { action: i18n.t("common.delete").toLowerCase() })}
           subtitle={i18n.t("admin.customers.selectModal.choose")}
           customers={customers}
+          searchable
           onClose={() => setShowSelectForDelete(false)}
           onSelect={(c) => {
             setSelectedCustomer(c);
@@ -1812,7 +2094,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#fff",
     marginHorizontal: 24,
-    marginTop: -16,
+    marginTop: 12,
     borderRadius: 16,
     padding: 20,
     shadowColor: "#000",
@@ -2680,5 +2962,107 @@ actionCardDescription: {
   },
   dropdownIcon: {
     marginLeft: 4,
-  }
+  },
+  subscriptionCard: {
+  backgroundColor: "#fff",
+  marginHorizontal: 24,
+  marginTop: 16,
+  padding: 16,
+  borderRadius: 16,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 8,
+  elevation: 3,
+  borderWidth: 1,
+  borderColor: "#f0f0f0",
+},
+
+subscriptionHeader: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 10,
+},
+
+subscriptionPlan: {
+  fontSize: 14,
+  fontWeight: "700",
+  color: "#2c3e50",
+},
+
+subscriptionBadge: {
+  backgroundColor: "#e9f7f6",
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 10,
+},
+
+subscriptionBadgeText: {
+  color: "#1f9c8b",
+  fontWeight: "700",
+  fontSize: 12,
+},
+
+subscriptionBarContainer: {
+  height: 8,
+  backgroundColor: "#ecf0f1",
+  borderRadius: 6,
+  overflow: "hidden",
+  marginBottom: 8,
+},
+
+subscriptionBarFill: {
+  height: "100%",
+  backgroundColor: "#1f9c8b",
+},
+
+subscriptionText: {
+  fontSize: 12,
+  color: "#666",
+},
+customerSearchContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 12,
+  borderWidth: 1,
+  borderColor: "#e9ecef",
+  borderRadius: 10,
+  backgroundColor: "#f8f9fa",
+  marginBottom: 12,
+},
+directorySearchContainer: {
+  marginHorizontal: 24,
+},
+customerSearchInput: {
+  flex: 1,
+  paddingVertical: 11,
+  paddingHorizontal: 10,
+  fontSize: 15,
+  color: "#2c3e50",
+  fontFamily: "System",
+},
+customerSearchClearButton: {
+  padding: 4,
+},
+customerSearchEmpty: {
+  alignItems: "center",
+  justifyContent: "center",
+  paddingVertical: 28,
+},
+directorySearchEmpty: {
+  marginHorizontal: 24,
+  marginBottom: 20,
+  borderRadius: 12,
+  backgroundColor: "#fff",
+  borderWidth: 1,
+  borderColor: "#f0f0f0",
+},
+customerSearchEmptyText: {
+  marginTop: 8,
+  fontSize: 14,
+  color: "#999",
+  textAlign: "center",
+  fontFamily: "System",
+},
 });
