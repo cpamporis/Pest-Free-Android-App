@@ -8,6 +8,7 @@ import MapScreen from "./screens/Technician/MyocideScreen";
 import NavigationScreen from "./screens/Technician/NavigationScreen";
 import DisinfectionScreen from "./screens/Technician/DisinfectionScreen";
 import InsecticideScreen from "./screens/Technician/InsecticideScreen";
+import CertificationServiceScreen from "./screens/Technician/CertificationServiceScreen";
 import SpecialServicesScreen from "./screens/Technician/SpecialServicesScreen";
 import ReportScreen from "./screens/Technician/ReportScreen";
 import CustomerHomeScreen from "./screens/Customer/CustomerHomeScreen";
@@ -229,6 +230,12 @@ export default function RootApp() {
         return <InsecticideScreen {...commonProps} />;
       case "special":
         return <SpecialServicesScreen {...commonProps} />;
+        case "certificate":
+          return (
+            <CertificationServiceScreen
+              {...commonProps}
+            />
+          );
       case "myocide":
       default:
         return <MapScreen {...commonProps} />;

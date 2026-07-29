@@ -303,6 +303,17 @@ export default function TechniciansScreen({ onClose }) {
     }
   };
 
+  const getSubscriptionPlanName = (plan) => {
+      const planKey = String(plan || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, "_");
+  
+      return i18n.t(`admin.home.subscription.plans.${planKey}`, {
+        defaultValue: String(plan || "").toUpperCase()
+      });
+    };
+
   const handleEditTechnician = async (formData) => {
     setSaveLoading(true);
     try {
@@ -381,6 +392,13 @@ export default function TechniciansScreen({ onClose }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+      <ScrollView
+        style={styles.screenScrollView}
+        contentContainerStyle={styles.screenScrollContent}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+      >
+      
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -414,7 +432,9 @@ export default function TechniciansScreen({ onClose }) {
                     
                     <View style={styles.subscriptionHeader}>
                       <Text style={styles.subscriptionPlan}>
-                        {usage.subscriptionPlan.toUpperCase()} PLAN
+                        {i18n.t("admin.home.subscription.plan", {
+                          plan: getSubscriptionPlanName(usage.subscriptionPlan)
+                        })}
                       </Text>
         
                       <View style={styles.subscriptionBadge}>
@@ -436,7 +456,10 @@ export default function TechniciansScreen({ onClose }) {
                     </View>
         
                     <Text style={styles.subscriptionText}>
-                      Technicians used: {usage.technicians.used} / {usage.technicians.max}
+                      {i18n.t("admin.home.subscription.technicians", {
+                        used: usage.technicians.used,
+                        max: usage.technicians.max
+                      })}
                     </Text>
         
                   </View>
@@ -609,6 +632,7 @@ export default function TechniciansScreen({ onClose }) {
             {i18n.t("admin.technicians.footer.copyright", { year: new Date().getFullYear() })}
           </Text>
         </View>
+        </ScrollView>
 
         {/* Modals */}
         <TechnicianModal

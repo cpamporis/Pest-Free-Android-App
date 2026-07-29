@@ -20,6 +20,14 @@ import apiService from "../../services/apiService";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
 import i18n from "../../services/i18n";
 
+function normalizeMaterialSearch(value) {
+  const text = String(value ?? "").trim().toLocaleLowerCase();
+
+  return typeof text.normalize === "function"
+    ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    : text;
+}
+
 export default function MaterialsScreen({ onClose }) {
   const [activeSection, setActiveSection] = useState("bait"); // "bait" or "chemicals"
   const [baitTypes, setBaitTypes] = useState([]);
@@ -36,6 +44,7 @@ export default function MaterialsScreen({ onClose }) {
   const [saving, setSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
 
   // Configuration for each section
   const sections = {
@@ -67,6 +76,45 @@ export default function MaterialsScreen({ onClose }) {
 
   const currentSection = sections[activeSection];
   const items = currentSection.items;
+  const normalizedDropdownSearch =
+    normalizeMaterialSearch(dropdownSearch);
+
+  const filteredItems = items.filter((item) => {
+    if (!normalizedDropdownSearch) return true;
+
+    const material =
+      typeof item === "string"
+        ? { name: item }
+        : item;
+
+    return [
+      material?.name,
+      material?.active_ingredient,
+      material?.antidote,
+    ].some((value) =>
+      normalizeMaterialSearch(value).includes(
+        normalizedDropdownSearch
+      )
+    );
+  });
+
+  const locale = String(
+    i18n.locale ||
+    i18n.language ||
+    i18n.getLocale?.() ||
+    ""
+  ).toLocaleLowerCase();
+
+  const isGreek =
+    locale.startsWith("el") || locale.startsWith("gr");
+
+  const dropdownSearchPlaceholder = isGreek
+    ? "Αναζήτηση..."
+    : "Search...";
+
+  const noSearchResultsText = isGreek
+    ? "Δεν βρέθηκαν αποτελέσματα."
+    : "No results found.";
 
   // Load all data on initial mount
   useEffect(() => {
@@ -180,6 +228,7 @@ export default function MaterialsScreen({ onClose }) {
       setEditingActiveIngredient("");
       setEditingAntidote("");
       setShowDropdown(false);
+      setDropdownSearch("");
     }
   };
 
@@ -355,6 +404,7 @@ export default function MaterialsScreen({ onClose }) {
     setEditingActiveIngredient(selectedItem.active_ingredient || "");
     setEditingAntidote(selectedItem.antidote || "");
     setShowDropdown(false);
+    setDropdownSearch("");
     setShowDetails(true);
   };
 
@@ -570,7 +620,13 @@ export default function MaterialsScreen({ onClose }) {
                 
                 <TouchableOpacity
                   style={styles.dropdown}
-                  onPress={() => setShowDropdown(!showDropdown)}
+                  onPress={() => {
+                    if (showDropdown) {
+                      setDropdownSearch("");
+                    }
+
+                    setShowDropdown(!showDropdown);
+                  }}
                   disabled={saving}
                   activeOpacity={0.7}
                 >
@@ -598,26 +654,83 @@ export default function MaterialsScreen({ onClose }) {
 
                 {showDropdown && items.length > 0 && (
                   <View style={styles.dropdownMenu}>
-                    <ScrollView 
+                    <View style={styles.dropdownSearchContainer}>
+                      <MaterialIcons
+                        name="search"
+                        size={20}
+                        color="#666"
+                      />
+
+                      <TextInput
+                        style={styles.dropdownSearchInput}
+                        placeholder={dropdownSearchPlaceholder}
+                        placeholderTextColor="#999"
+                        value={dropdownSearch}
+                        onChangeText={setDropdownSearch}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+
+                      {!!dropdownSearch && (
+                        <TouchableOpacity
+                          style={styles.dropdownSearchClearButton}
+                          onPress={() => setDropdownSearch("")}
+                          activeOpacity={0.7}
+                        >
+                          <MaterialIcons
+                            name="close"
+                            size={18}
+                            color="#666"
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    <ScrollView
                       style={styles.dropdownScrollView}
                       nestedScrollEnabled={true}
                       showsVerticalScrollIndicator={true}
+                      keyboardShouldPersistTaps="handled"
                     >
-                      {items.map((item, index) => {
-                        const itemName = typeof item === 'string' ? item : item.name;
-                        return (
-                          <TouchableOpacity
-                            key={`${itemName}-${index}`}
-                            style={styles.dropdownItem}
-                            onPress={() => handleSelectItem(item)}
-                          >
-                            <MaterialIcons name="check-circle" size={16} color={currentSection.color} />
-                            <Text style={styles.dropdownItemText}>
-                              {itemName}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
+                      {filteredItems.length > 0 ? (
+                        filteredItems.map((item, index) => {
+                          const itemName =
+                            typeof item === "string"
+                              ? item
+                              : item.name;
+
+                          return (
+                            <TouchableOpacity
+                              key={`${itemName}-${index}`}
+                              style={styles.dropdownItem}
+                              onPress={() => handleSelectItem(item)}
+                              activeOpacity={0.7}
+                            >
+                              <MaterialIcons
+                                name="check-circle"
+                                size={16}
+                                color={currentSection.color}
+                              />
+
+                              <Text style={styles.dropdownItemText}>
+                                {itemName}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })
+                      ) : (
+                        <View style={styles.dropdownEmptyContainer}>
+                          <MaterialIcons
+                            name="search-off"
+                            size={28}
+                            color="#bbb"
+                          />
+
+                          <Text style={styles.dropdownEmptyText}>
+                            {noSearchResultsText}
+                          </Text>
+                        </View>
+                      )}
                     </ScrollView>
                   </View>
                 )}
@@ -731,64 +844,6 @@ export default function MaterialsScreen({ onClose }) {
                     )}
                   </View>
                 )}
-
-                {/* ITEMS LIST */}
-                <View style={styles.itemsListSection}>
-                  <View style={styles.itemsListHeader}>
-                    <Text style={styles.itemsListTitle}>
-                      {items.length === 1
-                        ? i18n.t("admin.materials.content.allItems_one", { count: items.length, plural: currentSection.plural })
-                        : i18n.t("admin.materials.content.allItems_other", { count: items.length, plural: currentSection.plural })}
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.itemsList}>
-                    {items.map((item) => (
-                      <View key={item.name} style={styles.itemCard}>
-                        <View style={styles.itemMainInfo}>
-                          <View style={styles.itemInfo}>
-                            <MaterialIcons name={currentSection.icon} size={16} color={currentSection.color} />
-                            <Text style={styles.itemText}>
-                              {typeof item === 'string' ? item : item.name}
-                            </Text>
-                          </View>
-                          <TouchableOpacity
-                            style={styles.itemAction}
-                            onPress={() => handleSelectItem(item)}
-                            activeOpacity={0.7}
-                          >
-                            <MaterialIcons name="edit" size={16} color="#1f9c8b" />
-                            <Text style={styles.itemActionText}>{i18n.t("common.edit")}</Text>
-                          </TouchableOpacity>
-                        </View>
-                        
-                        <View style={styles.itemDetailsPreview}>
-                          {item.active_ingredient && (
-                            <View style={styles.detailTag}>
-                              <MaterialIcons name="science" size={12} color="#1f9c8b" />
-                              <Text style={styles.detailTagText} numberOfLines={1}>
-                                {item.active_ingredient}
-                              </Text>
-                            </View>
-                          )}
-                          
-                          {item.antidote && (
-                            <View style={[styles.detailTag, { backgroundColor: "#E3F2FD" }]}>
-                              <MaterialIcons name="medical-services" size={12} color="#1f9c8b" />
-                              <Text style={[styles.detailTagText, { color: '#333' }]} numberOfLines={1}>
-                                {i18n.t("admin.materials.content.antidoteLabel")}: {item.antidote.length > 20 ? item.antidote.substring(0, 20) + '...' : item.antidote}
-                              </Text>
-                            </View>
-                          )}
-                          
-                          {!item.active_ingredient && !item.antidote && (
-                            <Text style={styles.noDetailsText}>{i18n.t("admin.materials.content.noDetails")}</Text>
-                          )}
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </View>
               </>
             )}
 
@@ -948,6 +1003,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
+  dropdownSearchContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+  margin: 10,
+  marginBottom: 4,
+  paddingHorizontal: 12,
+  borderWidth: 1,
+  borderColor: "#e9ecef",
+  borderRadius: 8,
+  backgroundColor: "#f8f9fa",
+},
+
+dropdownSearchInput: {
+  flex: 1,
+  paddingVertical: 10,
+  paddingHorizontal: 10,
+  fontSize: 15,
+  color: "#333",
+  fontFamily: "System",
+},
+
+dropdownSearchClearButton: {
+  padding: 4,
+},
+
+dropdownEmptyContainer: {
+  alignItems: "center",
+  justifyContent: "center",
+  paddingVertical: 24,
+  paddingHorizontal: 16,
+},
+
+dropdownEmptyText: {
+  marginTop: 8,
+  fontSize: 14,
+  color: "#999",
+  textAlign: "center",
+  fontFamily: "System",
+},
   keyboardView: {
     flex: 1,
   },
@@ -1451,96 +1545,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-    fontFamily: 'System',
-  },
-  
-  // ITEMS LIST (enhanced)
-  itemsListSection: {
-    marginTop: 8,
-  },
-  itemsListHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  itemsListTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#2c3e50",
-    fontFamily: 'System',
-  },
-  itemsListStats: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  itemsList: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-    padding: 12,
-  },
-  itemCard: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e9ecef",
-  },
-  itemMainInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  itemInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  itemText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#333",
-    marginLeft: 12,
-    fontFamily: 'System',
-  },
-  itemAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#e9f7f6",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  itemActionText: {
-    fontSize: 12,
-    color: "#1f9c8b",
-    fontWeight: "600",
-    marginLeft: 4,
-    fontFamily: 'System',
-  },
-  itemDetailsPreview: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 4,
-  },
-  detailTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#E3F2FD",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
-    maxWidth: "48%",
-  },
-  detailTagText: {
-    fontSize: 11,
-    color: "#333",
-    fontFamily: 'System',
-  },
-  noDetailsText: {
-    fontSize: 12,
-    color: "#999",
-    fontStyle: "italic",
     fontFamily: 'System',
   },
   

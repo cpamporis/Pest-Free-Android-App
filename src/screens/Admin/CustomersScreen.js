@@ -1222,10 +1222,6 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
     }
   }, [reportToOpen, onOpenReport]);
 
-  const handleOpenReportFromProfile = (visitData) => {
-    console.log("📄 Passing through report data:");
-    // Let CustomerProfile handle everything
-  };
 
   const loadUsage = async () => {
       try {

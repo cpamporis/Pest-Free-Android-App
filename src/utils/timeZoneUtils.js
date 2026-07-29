@@ -49,47 +49,54 @@ export const formatTimeInGreece = (dateString) => {
 };
 
 /**
- * Format date in Greece timezone
- * @param {string} dateString - Date string to format
- * @returns {string} Formatted date in Greece timezone
+ * Format date in Greece timezone according to selected language.
+ *
+ * @param {string | Date} dateString
+ * @param {string} language
+ * @returns {string}
  */
-export const formatDateInGreece = (dateString) => {
-  if (!dateString || dateString === "null" || dateString === "undefined" || dateString === "") {
+export const formatDateInGreece = (
+  dateString,
+  language = "en"
+) => {
+  if (
+    !dateString ||
+    dateString === "null" ||
+    dateString === "undefined" ||
+    dateString === ""
+  ) {
     return "—";
   }
-  
+
   try {
     const date = new Date(dateString);
-    
+
     if (isNaN(date.getTime())) {
       console.warn("⚠️ Invalid date string:", dateString);
       return "—";
     }
-    
-    // Use Intl.DateTimeFormat for Greece timezone
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Europe/Athens',
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-    
-    return formatter.format(date);
+
+    const normalizedLanguage = String(language)
+      .trim()
+      .toLowerCase();
+
+    const locale =
+      normalizedLanguage === "gr" ||
+      normalizedLanguage.startsWith("gr-") ||
+      normalizedLanguage === "el" ||
+      normalizedLanguage.startsWith("el-")
+        ? "el-GR"
+        : "en-US";
+
+    return new Intl.DateTimeFormat(locale, {
+      timeZone: "Europe/Athens",
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }).format(date);
   } catch (error) {
     console.error("❌ Error formatting Greece date:", error);
-    
-    // Fallback to simple formatting
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch {
-      return "—";
-    }
+    return "—";
   }
 };

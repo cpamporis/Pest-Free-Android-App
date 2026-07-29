@@ -54,8 +54,6 @@ export default function SwipeableVisitRow({
 
     try {
 
-      console.log("📥 Starting PDF download for:", visit.visitId);
-
       const token = await apiService.getCurrentToken();
 
       const customerNameSlug = customerName 
@@ -86,9 +84,6 @@ export default function SwipeableVisitRow({
           idempotent: true
         }
       );
-
-      console.log("✅ PDF downloaded:", downloadedFile.uri);
-
       const canShare = await Sharing.isAvailableAsync();
 
       if (canShare) {

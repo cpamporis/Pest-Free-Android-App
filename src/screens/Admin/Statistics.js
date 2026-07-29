@@ -41,20 +41,179 @@ export default function Statistics({ onClose }) {
   const [kpiData, setKpiData] = useState({
     revenueGrowth: 0,
     customerGrowth: 0,
-    efficiencyScore: 0,
-    retentionRate: 0,
     avgTicketSize: 0,
     visitFrequency: 0
   });
   const [newCustomersThisMonth, setNewCustomersThisMonth] = useState(0);
   const [bestTechnician, setBestTechnician] = useState(i18n.t("admin.statistics.insights.notAvailable") || "N/A");
-  const [topService, setTopService] = useState(i18n.t("admin.statistics.insights.notAvailable") || "N/A");
+  const [topService, setTopService] = useState(null);
   
   // CHART INTERACTIVITY STATES
   const [timePeriod, setTimePeriod] = useState('6months'); // '3months', '6months', '1year', 'all'
   const [showTimeFilter, setShowTimeFilter] = useState(false);
   const [showRevenueDetails, setShowRevenueDetails] = useState(false);
   const [selectedBarIndex, setSelectedBarIndex] = useState(null);
+  const getCurrentMonthKey = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}`;
+};
+
+function parseMoney(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const number = Number(String(value).replace(",", "."));
+  return Number.isFinite(number) ? number : null;
+}
+
+function getAppointmentRevenueParts(appointment) {
+  const gross =
+    parseMoney(appointment.servicePrice) ??
+    parseMoney(appointment.service_price) ??
+    0;
+
+  const storedNet =
+    parseMoney(appointment.serviceNetPrice) ??
+    parseMoney(appointment.service_net_price);
+
+  const storedVat =
+    parseMoney(appointment.serviceVatAmount) ??
+    parseMoney(appointment.service_vat_amount);
+
+  const vatPercent =
+    parseMoney(appointment.serviceVatPercent) ??
+    parseMoney(appointment.service_vat_percent) ??
+    0;
+
+  let net = storedNet;
+  let vat = storedVat;
+
+  if (net === null && vat !== null) {
+    net = gross - vat;
+  }
+
+  if (net === null && vatPercent > 0 && gross > 0) {
+    net = gross / (1 + vatPercent / 100);
+  }
+
+  if (net === null) {
+    net = gross;
+  }
+
+  if (vat === null) {
+    vat = gross - net;
+  }
+
+  return {
+    gross: Math.max(0, gross),
+    net: Math.max(0, net),
+    vat: Math.max(0, vat),
+  };
+}
+
+function isCompletedAppointment(appointment) {
+  return ["completed", "done", "finished"].includes(
+    String(appointment.status || "").toLowerCase()
+  );
+}
+
+function getAppointmentDateString(appointment) {
+  return (
+    appointment.date ||
+    appointment.appointmentDate ||
+    appointment.appointment_date ||
+    appointment.completedAt ||
+    appointment.completed_at ||
+    appointment.createdAt ||
+    appointment.created_at ||
+    null
+  );
+}
+
+function isCurrentMonthAppointment(appointment) {
+  const rawDate = getAppointmentDateString(appointment);
+
+  if (!rawDate) return false;
+
+  const date = new Date(rawDate);
+
+  if (isNaN(date.getTime())) return false;
+
+  const now = new Date();
+
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth()
+  );
+}
+
+const completedAppointmentRecords =
+  appointments.filter(isCompletedAppointment);
+
+const revenueTotals = completedAppointmentRecords.reduce(
+  (totals, appointment) => {
+    const parts = getAppointmentRevenueParts(appointment);
+
+    totals.gross += parts.gross;
+    totals.net += parts.net;
+    totals.vat += parts.vat;
+
+    return totals;
+  },
+  {
+    gross: 0,
+    net: 0,
+    vat: 0,
+  }
+);
+
+const currentMonthVatFromAppointments =
+  completedAppointmentRecords
+    .filter(isCurrentMonthAppointment)
+    .reduce(
+      (sum, appointment) =>
+        sum + getAppointmentRevenueParts(appointment).vat,
+      0
+    );
+
+const currentMonthRevenueRow =
+  monthlyRevenue.find(
+    (item) => item.month === getCurrentMonthKey()
+  ) ||
+  monthlyRevenue[0] ||
+  {};
+
+const currentMonthRevenue =
+  parseMoney(currentMonthRevenueRow?.revenue) ?? 0;
+
+const totalRevenueDisplay =
+  parseMoney(revenueStats?.total_revenue) ??
+  revenueTotals.gross;
+
+const vatRevenueDisplay =
+  parseMoney(revenueStats?.vat_total) ??
+  parseMoney(revenueStats?.total_vat) ??
+  parseMoney(revenueStats?.vat) ??
+  revenueTotals.vat;
+
+const netRevenueDisplay =
+  parseMoney(revenueStats?.net_revenue) ??
+  parseMoney(revenueStats?.total_net_revenue) ??
+  Math.max(0, totalRevenueDisplay - vatRevenueDisplay);
+
+const currentMonthVatDisplay =
+  parseMoney(currentMonthRevenueRow?.vat_total) ??
+  parseMoney(currentMonthRevenueRow?.total_vat) ??
+  parseMoney(currentMonthRevenueRow?.vat) ??
+  currentMonthVatFromAppointments;
+
+const completedAppointmentsDisplay =
+  Number(revenueStats?.completed_appointments || 0) ||
+  completedAppointmentRecords.length;
 
   useEffect(() => {
     loadStatistics();
@@ -271,8 +430,6 @@ export default function Statistics({ onClose }) {
         setKpiData({
           revenueGrowth: enhancedKPIRes.kpiData.revenueGrowth || 0,
           customerGrowth: enhancedKPIRes.kpiData.customerGrowth || 0,
-          efficiencyScore: enhancedKPIRes.kpiData.efficiencyScore || 0,
-          retentionRate: enhancedKPIRes.kpiData.retentionRate || 0,
           avgTicketSize: enhancedKPIRes.kpiData.avgTicketSize || 0,
           visitFrequency: enhancedKPIRes.kpiData.visitFrequency || 30
         });
@@ -378,26 +535,28 @@ export default function Statistics({ onClose }) {
   }, {});
 
   const getFilteredMonthlyRevenue = () => {
-    if (!monthlyRevenue || monthlyRevenue.length === 0) return [];
-    
-    let filteredData = [...monthlyRevenue];
-    
-    // Sort by date (most recent first)
-    filteredData.sort((a, b) => {
-      const [aYear, aMonth] = a.month.split('-').map(Number);
-      const [bYear, bMonth] = b.month.split('-').map(Number);
-      return bYear - aYear || bMonth - aMonth;
-    });
-    
-    // Filter based on time period
-    switch(timePeriod) {
-      case '3months':
-        return filteredData.slice(0, 3);
-      case '6months':
-        return filteredData.slice(0, 6);
-      case '1year':
-        return filteredData.slice(0, 12);
-      case 'all':
+    if (!monthlyRevenue || monthlyRevenue.length === 0) {
+      return [];
+    }
+
+    const filteredData = [...monthlyRevenue];
+
+    // Παλαιότερος προς νεότερο μήνα
+    filteredData.sort((a, b) =>
+      String(a.month).localeCompare(String(b.month))
+    );
+
+    switch (timePeriod) {
+      case "3months":
+        return filteredData.slice(-3);
+
+      case "6months":
+        return filteredData.slice(-6);
+
+      case "1year":
+        return filteredData.slice(-12);
+
+      case "all":
       default:
         return filteredData;
     }
@@ -445,7 +604,10 @@ export default function Statistics({ onClose }) {
   }, {});
 
   const appointmentsByService = appointments.reduce((acc, a) => {
-    const key = a.serviceType || "unknown";
+    const key =
+      a.serviceType ||
+      a.service_type ||
+      "unknown";
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
@@ -467,8 +629,6 @@ export default function Statistics({ onClose }) {
     const defaultKpiData = {
       revenueGrowth: 0,
       customerGrowth: 0,
-      efficiencyScore: 0,
-      retentionRate: 0,
       avgTicketSize: 0,
       visitFrequency: 0
     };
@@ -507,42 +667,6 @@ export default function Statistics({ onClose }) {
       revenueGrowth = lastMonthRev > 0 ? ((currentMonthRev - lastMonthRev) / lastMonthRev * 100) : currentMonthRev > 0 ? 100 : 0;
     }
     
-    // Technician Efficiency Score
-    let efficiencyScore = 100;
-    if (completedAppointments.length > 0) {
-      // Get actual durations from visits
-      const durations = completedAppointments.map(v => {
-        if (v.duration) return v.duration;
-        if (v.start_time && v.end_time) {
-          return Math.round((new Date(v.end_time) - new Date(v.start_time)) / 60000);
-        }
-        return 0;
-      }).filter(d => d > 0);
-      
-      if (durations.length > 0) {
-        const avgDuration = durations.reduce((a, b) => a + b, 0) / durations.length;
-        
-        // Better calculation based on realistic times
-        const expectedTime = 75; // minutes for average job
-        
-        // Efficiency: 100% if at or below expected, penalty for going over
-        efficiencyScore = Math.max(0, Math.min(100, 
-          100 - Math.max(0, ((avgDuration - expectedTime) / expectedTime) * 50)
-        ));
-      }
-    }
-    
-    // Customer Retention Rate
-    const recurringCustomers = visits.reduce((set, visit) => {
-      if (visit.customer_id && (visit.status === "completed" || visit.status === "done")) {
-        set.add(visit.customer_id);
-      }
-      return set;
-    }, new Set()).size;
-    
-    const retentionRate = customersData.length > 0 ? 
-      (recurringCustomers / customersData.length * 100) : 0;
-    
     // Average Ticket Size - safely parse
     const avgTicketSize = revenueStatsData?.avg_price ? parseFloat(revenueStatsData.avg_price) : 0;
     
@@ -562,14 +686,16 @@ export default function Statistics({ onClose }) {
       const topServiceData = revenueByServiceData.reduce((max, service) => 
         parseFloat(service.total_revenue || 0) > parseFloat(max.total_revenue || 0) ? service : max
       );
-      setTopService(topServiceData.service_type || i18n.t("admin.statistics.insights.notAvailable") || 'N/A');
+      setTopService(
+        topServiceData.service_type ||
+        topServiceData.serviceType ||
+        null
+      );
     }
     
     setKpiData({
       revenueGrowth: parseFloat(revenueGrowth.toFixed(1)),
       customerGrowth: parseFloat(customerGrowth.toFixed(1)),
-      efficiencyScore: parseFloat(efficiencyScore.toFixed(0)),
-      retentionRate: parseFloat(retentionRate.toFixed(1)),
       avgTicketSize: parseFloat(avgTicketSize.toFixed(2)),
       visitFrequency: Math.round(visitFrequency)
     });
@@ -675,7 +801,7 @@ export default function Statistics({ onClose }) {
           <View style={styles.kpiRow}>
             <KPICard 
               title={i18n.t("admin.statistics.kpi.monthlyRevenue")}
-              value={`€${parseFloat(monthlyRevenue[0]?.revenue || 0).toFixed(0)}`}
+              value={`€${currentMonthRevenue.toFixed(0)}`}
               change={kpiData.revenueGrowth || 0}
               icon="euro"
               isCurrency={true}
@@ -691,27 +817,6 @@ export default function Statistics({ onClose }) {
             />
           </View>
           
-          {/* EFFICIENCY ROW */}
-          <View style={styles.kpiRow}>
-            <KPICard 
-              title={i18n.t("admin.statistics.kpi.efficiencyScore")}
-              value={`${(kpiData.efficiencyScore || 0).toFixed(0)}%`}
-              icon="speed"
-              showProgress={true}
-              progress={(kpiData.efficiencyScore || 0) / 100}
-              subtitle={i18n.t("admin.statistics.kpi.efficiencyDesc")}
-              color="#1f9c8b"
-            />
-            
-            <KPICard 
-              title={i18n.t("admin.statistics.kpi.retentionRate")}
-              value={`${(kpiData.retentionRate || 0).toFixed(1)}%`}
-              icon="loyalty"
-              subtitle={i18n.t("admin.statistics.kpi.retentionDesc")}
-              color="#1f9c8b"
-            />
-          </View>
-          
           {/* OPERATIONAL ROW */}
           <View style={styles.kpiRow}>
             <KPICard 
@@ -722,11 +827,17 @@ export default function Statistics({ onClose }) {
               color="#1f9c8b"
             />
             
-            <KPICard 
-              title={i18n.t("admin.statistics.kpi.visitFrequency")}
-              value={`${kpiData.visitFrequency || 30} ${i18n.t("common.days_other")}`}
-              icon="update"
-              subtitle={i18n.t("admin.statistics.kpi.frequencyDesc")}
+            <KPICard
+              title={
+                i18n.t("admin.statistics.kpi.monthlyVat") ||
+                "VAT This Month"
+              }
+              value={`€${currentMonthVatDisplay.toFixed(2)}`}
+              icon="receipt-long"
+              subtitle={
+                i18n.t("admin.statistics.kpi.monthlyVatDesc") ||
+                "VAT sum for the current month"
+              }
               color="#1f9c8b"
             />
           </View>
@@ -744,40 +855,17 @@ export default function Statistics({ onClose }) {
               <InsightCard 
                 icon="star"
                 title={i18n.t("admin.statistics.insights.topService")}
-                value={topService}
+                value={
+                  topService
+                    ? formatServiceType(topService)
+                    : i18n.t("admin.statistics.insights.notAvailable") || "N/A"
+                }
                 color="#1f9c8b"
               />
             </View>
           </View>
         </View>
 
-        {/* REVENUE SUMMARY SECTION */}
-        {revenueStats && (
-          <Section title={i18n.t("admin.statistics.revenue.summary")}>
-            <View style={styles.revenueGrid}>
-              <RevenueCard 
-                title={i18n.t("admin.statistics.revenue.totalRevenue")} 
-                value={`€${parseFloat(revenueStats.total_revenue || 0).toFixed(2)}`}
-                icon="euro"
-              />
-              <RevenueCard 
-                title={i18n.t("admin.statistics.revenue.thisYear")} 
-                value={`€${parseFloat(yearRevenue).toFixed(2)}`}
-                icon="calendar-today"
-              />
-              <RevenueCard 
-                title={i18n.t("admin.statistics.revenue.avgPrice")} 
-                value={`€${parseFloat(revenueStats.avg_price || 0).toFixed(2)}`}
-                icon="trending-up"
-              />
-              <RevenueCard 
-                title={i18n.t("admin.statistics.revenue.completed")} 
-                value={revenueStats.completed_appointments || 0}
-                icon="check-circle"
-              />
-            </View>
-          </Section>
-        )}
 
         {/* REVENUE TRENDS CHART */}
         <Section title={i18n.t("admin.statistics.revenueTrends.title")}>
@@ -793,7 +881,7 @@ export default function Statistics({ onClose }) {
                   <View style={styles.chartStatItem}>
                     <Text style={styles.chartStatLabel}>{i18n.t("admin.statistics.revenueTrends.currentMonth")}</Text>
                     <Text style={styles.chartStatValue}>
-                      €{parseFloat(monthlyRevenue[0]?.revenue || 0).toFixed(0)}
+                      €{currentMonthRevenue.toFixed(0)}
                     </Text>
                   </View>
                   <View style={styles.chartStatItem}>
@@ -1180,10 +1268,10 @@ export default function Statistics({ onClose }) {
             <View style={styles.statusChartContainer}>
               {/* Pie chart visualization (simplified) */}
               <View style={styles.pieChart}>
-                {Object.entries(appointmentsByStatus).map(([status, count], index) => {
+                {Object.entries(appointmentsByStatus).map(([status, count]) => {
                   const total = Object.values(appointmentsByStatus).reduce((a, b) => a + b, 0);
                   const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
-                  const colors = ['#b9cd63', '#1f9c8b', '#95a5a6', ];
+                  const color = getAppointmentStatusColor(status);
                   
                   return (
                     <View 
@@ -1191,7 +1279,7 @@ export default function Statistics({ onClose }) {
                       style={[
                         styles.pieSegment,
                         { 
-                          backgroundColor: colors[index % colors.length],
+                          backgroundColor: color,
                           width: `${percentage}%`
                         }
                       ]} 
@@ -1207,10 +1295,10 @@ export default function Statistics({ onClose }) {
             </View>
             
             <View style={styles.statusList}>
-              {Object.entries(appointmentsByStatus).map(([status, count], index) => {
+              {Object.entries(appointmentsByStatus).map(([status, count]) => {
                 const total = Object.values(appointmentsByStatus).reduce((a, b) => a + b, 0);
                 const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
-                const colors = ['#b9cd63', '#1f9c8b', '#95a5a6', ];
+                const color = getAppointmentStatusColor(status);
                 
                 return (
                   <StatusItem
@@ -1218,7 +1306,7 @@ export default function Statistics({ onClose }) {
                     status={status}
                     count={count}
                     percentage={percentage}
-                    color={colors[index % colors.length]}
+                    color={color}
                   />
                 );
               })}
@@ -1392,7 +1480,14 @@ function ChartCard({ title, children }) {
   );
 }
 
-function KPICard({ title, value, change, icon, subtitle, showProgress = false, progress = 0, color = "#1f9c8b", isCurrency = false }) {
+function KPICard({  title,
+  value,
+  change,
+  icon,
+  subtitle,
+  color = "#1f9c8b",
+  isCurrency = false }) 
+{
   const getTrendIcon = (value) => {
     if (value > 0) return 'trending-up';
     if (value < 0) return 'trending-down';
@@ -1431,25 +1526,7 @@ function KPICard({ title, value, change, icon, subtitle, showProgress = false, p
           </Text>
         </View>
       )}
-      
-      {showProgress && (
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { 
-                  width: `${(progress || 0) * 100}%`,
-                  backgroundColor: color
-                }
-              ]} 
-            />
-          </View>
-          <Text style={styles.progressText}>
-            {(progress || 0) < 0.5 ? i18n.t("admin.statistics.kpi.needsImprovement") : (progress || 0) < 0.8 ? i18n.t("admin.statistics.kpi.good") : i18n.t("admin.statistics.kpi.excellent")}
-          </Text>
-        </View>
-      )}
+
     </View>
   );
 }
@@ -1558,33 +1635,70 @@ function formatMonth(monthString) {
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
+const SERVICE_ICONS = {
+  myocide: "pest-control-rodent",
+  disinfection: "clean-hands",
+  insecticide: "bug-report",
+  special: "star",
+  certificate: "verified",
+};
+
+const SERVICE_TYPE_ALIASES = {
+  certification: "certificate",
+  certification_service: "certificate",
+  certificate_service: "certificate",
+  special_service: "special",
+};
+
+function normalizeServiceType(serviceType) {
+  const normalized = String(serviceType || "")
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  return SERVICE_TYPE_ALIASES[normalized] || normalized;
+}
+
+function getServiceIcon(serviceType) {
+  const normalizedType = normalizeServiceType(serviceType);
+
+  return SERVICE_ICONS[normalizedType] || "category";
+}
+
 function formatServiceType(serviceType) {
-  if (!serviceType) return i18n.t("admin.statistics.unknown") || "Unknown";
-  
-  // Define custom mappings for specific service types
-  const serviceMappings = {
-    'myocide': i18n.t("serviceTypes.myocide"),
-    'disinfection': i18n.t("serviceTypes.disinfection"),
-    'insecticide': i18n.t("serviceTypes.insecticide"),
-    'special': i18n.t("serviceTypes.special"),
-  };
-  
-  // Check if we have a custom mapping
-  const lowerType = serviceType.toLowerCase();
-  if (serviceMappings[lowerType]) {
-    return serviceMappings[lowerType];
+  if (!serviceType) {
+    return i18n.t("admin.statistics.unknown") || "Unknown";
   }
-  
-  // Default: Capitalize first letter of each word
-  return serviceType
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+
+  const serviceMappings = {
+    myocide: i18n.t("serviceTypes.myocide"),
+    disinfection: i18n.t("serviceTypes.disinfection"),
+    insecticide: i18n.t("serviceTypes.insecticide"),
+    certificate: i18n.t("serviceTypes.certificate"),
+    special: i18n.t("serviceTypes.special"),
+  };
+
+  const normalizedType = normalizeServiceType(serviceType);
+
+  if (serviceMappings[normalizedType]) {
+    return serviceMappings[normalizedType];
+  }
+
+  return String(serviceType)
+    .replace(/_/g, " ")
+    .split(" ")
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() +
+        word.slice(1).toLowerCase()
+    )
+    .join(" ");
 }
 
 function ServiceTypeCard({ name, revenue, appointments, percentage, index }) {
   const colors = ['#1f9c8b'];
-  const icons = ['pest-control-rodent', 'clean-hands', 'bug-report', 'star', 'build'];
+  const serviceIcon = getServiceIcon(name);
   
   // Format the service name
   const formattedName = formatServiceType(name);
@@ -1594,7 +1708,7 @@ function ServiceTypeCard({ name, revenue, appointments, percentage, index }) {
       <View style={styles.serviceTypeHeader}>
         <View style={[styles.serviceTypeIcon, { backgroundColor: `${colors[index % colors.length]}15` }]}>
           <MaterialIcons 
-            name={icons[index % icons.length] || 'category'} 
+            name={serviceIcon} 
             size={20} 
             color={colors[index % colors.length]} 
           />
@@ -1703,6 +1817,26 @@ function CustomerCard({ rank, name, revenue, visits, index }) {
   );
 }
 
+function getAppointmentStatusColor(status) {
+  const normalizedStatus = String(status || "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    ["completed", "done", "finished"].includes(normalizedStatus)
+  ) {
+    return "#1f9c8b";
+  }
+
+  if (
+    ["cancelled", "canceled"].includes(normalizedStatus)
+  ) {
+    return "#95a5a6";
+  }
+
+  return "#b9cd63";
+}
+
 function StatusItem({ status, count, percentage, color }) {
   const statusIcons = {
     'completed': 'check-circle',
@@ -1744,7 +1878,7 @@ function StatusItem({ status, count, percentage, color }) {
 }
 
 function ServiceDistributionItem({ type, count, percentage, color, index }) {
-  const icons = ['pest-control-rodent', 'clean-hands', 'bug-report', 'star', 'build'];
+  const serviceIcon = getServiceIcon(type);
   
   // Format the service type name
   const formattedType = formatServiceType(type);
@@ -1754,7 +1888,7 @@ function ServiceDistributionItem({ type, count, percentage, color, index }) {
       <View style={styles.distributionLeft}>
         <View style={[styles.distributionIcon, { backgroundColor: `${color}15` }]}>
           <MaterialIcons 
-            name={icons[index % icons.length] || 'category'} 
+            name={serviceIcon} 
             size={16} 
             color={color} 
           />
@@ -1993,25 +2127,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 4,
-  },
-  progressContainer: {
-    marginTop: 12,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#e8e8e8',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 10,
-    color: '#7f8c8d',
-    marginTop: 4,
-    textAlign: 'center',
   },
   insightsContainer: {
     marginTop: 20,

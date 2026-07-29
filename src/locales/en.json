@@ -12,7 +12,7 @@
       "loginFailed": "Login Failed"
     }
   },
-    "passwordRecovery": {
+  "passwordRecovery": {
     "badge": "PASSWORD RECOVERY",
     "title": "Forgot Your Password?",
     "subtitle": "Enter your registered email address below. An administrator will review your request and send you a new password within 24 hours.",
@@ -39,7 +39,7 @@
   "privacyPolicy": {
     "title": "Privacy Policy",
     "closeButton": "Close",
-    "content": "Privacy Policy\n\nThis Privacy Policy is provided by Pest – Free (Owner: Christos Pamporis), Greece (\"we\", \"us\", \"our\").\n\nWe aim to comply with Regulation (EU) 2016/679 (GDPR) and applicable Greek data protection law.\n\n1. Data Controller\nData Controller: Pest – Free (Christos Pamporis), Greece\nContact email: manager@pestify.gr\n\n2. Scope\nThis Privacy Policy covers:\n\nMarketing website: pestify.gr (information pages, contact form, demo request)\nApplication platform: app.pestify.gr and Pestify mobile apps (iOS/Android)\nNote: The \"Login\" button on pestify.gr only redirects you to app.pestify.gr. No authentication occurs on pestify.gr.\n\n3. Marketing Website (pestify.gr)\n\n3.1 Data we collect\nWe collect personal data only when you voluntarily submit it:\n\nContact form: name, email, company, team size, message\nDemo booking (Calendly): name and email (as requested by Calendly)\n\n3.2 Purpose\nWe use this information strictly to:\n\nRespond to your request\nCommunicate with you about a demo you requested\nSchedule the demo\n\n3.3 What we do not do\nWe do not sell personal data\nWe do not use your data for advertising, remarketing, or profiling\nWe do not run transactions or process payments on pestify.gr\nWe do not create a marketing database for newsletters without your explicit consent\n\n3.4 Legal basis\nWe process this data under GDPR Article 6(1)(b) (steps prior to entering into a contract, at your request) and/or Article 6(1)(f) (legitimate interest in responding to business inquiries).\n\n3.5 Retention\nWe retain inquiry and demo-related communications only for as long as necessary to respond and follow up on your request, and then delete them when no longer needed, unless legal obligations require longer retention.\n\n3.6 Calendly\nIf you request a demo using Calendly, your booking details may be processed by Calendly. Calendly may act as an independent data controller for certain processing activities according to its own privacy policy. We recommend reviewing Calendly's privacy information before submitting data through the Calendly interface.\n\n4. Application Platform (app.pestify.gr & Mobile Apps)\n\n4.1 Data processed in the application\nWhen the application is used, the platform may process and store data such as:\n\nAccount data: customer/user name, username, email\nService locations: address of the location where pest control services are performed\nOperational data: service logs, reports, performance indicators (used only inside the app)\nTechnician data: technician name and age (used only for internal operational management)\nImages (admin-only): admin uploads images created by the admin (top-view diagrams of buildings / locations)\nNo payment data is processed. No transactions take place through the platform.\n\n4.2 Roles under GDPR (Controller / Processor)\nWhen pest control companies use Pestify and upload personal data of private individuals (e.g., homeowner names), the pest control company is typically the Data Controller and Data Processor for that customer's data, processing it only to provide the service.\n\nWhere Pestify acts as a Data Processor on behalf of a business customer, requests regarding personal data (e.g., access, deletion) should primarily be directed to the relevant business acting as Data Controller. Pestify will assist the Controller as required under GDPR Article 28.\n\n4.3 Legal basis\nFor platform account operation and service delivery, processing is generally based on GDPR Article 6(1)(b) (performance of a contract) and GDPR Article 28 (processing on behalf of a a controller, where applicable).\n\n4.4 Security\nPasswords are stored using hashing (not plaintext)\nRole-based access controls (e.g., admin-only uploads)\nHTTPS encryption in transit\n\n4.5 Retention\nApplication data is retained for the duration of the contractual relationship with the business customer and is deleted upon account termination or upon instruction from the business customer, unless legal obligations require longer retention.\n\n5. Hosting & Infrastructure\n\n5.1 Marketing website hosting\nThe website pestify.gr is hosted by Papaki (Top.Host). Papaki may process limited technical data (e.g., IP addresses) as part of standard hosting operations.\n\n5.2 Application backend hosting\nThe application backend is hosted on Railway and data is stored in PostgreSQL (PSQL).\n\n6. Sharing of Data\nWe do not sell, rent, or trade personal data.\n\nData may be processed only by:\n\nOur hosting/infrastructure providers (Papaki for the website; Railway for the backend and database)\nCalendly (for demo scheduling, when you use the demo booking feature)\nAuthorized personnel, solely for support and operations\n\n7. International Transfers\nWhere any service provider involved in processing transfers personal data outside the European Economic Area (EEA), appropriate safeguards (such as Standard Contractual Clauses) will be used where required in accordance with GDPR Chapter V.\n\n8. Cookies\nAt the time of this policy, pestify.gr does not use analytics or marketing cookies. If analytics/advertising tools are enabled in the future, they will be activated only with user consent where required, and this policy will be updated.\n\nThe application may use strictly necessary cookies (or similar technologies) for secure authentication and session management.\n\nFor more information, see our Cookie Settings.\n\n9. Your Rights and Supervisory Authority\nDepending on the circumstances, you may have rights including:\n\nRight of access\nRight to rectification\nRight to erasure\nRight to restriction of processing\nRight to object\nRight to data portability\nRight to withdraw consent (where processing is based on consent)\nTo exercise your rights, contact: manager@pestify.gr\n\nYou also have the right to lodge a complaint with the competent supervisory authority. For Greece, the supervisory authority is\n\nHellenic Data Protection Authority (HDPA)\nAddress: Kifisias 1-3\n115 23 Athens\nGreece\nWebsite: https://www.dpa.gr\nTelephone: +30 210 6475600\n\n10. Changes to this Policy\nWe may update this Privacy Policy to reflect changes in our services or legal requirements. We will publish the updated version on this page with a revised date."
+    "content": "Privacy Policy\n\nThis Privacy Policy is provided by Pest – Free (Owner: Christos Pamporis), Greece (\"we\", \"us\", \"our\").\n\nWe aim to comply with Regulation (EU) 2016/679 (GDPR) and applicable Greek data protection law.\n\n1. Data Controller\nData Controller: Pest – Free (Christos Pamporis), Greece\nContact email: manager@pestify.gr\n\n2. Scope\nThis Privacy Policy covers:\n\nMarketing website: pestify.gr (information pages, contact form, demo request)\nApplication platform: app.pestify.gr and Pestify mobile apps (iOS/Android)\nNote: The \"Login\" button on pestify.gr only redirects you to app.pestify.gr. No authentication occurs on pestify.gr.\n\n3. Marketing Website (pestify.gr)\n\n3.1 Data we collect\nWe collect personal data only when you voluntarily submit it:\n\nContact form: name, email, company, team size, message\nDemo booking (Calendly): name and email (as requested by Calendly)\n\n3.2 Purpose\nWe use this information strictly to:\n\nRespond to your request\nCommunicate with you about a demo you requested\nSchedule the demo\n\n3.3 What we do not do\nWe do not sell personal data\nWe do not use your data for advertising, remarketing, or profiling\nWe do not run transactions or process payments on pestify.gr\nWe do not create a marketing database for newsletters without your explicit consent\n\n3.4 Legal basis\nWe process this data under GDPR Article 6(1)(b) (steps prior to entering into a contract, at your request) and/or Article 6(1)(f) (legitimate interest in responding to business inquiries).\n\n3.5 Retention\nWe retain inquiry and demo-related communications only for as long as necessary to respond and follow up on your request, and then delete them when no longer needed, unless legal obligations require longer retention.\n\n3.6 Calendly\nIf you request a demo using Calendly, your booking details may be processed by Calendly. Calendly may act as an independent data controller for certain processing activities according to its own privacy policy. We recommend reviewing Calendly's privacy information before submitting data through the Calendly interface.\n\n4. Application Platform (app.pestify.gr & Mobile Apps)\n\n4.1 Data processed in the application\nWhen the application is used, the platform may process and store data such as:\n\nAccount data: customer/user name, username, email\nService locations: address of the location where pest control services are performed\nOperational data: service logs, reports, performance indicators (used only inside the app)\nTechnician data: technician name and age (used only for internal operational management) \nImages : Admin uploads images created by the admin (floor-map diagrams of buildings / locations). Technicians may upload images while performing the service for their reports if needed. Customers may upload images while requesting a service.\nNo payment data is processed. No transactions take place through the platform.\n\n4.2 Roles under GDPR (Controller / Processor)\nWhen pest control companies use Pestify and upload personal data of private individuals (e.g., homeowner names), the pest control company is typically the Data Controller and Data Processor for that customer's data, processing it only to provide the service.\n\nWhere Pestify acts as a Data Processor on behalf of a business customer, requests regarding personal data (e.g., access, deletion) should primarily be directed to the relevant business acting as Data Controller. Pestify will assist the Controller as required under GDPR Article 28.\n\n4.3 Legal basis\nFor platform account operation and service delivery, processing is generally based on GDPR Article 6(1)(b) (performance of a contract) and GDPR Article 28 (processing on behalf of a a controller, where applicable).\n\n4.4 Security\nPasswords are stored using hashing (not plaintext)\nRole-based access controls (e.g., admin-only uploads)\nHTTPS encryption in transit\n\n4.5 Retention\nApplication data is retained for the duration of the contractual relationship with the business customer and is deleted upon account termination or upon instruction from the business customer, unless legal obligations require longer retention.\n\n5. Hosting & Infrastructure\n\n5.1 Marketing website hosting\nThe website pestify.gr is hosted by Papaki (Top.Host). Papaki may process limited technical data (e.g., IP addresses) as part of standard hosting operations.\n\n5.2 Application backend hosting\nThe application backend is hosted on Railway and data is stored in PostgreSQL (PSQL).\n\n6. Sharing of Data\nWe do not sell, rent, or trade personal data.\n\nData may be processed only by:\n\nOur hosting/infrastructure providers (Papaki for the website; Railway for the backend and database)\nCalendly (for demo scheduling, when you use the demo booking feature)\nAuthorized personnel, solely for support and operations\n\n7. International Transfers\nWhere any service provider involved in processing transfers personal data outside the European Economic Area (EEA), appropriate safeguards (such as Standard Contractual Clauses) will be used where required in accordance with GDPR Chapter V.\n\n8. Cookies\nAt the time of this policy, pestify.gr does not use analytics or marketing cookies. If analytics/advertising tools are enabled in the future, they will be activated only with user consent where required, and this policy will be updated.\n\nThe application may use strictly necessary cookies (or similar technologies) for secure authentication and session management.\n\nFor more information, see our Cookie Settings.\n\n9. Your Rights and Supervisory Authority\nDepending on the circumstances, you may have rights including:\n\nRight of access\nRight to rectification\nRight to erasure\nRight to restriction of processing\nRight to object\nRight to data portability\nRight to withdraw consent (where processing is based on consent)\nTo exercise your rights, contact: manager@pestify.gr\n\nYou also have the right to lodge a complaint with the competent supervisory authority. For Greece, the supervisory authority is\n\nHellenic Data Protection Authority (HDPA)\nAddress: Kifisias 1-3\n115 23 Athens\nGreece\nWebsite: https://www.dpa.gr\nTelephone: +30 210 6475600\n\n10. Changes to this Policy\nWe may update this Privacy Policy to reflect changes in our services or legal requirements. We will publish the updated version on this page with a revised date."
   },
   "limits": {
     "title": "Limit reached",
@@ -51,7 +51,6 @@
     "closeButton": "Close",
     "content": "Terms of Use\n\nEffective Date: 23/02/2026\nLast Updated: 23/02/2026\n\nThese Terms of Use (\"Terms\") govern your access to and use of:\n\npestify.gr (marketing website), and\napp.pestify.gr and related mobile applications (the \"Platform\"),\noperated by:\n\nPest – Free\nOwner: Christos Pamporis (Χρήστος Παμπόρης)\nGreece\n\nBy accessing or using Pestify, you agree to be bound by these Terms.\n\nIf you do not agree, you must not use the services.\n\n1. Scope of the Services\nPestify is a digital software platform designed for pest control businesses to:\n\nManage customer data\nOrganize service schedules\nMaintain service logs and documentation\nGenerate structured compliance reports\nImprove operational workflows\nThe marketing website (pestify.gr) is informational only and does not provide pest control services.\n\n2. Eligibility\nThe Platform is intended primarily for business users (B2B).\n\nBy using the Platform, you confirm that:\n\nYou are acting on behalf of a business entity, or\nYou are legally authorized to bind the business you represent\nIf you are a consumer within the meaning of EU consumer law, certain mandatory consumer protections may apply.\n\n3. Account Registration\nTo access the Platform, you may need to create an account.\n\nYou agree to:\n\nProvide accurate and complete information\nMaintain confidentiality of login credentials\nBe responsible for all activities under your account\nYou must notify us immediately of unauthorized use.\n\nWe reserve the right to suspend or terminate accounts in case of breach.\n\n4. Subscription & Payments\nIf paid plans are offered:\n\nSubscription fees are stated on the Pricing page.\nFees are exclusive of VAT unless stated otherwise.\nPayment terms will be specified at checkout.\nFailure to pay may result in suspension.\nFree trials, if offered, convert to paid subscriptions unless cancelled before expiration.\n\n5. Acceptable Use\nYou agree NOT to:\n\nUse the Platform for unlawful purposes\nUpload illegal or harmful content\nInterfere with system security\nReverse engineer, copy, or exploit the software\nUse the Platform to process data without legal basis under GDPR\nYou are solely responsible for the legality of the data you upload.\n\n6. Intellectual Property\nAll intellectual property rights in:\n\nSoftware\nCode\nDesign\nBranding\nDocumentation\nLogos\nare owned by Pest – Free unless otherwise stated.\n\nYou are granted a limited, non-exclusive, non-transferable license to use the Platform for internal business purposes only.\n\nYou may not:\n\nResell the Platform\nModify or redistribute it\nCreate derivative works\n\n7. Data Protection (GDPR Roles)\n\n7.1 Marketing Website\nFor pestify.gr, Pest – Free acts as Data Controller as described in the Privacy Policy.\n\n7.2 Application Platform\nWhen business customers upload personal data (e.g., homeowner names):\n\nThe pest control company is the Data Controller\nPestify acts as a Data Processor under Article 28 GDPR\nWe process data solely:\n\nOn documented instructions from the business customer\nTo provide the contracted service\nRequests from individuals (data subjects) should primarily be directed to the business acting as Controller.\n\nA Data Processing Agreement (DPA) may apply where required by law.\n\n8. Availability of Service\nWe aim to provide continuous access but do not guarantee uninterrupted availability.\n\nThe Platform may be temporarily unavailable due to:\n\nMaintenance\nSecurity updates\nTechnical failures\nForce majeure events\nWe reserve the right to modify or discontinue features.\n\n9. Limitation of Liability\nTo the maximum extent permitted under Greek and EU law:\n\nThe Platform is provided \"as is\".\nWe do not guarantee error-free or uninterrupted service.\nWe are not liable for indirect, incidental, or consequential damages.\nOur total liability shall not exceed the amount paid by the customer in the preceding 12 months.\nNothing in these Terms excludes liability for:\n\nDeath or personal injury caused by negligence\nFraud or fraudulent misrepresentation\nAny liability that cannot be excluded under applicable law\n\n10. No Professional Advice\nPestify is a software tool.\n\nIt does not provide:\n\nLegal advice\nRegulatory advice\nPest control services\nCertification guarantees\nUsers remain fully responsible for regulatory compliance in their jurisdiction.\n\n11. Termination\nWe may suspend or terminate access if:\n\nYou breach these Terms\nYou fail to pay subscription fees\nUse poses security risks\nRequired by law\nYou may terminate your account at any time.\n\nUpon termination:\n\nAccess is revoked\nData may be deleted according to the Privacy Policy\n\n12. Third-Party Services\nThe Platform may integrate third-party services such as:\n\nHosting providers\nCalendly (demo booking)\nInfrastructure services\nWe are not responsible for third-party policies or performance.\n\n13. Confidentiality\nBoth parties agree to maintain confidentiality of non-public business information.\n\nThis obligation survives termination.\n\n14. Force Majeure\nWe are not liable for failure to perform due to events beyond reasonable control, including:\n\nNatural disasters\nWar\nGovernment actions\nInternet failures\nPower outages\n\n15. Governing Law & Jurisdiction\nThese Terms are governed by the laws of Greece.\n\nAny disputes shall be subject to the exclusive jurisdiction of the courts of Greece, unless mandatory EU consumer law provides otherwise.\n\n16. Amendments\nWe may update these Terms.\n\nUpdated versions will be published on this page with a revised date.\n\nContinued use constitutes acceptance.\n\n17. Contact\nFor legal inquiries:\n\nmanager@pestify.gr"
   },
-  
   "common": {
     "loading": "Loading...",
     "error": "Error",
@@ -83,14 +82,6 @@
     "chooseOption": "Choose option",
     "ok": "OK"
   },
-
-  "services": {
-    "myocide": "Myocide",
-    "disinfection": "Disinfection",
-    "insecticide": "Insecticide",
-    "special": "Special Service"
-  },
-
   "admin": {
     "home": {
       "loading": "Loading Admin Dashboard...",
@@ -175,9 +166,24 @@
         "system": "Pestify Admin System",
         "version": "Version 1.1 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
+      },
+      "subscription": {
+        "plan": "{{plan}} PLAN",
+        "active": "Active",
+        "customers": "Customers: {{used}} / {{max}}",
+        "technicians": "Technicians: {{used}} / {{max}}",
+        "plans": {
+          "free": "FREE",
+          "basic": "BASIC",
+          "standard": "STANDARD",
+          "pro": "PRO",
+          "professional": "PROFESSIONAL",
+          "premium": "PREMIUM",
+          "enterprise": "ENTERPRISE",
+          "custom": "CUSTOM"
+        }
       }
     },
-
     "notifications": {
       "loading": "Loading Notifications...",
       "header": {
@@ -214,7 +220,6 @@
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
-
     "calendar": {
       "loading": "Loading Calendar...",
       "header": {
@@ -269,7 +274,6 @@
         "unknown": "Unknown"
       }
     },
-
     "schedule": {
       "loading": "Loading Schedule...",
       "header": {
@@ -320,6 +324,10 @@
         "special": {
           "label": "Special Service",
           "description": "Custom pest control services"
+        },
+        "certificate": {
+          "label": "Certification Service",
+          "description": "Station inspection and certification documentation"
         }
       },
       "specialSubtypes": {
@@ -357,7 +365,8 @@
       "servicePrice": {
         "title": "Service Price",
         "placeholder": "Enter service price in Euro (e.g. 80)",
-        "invalid": "Enter a value for price with up to two decimals"
+        "invalid": "Enter a value for price with up to two decimals",
+        "totalWithVat": "Total with VAT"
       },
       "appointments": {
         "title": "Appointments for {{date}}",
@@ -369,7 +378,9 @@
         "cancelled": "Cancelled",
         "removeTitle": "Διαγραφή Ραντεβού",
         "removeConfirm": "Θέλετε να διαγράψετε αυτό το ραντεβού;",
-        "removeSuccess": "Το ραντεβού διαγράφτηκε επιτυχώς"
+        "removeSuccess": "Το ραντεβού διαγράφτηκε επιτυχώς",
+        "cancelConfirm": "Appointment cancelled successfully",
+        "cancelTitle": "Appointment Cancellation"
       },
       "addCustomer": {
         "title": "Add Customer Appointment",
@@ -401,7 +412,8 @@
         "saveChanges": "Save Changes",
         "cancel": "Cancel",
         "updateSuccess": "Appointment updated successfully",
-        "treatmentDetails": "Service Details"
+        "treatmentDetails": "Service Details",
+        "specificServiceType": "Specific Service Type"
       },
       "modals": {
         "selectService": "Select Service Type",
@@ -412,9 +424,13 @@
         "system": "Technician's Schedule Management System",
         "version": "Version 1.1 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
+      },
+      "serviceVat": {
+        "title": "VAT",
+        "placeholder": "e.g. 24",
+        "invalid": "Please enter a valid VAT percentage."
       }
     },
-
     "customerProfile": {
       "loading": "Loading customer profile...",
       "header": {
@@ -469,13 +485,6 @@
         "monthlyActivity": "Monthly Activity",
         "change": "Change",
         "peakMonths": "Peak Months",
-        "deviceTypes": {
-          "baitStation": "Bait Station",
-          "rodentMulticatch": "Rodent Multicatch",
-          "snapTrap": "Snap Trap",
-          "lightTrap": "Light Trap",
-          "pheromoneTrap": "Pheromone Trap"
-        },
         "filters": {
           "deviceType": "Device Type",
           "period": "Period",
@@ -508,7 +517,11 @@
           "fullConsumption": "100% Consumption",
           "avgConsumption": "Avg Consumption",
           "times": "times"
-        }
+        },
+        "footer": "{{count}} stations",
+        "footer_plural": "{{count}} stations",
+        "sortedByStation": " • Sorted by station",
+        "sortBadge": "Sorted by increasing ID"
       },
       "months": {
         "jan": "Jan",
@@ -529,8 +542,7 @@
         "version": "Version 1.1 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
-   },
-
+    },
     "customerRequests": {
       "loading": "Loading Customer Requests...",
       "header": {
@@ -569,6 +581,8 @@
         "decline": "Decline",
         "accept": "Accept"
       },
+      "declineNotes": "Your appointment hasn't been rescheduled",
+      "dateNotSpecified": "Date not specified",
       "detailsModal": {
         "title": "Request Details",
         "customer": "Customer",
@@ -586,9 +600,10 @@
         "additionalNotes": "Additional Notes",
         "declineRequest": "Decline Request",
         "acceptAction": "{{action}}",
-        "acceptAndSchedule": "Accept Request"
+        "acceptAndSchedule": "Appointment created successfully",
+        "acceptReschedule": "Accept Request"
       },
-      "declineRequest":"Decline Request",
+      "declineRequest": "Decline Request",
       "declineConfirm": "Decline customer's request?",
       "declineButton": "Decline",
       "appointmentModal": {
@@ -615,9 +630,11 @@
         "noTechnicians": "No technicians available. Please add technicians first.",
         "cancel": "Cancel",
         "createAppointment": "Create Appointment",
-        "approveReschedule": "Approve Reschedule"
+        "approveReschedule": "Approve Reschedule",
+        "createSuccess": "Appoiintment created successfully",
+        "rescheduleSuccessDetailed": "Appointment rescheduled successfully",
+        "rescheduleApproved": "Appointment rescheduled successfully"
       },
-      "declineNotes": "Your request has been declined",
       "passwordModal": {
         "title": "Reset Customer Password",
         "subtitle": "Set a new password for this customer account",
@@ -626,16 +643,14 @@
         "updatePassword": "Update Password",
         "newPasswordPlaceholder": "Enter new password",
         "confirmPasswordPlaceholder": "Confirm new password",
-        "updateSuccess": "Password updated successfully",
-        "resetPassword": "Reset Password"
-     },
+        "updateSuccess": "Password updated successfully"
+      },
       "footer": {
         "system": "Customer Request Management System",
         "version": "Version 1.1 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
-
     "customers": {
       "loading": "Loading Customers...",
       "header": {
@@ -715,7 +730,13 @@
         "createSuccess": "Client created successfully",
         "createWithLoginSuccess": "Customer account created successfully",
         "createWithoutLoginSuccess": "Customer's account was not created",
-        "imagePickerError": "Image error"
+        "deleteMapTitle": "Delete Map",
+        "deleteMapConfirm": "Are you sure you want to delete this map?",
+        "deleteMapSuccess": "The map was deleted successfully",
+        "tin": "TIN",
+        "tinPlaceholder": "e.g. 123456789",
+        "ama": "AMA",
+        "amaPlaceholder": "e.g. AMA number"
       },
       "editModal": {
         "title": "Edit Customer",
@@ -735,17 +756,15 @@
         "changeImage": "Change Image",
         "uploadMap": "Upload Map",
         "saveChanges": "Save Changes",
-        "saveSuccess": "Changes are saved succesfully",
-        "deleteMapConfirm": "Do you want to delete this map?",
-        "deleteMapTitle": "Delete Map"
+        "saveSuccess": "Profile updated successfully",
+        "mapAddSuccess": "Map added successfully"
       },
       "deleteModal": {
         "title": "Remove Customer",
         "message": "Are you sure you want to remove {{name}}?",
         "warning": "This action removes all associated maps and stations of that customer, but they may be recovered",
         "remove": "Remove",
-        "moveSuccess" : "Customer successfully removed"
-        
+        "moveSuccess": "Customer successfully removed"
       },
       "permanentDeleteModal": {
         "title": "Confirm Permanent Delete",
@@ -766,7 +785,6 @@
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
-
     "materials": {
       "loading": "Loading Materials...",
       "header": {
@@ -814,6 +832,7 @@
         "addTitle": "Add New {{singular}}",
         "addNamePlaceholder": "New {{singular}} name (required)",
         "activeIngredientPlaceholder": "Active ingredient (optional)",
+        "namePlaceholder": "Name of material",
         "antidotePlaceholder": "Antidote or first aid information (optional)",
         "addButton": "Add {{singular}}",
         "hint": "* Required field. Additional fields are optional but recommended."
@@ -830,7 +849,6 @@
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
-
     "statistics": {
       "loading": "Loading Statistics...",
       "header": {
@@ -853,7 +871,9 @@
         "ticketDesc": "per service",
         "visitFrequency": "Visit Frequency",
         "frequencyDesc": "between services",
-        "excellent": ""
+        "excellent": "",
+        "monthlyVat": "VAT This Month",
+        "monthlyVatDesc": "VAT sum for the current month"
       },
       "insights": {
         "title": "Quick Insights",
@@ -866,7 +886,9 @@
         "totalRevenue": "Total Revenue",
         "thisYear": "This Year",
         "avgPrice": "Avg Price",
-        "completed": "Completed"
+        "completed": "Completed",
+        "netRevenue": "Net Revenue",
+        "vat": "VAT"
       },
       "revenueTrends": {
         "title": "Revenue Trends",
@@ -935,7 +957,6 @@
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
-
     "technicians": {
       "loading": "Loading Technicians...",
       "header": {
@@ -977,8 +998,9 @@
         "lastNamePlaceholder": "Enter last name",
         "agePlaceholder": "Enter age",
         "emailPlaceholder": "Email address",
-        "usernamePlaceholder":"Enter username",
-        "passwordPlaceholder":"Enter password"
+        "usernamePlaceholder": "Enter username",
+        "passwordPlaceholder": "Enter password",
+        "success": "Technician created successfully"
       },
       "editModal": {
         "title": "Edit Technician",
@@ -992,13 +1014,14 @@
         "newPassword": "New Password (optional)",
         "passwordHint": "Leave blank to keep current password",
         "update": "Update Technician",
-        "newPasswordPlaceholder":"Enter new password"
+        "newPasswordPlaceholder": "Enter new password"
       },
       "deleteModal": {
         "title": "Delete Technician",
         "message": "Are you sure you want to delete this technician? This action cannot be undone.",
         "warning": "All assigned visits and history will be permanently removed.",
-        "delete": "Delete"
+        "delete": "Delete",
+        "success": "Technician deleted successfully"
       },
       "footer": {
         "system": "Technician Management System",
@@ -1007,15 +1030,14 @@
       }
     }
   },
-
   "serviceTypes": {
     "myocide": "Myocide",
     "disinfection": "Disinfection",
     "insecticide": "Insecticide",
     "special": "Special Service",
-    "unknown": "Unknown Service"
+    "unknown": "Unknown Service",
+    "certificate": "Certification Service"
   },
-
   "status": {
     "scheduled": "Scheduled",
     "completed": "Completed",
@@ -1025,14 +1047,12 @@
     "accepted": "Accepted",
     "declined": "Declined"
   },
-
   "urgency": {
     "emergency": "EMERGENCY",
     "high": "HIGH",
     "normal": "NORMAL",
     "low": "LOW"
   },
-
   "months": {
     "jan": "Jan",
     "feb": "Feb",
@@ -1047,7 +1067,6 @@
     "nov": "Nov",
     "dec": "Dec"
   },
-
   "weekdays": {
     "short": {
       "mon": "MON",
@@ -1058,8 +1077,8 @@
       "sat": "SAT",
       "sun": "SUN"
     }
-  }, 
-   "customer": {
+  },
+  "customer": {
     "loading": "Loading your dashboard...",
     "dashboardUnavailable": "Dashboard unavailable",
     "common": {
@@ -1222,6 +1241,7 @@
         "messagePlaceholder": "Type your message here...",
         "send": "Send Email",
         "sending": "Sending...",
+        "footer": "Sent by Pestify Customer Portal",
         "note": "• Your default email app will open with pre-filled content\n• Make sure to review before sending"
       },
       "error": {
@@ -1360,213 +1380,217 @@
         "description": "Your reschedule request has been declined"
       }
     },
-      "visits": {
-        "loading": "Loading Visits...",
-        "title": "All Service Visits",
-        "subtitle": "Tap any visit to view full report",
-        "total": "Total",
-        "infoBanner": "Tap \"View Report\" to see details or \"Download PDF\" to save",
-        "listTitle": "All Services",
-        "listSubtitle": "Including Myocide, Disinfection, Insecticide, and Special Services",
-        "empty": {
-          "title": "No Visits Found",
-          "text": "There are no completed service visits to display yet.",
-          "refresh": "Refresh"
-        },
-        "card": {
-          "status": "Completed",
-          "dateNotAvailable": "Date not available",
-          "timeNotAvailable": "Time not available",
-          "technician": "Technician",
-          "service": "Service: {{type}}",
-          "viewReport": "View Report",
-          "downloadPDF": "Download PDF"
-        },
-        "serviceTypes": {
-          "myocide": "Myocide Service",
-          "disinfection": "Disinfection Service",
-          "insecticide": "Insecticide Service",
-          "special": "Special Service",
-          "inspection": "Inspection Service",
-          "emergency": "Emergency Service",
-          "installation": "Installation Service",
-          "followUp": "Follow-up Service",
-          "regular": "Regular Service",
-          "default": "Service"
-        },
-        "errors": {
-          "noReportId": "No report ID found for this visit",
-          "authRequired": "Authentication required. Please login again.",
-          "downloadFailed": "The report could not be downloaded.",
-          "noVisitId": "Could not find visit ID. Please try again.",
-          "loadFailed": "Failed to load visits"
-        },
-        "alerts": {
-          "downloadComplete": "Download Complete",
-          "downloadCompleteMessage": "The PDF report has been downloaded to:\n{{path}}",
-          "downloadFailed": "Download Failed"
-        },
-        "back": "Back"
+    "visits": {
+      "loading": "Loading Visits...",
+      "title": "All Service Visits",
+      "subtitle": "Tap any visit to view full report",
+      "total": "Total",
+      "infoBanner": "Tap \"View Report\" to see details or \"Download PDF\" to save",
+      "listTitle": "All Services",
+      "listSubtitle": "Including Myocide, Disinfection, Insecticide, and Special Services",
+      "empty": {
+        "title": "No Visits Found",
+        "text": "There are no completed service visits to display yet.",
+        "refresh": "Refresh"
       },
-      "serviceDisplay": {
-        "special": "Special: {{name}}",
-        "specialWithSubtype": "Special: {{subtype}}"
-      }
-  },
-    "components": {
-      "addTechnicianModal": {
-        "title": "Add Technician",
-        "firstName": "First Name *",
-        "firstNamePlaceholder": "Enter first name",
-        "lastName": "Last Name *",
-        "lastNamePlaceholder": "Enter last name",
-        "age": "Age",
-        "agePlaceholder": "Enter age",
-        "username": "Username *",
-        "usernamePlaceholder": "Enter username",
-        "password": "Password *",
-        "passwordPlaceholder": "Enter password",
-        "save": "Save",
-        "back": "Back",
-        "error": {
-          "requiredFields": "All required fields must be filled"
-        }
+      "card": {
+        "status": "Completed",
+        "dateNotAvailable": "Date not available",
+        "timeNotAvailable": "Time not available",
+        "technician": "Technician",
+        "service": "Service: {{type}}",
+        "viewReport": "View Report",
+        "downloadPDF": "Download PDF"
       },
-      "stationForms": {
-        "common": {
-          "save": "Save",
-          "cancel": "Cancel",
-          "yes": "Yes",
-          "no": "No",
-          "functional": "Functional",
-          "damaged": "Damaged",
-          "access": "Access",
-          "condition": "Condition",
-          "timeSpent": "Time spent: {{time}}",
-          "incompleteForm": "Incomplete Form",
-          "selectOption": "Select {{field}}"
-        },
-        "baitStation": {
-          "title": "Station {{id}}",
-          "baitConsumption": "Bait Consumption %",
-          "selectConsumption": "Select consumption",
-          "baitType": "Bait Type",
-          "selectBaitType": "Select bait type",
-          "dosage": "Dosage (g)",
-          "selectDosage": "Select dosage",
-          "noBaitTypes": "No bait types available",
-          "error": {
-            "consumptionRequired": "You need to log Bait Consumption % before saving",
-            "baitTypeRequired": "You need to log Bait Type before saving",
-            "dosageRequired": "You need to log Dosage (g) before saving",
-            "conditionRequired": "You need to log Condition before saving",
-            "accessRequired": "You need to log Access before saving"
-          }
-        },
-        "lightTrap": {
-          "title": "Light Trap {{id}}",
-          "mosquitoes": "Mosquitoes",
-          "lepidoptera": "Lepidoptera",
-          "drosophila": "Drosophila",
-          "flies": "Flies",
-          "others": "Others",
-          "otherPlaceholder": "Enter name and value",
-          "replaceBulb": "Replace bulb",
-          "error": {
-            "replaceBulbRequired": "You need to log Replace Bulb before saving",
-            "conditionRequired": "You need to log Condition before saving",
-            "accessRequired": "You need to log Access before saving"
-          }
-        },
-        "pheromoneTrap": {
-          "title": "Pheromone Trap {{id}}",
-          "pheromoneType": "Pheromone Type",
-          "selectPheromoneType": "Select pheromone type",
-          "replacedPheromone": "Replaced Pheromone",
-          "insectsCaptured": "Insects Captured",
-          "insectsPlaceholder": "Describe insects captured...",
-          "damaged": "Damaged",
-          "noPheromoneTypes": "No pheromone types available",
-          "error": {
-            "pheromoneTypeRequired": "You need to select Pheromone Type before saving",
-            "replacedPheromoneRequired": "You need to select Replaced Pheromone (Yes/No) before saving",
-            "damagedRequired": "You need to select Damaged (Yes/No) before saving",
-            "accessRequired": "You need to log Access before saving"
-          }
-        },
-        "atoxicStation": {
-          "title": "{{type}} {{id}}",
-          "snapTrap": "Snap Trap",
-          "multicatch": "Multicatch",
-          "capture": "Capture",
-          "rodentsCaptured": "Rodents Captured",
-          "rodentsPlaceholder": "Rodents Captured",
-          "triggered": "Triggered",
-          "replacedSurface": "Replaced Surface",
-          "error": {
-            "captureRequired": "You need to log Capture before saving",
-            "rodentsRequired": "You need to log Rodents Captured before saving",
-            "replacedSurfaceRequired": "You need to log Replaced Surface before saving",
-            "triggeredRequired": "You need to log Triggered before saving",
-            "conditionRequired": "You need to log Condition before saving",
-            "accessRequired": "You need to log Access before saving"
-          }
-        }
+      "serviceTypes": {
+        "myocide": "Myocide Service",
+        "disinfection": "Disinfection Service",
+        "insecticide": "Insecticide Service",
+        "special": "Special Service",
+        "inspection": "Inspection Service",
+        "emergency": "Emergency Service",
+        "installation": "Installation Service",
+        "followUp": "Follow-up Service",
+        "regular": "Regular Service",
+        "default": "Service"
       },
-      "chemicalsDropdown": {
-        "selectedChemicals": "Selected Chemicals:",
-        "clearAll": "Clear All",
-        "selectChemicals": "Select chemicals used",
-        "chemicalSelected_one": "{{count}} chemical selected",
-        "chemicalSelected_other": "{{count}} chemicals selected",
-        "availableChemicals": "Available chemicals: {{count}}",
-        "search": "Search chemicals...",
-        "noChemicalsFound": "No chemicals found",
-        "noChemicalsAvailable": "No chemicals available",
-        "tapToReload": "Tap to reload",
-        "done": "Done",
-        "addDetails": "Add Details for {{chemical}}",
-        "concentration": "Concentration (%)",
-        "concentrationPlaceholder": "e.g., 10",
-        "volume": "Volume (ml)",
-        "volumePlaceholder": "e.g., 500",
-        "save": "Save",
-        "cancel": "Cancel",
-        "error": {
-          "startServiceRequired": "Please start the service before selecting chemicals.",
-          "actionDisabled": "Start the service first",
-          "editingDisabled": "Editing is disabled"
-        },
-        "gallery": "Gallery",
-        "camera": "Camera"
+      "errors": {
+        "noReportId": "No report ID found for this visit",
+        "authRequired": "Authentication required. Please login again.",
+        "downloadFailed": "The report could not be downloaded.",
+        "noVisitId": "Could not find visit ID. Please try again.",
+        "loadFailed": "Failed to load visits"
       },
-      "swipeableVisitRow": {
-        "downloadReport": "Download Report",
-        "downloadConfirm": "Download PDF report for {{service}}?",
-        "download": "Download",
-        "cancel": "Cancel",
-        "success": "Success",
-        "pdfSaved": "PDF saved to: {{path}}",
+      "alerts": {
+        "downloadComplete": "Download Complete",
+        "downloadCompleteMessage": "The PDF report has been downloaded to:\n{{path}}",
         "downloadFailed": "Download Failed",
-        "errors": {
-          "network": "Network error. Please check your internet connection.",
-          "auth": "Authentication error. Please log in again.",
-          "notFound": "Report not found on server.",
-          "storage": "Storage permission required. Please check app permissions."
-        },
-        "appointmentId": "Appointment ID: {{id}}",
-        "unknownDate": "Unknown date",
-        "minutes": "min",
-        "serviceTypes": {
-          "myocide": "Myocide",
-          "insecticide": "Insecticide",
-          "disinfection": "Disinfection",
-          "special": "Special Service"
+        "downloadStarted": "Report has been successfully downloaded"
+      },
+      "back": "Back"
+    },
+    "serviceDisplay": {
+      "special": "Special: {{name}}",
+      "specialWithSubtype": "Special: {{subtype}}"
+    },
+    "tin": "TIN",
+    "ama": "PIN"
+  },
+  "components": {
+    "addTechnicianModal": {
+      "title": "Add Technician",
+      "firstName": "First Name *",
+      "firstNamePlaceholder": "Enter first name",
+      "lastName": "Last Name *",
+      "lastNamePlaceholder": "Enter last name",
+      "age": "Age",
+      "agePlaceholder": "Enter age",
+      "username": "Username *",
+      "usernamePlaceholder": "Enter username",
+      "password": "Password *",
+      "passwordPlaceholder": "Enter password",
+      "save": "Save",
+      "back": "Back",
+      "error": {
+        "requiredFields": "All required fields must be filled"
+      }
+    },
+    "stationForms": {
+      "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "yes": "Yes",
+        "no": "No",
+        "functional": "Functional",
+        "damaged": "Damaged",
+        "access": "Access",
+        "condition": "Condition",
+        "timeSpent": "Time spent: {{time}}",
+        "incompleteForm": "Incomplete Form",
+        "selectOption": "Select {{field}}"
+      },
+      "baitStation": {
+        "title": "Station {{id}}",
+        "baitConsumption": "Bait Consumption %",
+        "selectConsumption": "Select consumption",
+        "baitType": "Bait Type",
+        "selectBaitType": "Select bait type",
+        "dosage": "Dosage (g)",
+        "selectDosage": "Select dosage",
+        "noBaitTypes": "No bait types available",
+        "error": {
+          "consumptionRequired": "You need to log Bait Consumption % before saving",
+          "baitTypeRequired": "You need to log Bait Type before saving",
+          "dosageRequired": "You need to log Dosage (g) before saving",
+          "conditionRequired": "You need to log Condition before saving",
+          "accessRequired": "You need to log Access before saving"
+        }
+      },
+      "lightTrap": {
+        "title": "Light Trap {{id}}",
+        "mosquitoes": "Mosquitoes",
+        "lepidoptera": "Lepidoptera",
+        "drosophila": "Drosophila",
+        "flies": "Flies",
+        "others": "Others",
+        "otherPlaceholder": "Enter name and value",
+        "replaceBulb": "Replace bulb",
+        "error": {
+          "replaceBulbRequired": "You need to log Replace Bulb before saving",
+          "conditionRequired": "You need to log Condition before saving",
+          "accessRequired": "You need to log Access before saving"
+        }
+      },
+      "pheromoneTrap": {
+        "title": "Pheromone Trap {{id}}",
+        "pheromoneType": "Pheromone Type",
+        "selectPheromoneType": "Select pheromone type",
+        "replacedPheromone": "Replaced Pheromone",
+        "insectsCaptured": "Insects Captured",
+        "insectsPlaceholder": "Describe insects captured...",
+        "damaged": "Damaged",
+        "noPheromoneTypes": "No pheromone types available",
+        "error": {
+          "pheromoneTypeRequired": "You need to select Pheromone Type before saving",
+          "replacedPheromoneRequired": "You need to select Replaced Pheromone (Yes/No) before saving",
+          "damagedRequired": "You need to select Damaged (Yes/No) before saving",
+          "accessRequired": "You need to log Access before saving"
+        }
+      },
+      "atoxicStation": {
+        "title": "{{type}} {{id}}",
+        "snapTrap": "Snap Trap",
+        "multicatch": "Multicatch",
+        "capture": "Capture",
+        "rodentsCaptured": "Rodents Captured",
+        "rodentsPlaceholder": "Rodents Captured",
+        "triggered": "Triggered",
+        "replacedSurface": "Replaced Surface",
+        "error": {
+          "captureRequired": "You need to log Capture before saving",
+          "rodentsRequired": "You need to log Rodents Captured before saving",
+          "replacedSurfaceRequired": "You need to log Replaced Surface before saving",
+          "triggeredRequired": "You need to log Triggered before saving",
+          "conditionRequired": "You need to log Condition before saving",
+          "accessRequired": "You need to log Access before saving"
         }
       }
     },
-
-      "technician": {
+    "chemicalsDropdown": {
+      "selectedChemicals": "Selected Chemicals:",
+      "clearAll": "Clear All",
+      "selectChemicals": "Select chemicals used",
+      "chemicalSelected_one": "{{count}} chemical selected",
+      "chemicalSelected_other": "{{count}} chemicals selected",
+      "availableChemicals": "Available chemicals: {{count}}",
+      "search": "Search chemicals...",
+      "noChemicalsFound": "No chemicals found",
+      "noChemicalsAvailable": "No chemicals available",
+      "tapToReload": "Tap to reload",
+      "done": "Done",
+      "addDetails": "Add Details for {{chemical}}",
+      "concentration": "Concentration (%)",
+      "concentrationPlaceholder": "e.g., 10",
+      "volume": "Volume (ml)",
+      "volumePlaceholder": "e.g., 500",
+      "save": "Save",
+      "cancel": "Cancel",
+      "error": {
+        "startServiceRequired": "Please start the service before selecting chemicals.",
+        "actionDisabled": "Start the service first",
+        "editingDisabled": "Editing is disabled"
+      },
+      "gallery": "Gallery",
+      "camera": "Camera"
+    },
+    "swipeableVisitRow": {
+      "downloadReport": "Download Report",
+      "downloadConfirm": "Download PDF report for {{service}}?",
+      "download": "Download",
+      "cancel": "Cancel",
+      "success": "Success",
+      "pdfSaved": "PDF saved to: {{path}}",
+      "downloadFailed": "Download Failed",
+      "errors": {
+        "network": "Network error. Please check your internet connection.",
+        "auth": "Authentication error. Please log in again.",
+        "notFound": "Report not found on server.",
+        "storage": "Storage permission required. Please check app permissions."
+      },
+      "appointmentId": "Appointment ID: {{id}}",
+      "unknownDate": "Unknown date",
+      "minutes": "min",
+      "serviceTypes": {
+        "myocide": "Myocide",
+        "insecticide": "Insecticide",
+        "disinfection": "Disinfection",
+        "special": "Special Service",
+        "certificate": "Certification Service"
+      },
+      "downloadStarted": "Download has been completed"
+    }
+  },
+  "technician": {
     "common": {
       "loading": "Loading...",
       "back": "Back",
@@ -1592,7 +1616,8 @@
       "phone": "Phone",
       "email": "Email",
       "navigate": "Navigate",
-      "copyright":"© {{year}} Pestify. All rights reserved."
+      "copyright": "© {{year}} Pestify. All rights reserved.",
+      "noAddress": "No registered address"
     },
     "home": {
       "loading": "Loading Technician Dashboard...",
@@ -1631,7 +1656,7 @@
           "refresh": "Refresh"
         },
         "completedMessage": "This appointment has already been completed",
-        "viewDetails":"View Details",
+        "viewDetails": "View Details",
         "todayCount": "Appointments today",
         "status": {
           "cancelled": "Cancelled",
@@ -1643,7 +1668,8 @@
           "myocide": "Myocide",
           "disinfection": "Disinfection",
           "insecticide": "Insecticide",
-          "special": "Special"
+          "special": "Special",
+          "certificate": "Certification Service"
         }
       },
       "actions": {
@@ -1665,8 +1691,8 @@
       "quickNav": {
         "button": "Start Navigation",
         "noAddress": "No Address Available",
-        "chooseApp": "Choose Navigation App",
-        "prompt": "How would you like to navigate to {{name}}?"
+        "chooseApp": "Finding Route",
+        "prompt": "You will be automatically navigated to {{name}}"
       },
       "apps": {
         "googleMaps": {
@@ -1743,7 +1769,7 @@
         "pheromoneTraps": "Pheromone Traps",
         "totalStations": "Total Stations: {{count}}"
       },
-      "stationStatus":{
+      "stationStatus": {
         "status": "Status",
         "inactive": "Inactive",
         "lowActivity": "Low Activity",
@@ -1849,7 +1875,7 @@
       },
       "alerts": {
         "startServiceFirst": "Start Service First",
-        "startServiceRequired": "Please start the service first.",
+        "startServiceRequired": "Please start the service before taking photos.",
         "noData": "No Data",
         "noDataMessage": "You haven't logged any station data. Please log at least one station before saving.",
         "priceNotSet": "Price Not Set",
@@ -2074,9 +2100,18 @@
           "accessRequired": "You need to log Access before saving"
         }
       }
+    },
+    "certificate": {
+      "title": "Certification Service",
+      "certificationSection": "Certification Details",
+      "noMapInspection": "No map inspection was performed",
+      "missingCustomerData": "Missing customer information",
+      "missingCustomerDataMessage": "TIN and AMA must be added to the customer profile before completing certification.",
+      "noData": "No certification data",
+      "noDataMessage": "Add an inspection result, treated area, chemical, note, or photograph.",
+      "noMapOptional": "No map for the customer has been uploaded"
     }
   },
-
   "language": {
     "en": "EN",
     "gr": "GR"
