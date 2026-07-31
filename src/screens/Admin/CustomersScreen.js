@@ -1235,6 +1235,17 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
       }
     };
 
+  const getSubscriptionPlanName = (plan) => {
+    const planKey = String(plan || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+
+    return i18n.t(`admin.home.subscription.plans.${planKey}`, {
+      defaultValue: String(plan || "").toUpperCase()
+    });
+  };
+
   async function loadCustomers() {
     setLoading(true);
     try {
@@ -1462,7 +1473,7 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
                     
                     <View style={styles.subscriptionHeader}>
                       <Text style={styles.subscriptionPlan}>
-                        {usage.subscriptionPlan.toUpperCase()} PLAN
+                        plan: getSubscriptionPlanName(usage.subscriptionPlan)
                       </Text>
         
                       <View style={styles.subscriptionBadge}>
@@ -1484,7 +1495,10 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
                     </View>
         
                     <Text style={styles.subscriptionText}>
-                      Customers used: {usage.customers.used} / {usage.customers.max}
+                      {i18n.t("admin.home.subscription.customers", {
+                        used: usage.customers.used,
+                        max: usage.customers.max
+                      })}
                     </Text>
         
                   </View>

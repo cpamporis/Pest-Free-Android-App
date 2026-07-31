@@ -28,7 +28,7 @@ import BaitStationForm from "../../components/BaitStationForm";
 import { Dimensions } from "react-native";
 import AtoxicStationForm from "../../components/AtoxicStationForm";
 import LightTrapForm from "../../components/LTForm";
-import { launchImageLibrary, launchCamera } from "react-native-image-picker";  
+import * as ImagePicker from "expo-image-picker";  
 import { SafeAreaView } from "react-native-safe-area-context";
 import PheromoneTrapForm from "../../components/PheromoneTrapForm";
 import i18n from "../../services/i18n";
@@ -967,42 +967,57 @@ const handleSaveAll = async () => {
 
   // ---------------- IMAGE FUNCTIONS ----------------
   const pickImagesFromGallery = async () => {
-    try {
-      const result = await launchImageLibrary({
-        mediaType: "photo",
-        quality: 0.8,
-        selectionLimit: 0
-      });
+  try {
+    const permission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-      if (result.didCancel) return;
-
-      if (result.assets?.length > 0) {
-        setReportImages(prev => [...prev, ...result.assets]);
-      }
-
-    } catch (error) {
-      console.error("Gallery error:", error);
+    if (permission.status !== "granted") {
+      Alert.alert(
+        "Permission required",
+        "Gallery permission is required."
+      );
+      return;
     }
-  };
 
-  const captureImages = async () => {
-    try {
-      const result = await launchCamera({
-        mediaType: "photo",
-        quality: 0.8,
-        saveToPhotos: true
-      });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    });
 
-      if (result.didCancel) return;
-
-      if (result.assets?.length > 0) {
-        setReportImages(prev => [...prev, ...result.assets]);
-      }
-
-    } catch (error) {
-      console.error("Camera error:", error);
+    if (!result.canceled) {
+      setReportImages(prev => [...prev, ...result.assets]);
     }
-  };
+  } catch (error) {
+    console.error("Gallery error:", error);
+  }
+};
+
+const captureImages = async () => {
+  try {
+    const permission =
+      await ImagePicker.requestCameraPermissionsAsync();
+
+    if (permission.status !== "granted") {
+      Alert.alert(
+        "Permission required",
+        "Camera permission is required."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setReportImages(prev => [...prev, ...result.assets]);
+    }
+  } catch (error) {
+    console.error("Camera error:", error);
+  }
+};
 
   const openImageChooser = () => {
     if (!serviceStarted) {
@@ -1615,8 +1630,8 @@ const handleSaveAll = async () => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "height" : undefined}
-      keyboardVerticalOffset={0}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 110 : 0}
     >
       <View
         style={styles.container}

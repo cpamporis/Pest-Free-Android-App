@@ -316,6 +316,17 @@ export default function TechnicianHomeScreen({
     onSelectCustomer(customer, null, { mode: "layout-only" });
   };
 
+  const getSubscriptionPlanName = (plan) => {
+    const planKey = String(plan || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+
+    return i18n.t(`admin.home.subscription.plans.${planKey}`, {
+      defaultValue: String(plan || "").toUpperCase()
+    });
+  };
+
   const navigateToCustomerLocation = (customer) => {
     if (!customer || !customer.address) {
       Alert.alert(
