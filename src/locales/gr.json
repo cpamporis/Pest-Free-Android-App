@@ -733,7 +733,10 @@
         "tin": "ΑΦΜ",
         "tinPlaceholder": "π.χ. 123456789",
         "ama": "ΑΜΑ",
-        "amaPlaceholder": "π.χ. αριθμός ΑΜΑ"
+        "amaNumbers": "Αριθμοί ΑΜΑ",
+        "amaPlaceholder": "Αριθμός ΑΜΑ",
+        "addAma": "Προσθήκη άλλου ΑΜΑ",
+        "removeAma": "Αφαίρεση ΑΜΑ"
       },
       "editModal": {
         "title": "Επεξεργασία Πελάτη",

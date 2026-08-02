@@ -734,7 +734,10 @@
         "tin": "TIN",
         "tinPlaceholder": "e.g. 123456789",
         "ama": "AMA",
-        "amaPlaceholder": "e.g. AMA number"
+        "amaNumbers": "AMA numbers",
+        "amaPlaceholder": "AMA number",
+        "addAma": "Add another AMA",
+        "removeAma": "Remove AMA"
       },
       "editModal": {
         "title": "Edit Customer",
