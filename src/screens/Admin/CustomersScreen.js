@@ -1222,6 +1222,9 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
     }
   }, [reportToOpen, onOpenReport]);
 
+  const handleOpenReportFromProfile = (visitData) => {
+  };
+
 
   const loadUsage = async () => {
       try {
@@ -1473,7 +1476,9 @@ export default function CustomersScreen({ onClose, onOpenReport }) {
                     
                     <View style={styles.subscriptionHeader}>
                       <Text style={styles.subscriptionPlan}>
-                        plan: getSubscriptionPlanName(usage.subscriptionPlan)
+                        {i18n.t("admin.home.subscription.plan", {
+                          plan: getSubscriptionPlanName(usage.subscriptionPlan)
+                        })}
                       </Text>
         
                       <View style={styles.subscriptionBadge}>

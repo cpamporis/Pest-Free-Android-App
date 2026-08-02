@@ -58,27 +58,27 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
   const deviceTypes = [
     { 
       value: "BS", 
-      label: i18n.t("admin.customerProfile.charts.deviceTypes.baitStation"), 
+      label: i18n.t("admin.customerProfile.stations.baitStation"), 
       icon: "room" 
     },
     { 
       value: "RM", 
-      label: i18n.t("admin.customerProfile.charts.deviceTypes.rodentMulticatch"), 
+      label: i18n.t("admin.customerProfile.stations.rodentMonitor"), 
       icon: "pets" 
     },
     { 
       value: "ST", 
-      label: i18n.t("admin.customerProfile.charts.deviceTypes.snapTrap"), 
+      label: i18n.t("admin.customerProfile.stations.stickyTrap"), 
       icon: "bolt" 
     },
     { 
       value: "LT", 
-      label: i18n.t("admin.customerProfile.charts.deviceTypes.lightTrap"), 
+      label: i18n.t("admin.customerProfile.stations.lightTrap"), 
       icon: "lightbulb" 
     },
     { 
       value: "PT", 
-      label: i18n.t("admin.customerProfile.charts.deviceTypes.pheromoneTrap"), 
+      label: i18n.t("admin.customerProfile.stations.pheromoneTrap"), 
       icon: "bug-report" 
     }
   ];

@@ -1008,6 +1008,17 @@ const apiService = {
     return request("GET", `/reports/visit/${visitId}`);
   },
 
+  getCertificatePdfUrl(visitId) {
+    if (!visitId) {
+      throw new Error("Visit ID is required for certificate download");
+    }
+
+    return (
+      `${API_BASE_URL}/certificates/pdf/` +
+      encodeURIComponent(visitId)
+    );
+  },
+
   // CUSTOMER ENDPOINTS
   async getCustomerDashboard() {
     try {
