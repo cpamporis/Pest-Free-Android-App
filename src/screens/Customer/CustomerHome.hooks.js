@@ -618,7 +618,11 @@ export default function useCustomerHome({ customer, onLogout, onViewVisits }) {
       const result = await apiService.requestReschedule(appointment.id, {
         date: newAppointmentDate,
         time: newAppointmentTime,
-        notes: `Requested reschedule to ${newAppointmentDate} at ${newAppointmentTime}`
+        notes: `${i18n.t(
+          "customer.appointments.requestReschedule"
+        )}: ${newAppointmentDate} ${i18n.t(
+          "customer.common.at"
+        )} ${newAppointmentTime}`
       });
 
       if (result?.success) {
@@ -851,8 +855,25 @@ export default function useCustomerHome({ customer, onLogout, onViewVisits }) {
     });
   };
   const getServiceTypeLabel = (typeId, subtypeId = null, otherPest = null) => {
-    const service = serviceTypes.find(s => s.id === typeId);
-    let label = service ? service.label : typeId || i18n.t("customer.serviceTypes.myocide");
+    const normalizedType = String(typeId || "")
+      .trim()
+      .toLowerCase();
+
+    const isCertificate = [
+      "certificate",
+      "certification",
+      "st"
+    ].includes(normalizedType);
+
+    const service = serviceTypes.find(
+      (item) => item.id === normalizedType
+    );
+
+    let label = isCertificate
+      ? i18n.t("serviceTypes.certificate")
+      : service
+        ? service.label
+        : typeId || i18n.t("customer.serviceTypes.myocide");
     
     if (typeId === "special" && subtypeId) {
       const subtype = specialServiceSubtypes.find(s => s.id === subtypeId);

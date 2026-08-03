@@ -61,6 +61,13 @@ export default function CustomerHomeScreen({
     if (!description) return i18n.t("customer.visits.serviceTypes.default") || 'Service';
     
     const desc = description.toLowerCase();
+    if (
+  desc.includes("certificate") ||
+  desc.includes("certification") ||
+  desc.includes("πιστοποι")
+) {
+  return i18n.t("serviceTypes.certificate");
+}
     if (desc.includes('disinfection')) return i18n.t("customer.visits.serviceTypes.disinfection");
     if (desc.includes('insecticide')) return i18n.t("customer.visits.serviceTypes.insecticide");
     if (desc.includes('special service')) return i18n.t("customer.visits.serviceTypes.special");
@@ -151,6 +158,68 @@ export default function CustomerHomeScreen({
     
     return timeStr;
   };
+
+  const formatAppointmentNote = (appointment) => {
+  const rawNote =
+    appointment.reschedule_notes ||
+    appointment.rescheduleNotes ||
+    appointment.notes ||
+    "";
+
+  if (!rawNote) return "";
+
+  const lastLine = rawNote.split("\n").pop().trim();
+
+  // Preserve declined-reschedule messages
+  if (lastLine.includes("Reschedule declined: ")) {
+    return lastLine.replace("Reschedule declined: ", "");
+  }
+
+  const isRescheduleRequest =
+    appointment.status === "pending_reschedule" ||
+    /Αίτημα Επαναπρογραμματισμού|Request Reschedule|Requested reschedule/i.test(
+      lastLine
+    );
+
+  if (!isRescheduleRequest) {
+    return lastLine;
+  }
+
+  // Supports both old English and Greek stored notes
+  const dateFromNote =
+    lastLine.match(/\b\d{4}-\d{2}-\d{2}\b/)?.[0];
+
+  const timeFromNote =
+    lastLine.match(/\b(?:[01]\d|2[0-3]):[0-5]\d\b/)?.[0];
+
+  const requestedDate =
+    dateFromNote ||
+    appointment.requestedDate ||
+    appointment.requested_date ||
+    appointment.rescheduleDate ||
+    appointment.reschedule_date ||
+    appointment.date;
+
+  const requestedTime =
+    timeFromNote ||
+    appointment.requestedTime ||
+    appointment.requested_time ||
+    appointment.rescheduleTime ||
+    appointment.reschedule_time ||
+    appointment.time;
+
+  const translatedLabel = i18n.t(
+    "customer.appointments.requestReschedule"
+  );
+
+  if (requestedDate && requestedTime) {
+    return `${translatedLabel}: ${requestedDate} ${i18n.t(
+      "customer.common.at"
+    )} ${formatTime(requestedTime)}`;
+  }
+
+  return translatedLabel;
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -272,24 +341,15 @@ export default function CustomerHomeScreen({
                     <ActivityIndicator size="small" color="#1f9c8b" />
                   ) : home.lastVisit ? (
                     <Text style={styles.visitDateText}>
-                      {home.lastVisit.formattedDate || 
-                      (() => {
-                        try {
-                          const date = home.lastVisit.startTime;
-                          if (date) {
-                            const d = new Date(date);
-                            return d.toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            });
-                          }
-                        } catch {
-                          // ignore
-                        }
-                        return "—";
-                      })()}
+                      {home.formatDisplayDate(
+                        home.lastVisit.startTime ||
+                        home.lastVisit.service_start_time ||
+                        home.lastVisit.start_time ||
+                        home.lastVisit.appointmentDate ||
+                        home.lastVisit.appointment_date ||
+                        home.lastVisit.createdAt ||
+                        home.lastVisit.created_at
+                      ) || "—"}
                     </Text>
                   ) : (
                     <Text style={styles.noAppointmentText}>{i18n.t("customer.compliance.lastVisit.none")}</Text>
@@ -464,9 +524,13 @@ export default function CustomerHomeScreen({
                       : i18n.t("customer.notifications.preview.recent")}
                   </Text>
                   <Text style={styles.notificationsPreviewSubtitle}>
-                    {i18n.t("customer.notifications.preview.tapToView", { 
-                      type: home.notificationCount > 0 ? 'new' : 'recent' 
-                    })}
+                    {home.notificationCount > 0
+                      ? i18n.t(
+                          "customer.notifications.preview.tapToViewNew"
+                        )
+                      : i18n.t(
+                          "customer.notifications.preview.tapToViewRecent"
+                        )}
                   </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={24} color="#666" />
@@ -576,18 +640,17 @@ export default function CustomerHomeScreen({
                       )}
                       
                       {/* Appointment notes - show the most relevant information */}
-                      {(appointment.reschedule_notes || appointment.notes) && (
-                        <Text style={styles.appointmentNotes} numberOfLines={2}>
-                          {appointment.reschedule_notes 
-                            ? (() => {
-                                const lastLine = appointment.reschedule_notes.split('\n').pop();
-                                // Extract just the message after "Reschedule declined: "
-                                if (lastLine.includes('Reschedule declined: ')) {
-                                  return lastLine.replace('Reschedule declined: ', '');
-                                }
-                                return lastLine;
-                              })()
-                            : appointment.notes}
+                      {(
+                        appointment.status === "pending_reschedule" ||
+                        appointment.reschedule_notes ||
+                        appointment.rescheduleNotes ||
+                        appointment.notes
+                      ) && (
+                        <Text
+                          style={styles.appointmentNotes}
+                          numberOfLines={2}
+                        >
+                          {formatAppointmentNote(appointment)}
                         </Text>
                       )}
                       

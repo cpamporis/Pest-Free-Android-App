@@ -69,6 +69,30 @@ export default function CustomerRequestScreen({ onClose }) {
     { id: "emergency", label: i18n.t("admin.schedule.appointmentCategory.emergency") },
     { id: "contract_service", label: i18n.t("admin.schedule.appointmentCategory.contract_service") },
   ];
+  const WEEKDAY_KEYS = [
+  "sun",
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat"
+];
+
+const MONTH_KEYS = [
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "may",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "oct",
+  "nov",
+  "dec"
+];
 
   function parseDecimalInput(value) {
   if (
@@ -884,11 +908,12 @@ const appointmentPricePayload = buildVatPricePayload(
     if (!serviceType) return i18n.t("serviceTypes.unknown") || 'Unknown Service';
     
     const labels = {
-      'myocide': i18n.t("serviceTypes.myocide"),
-      'disinfection': i18n.t("serviceTypes.disinfection"),
-      'insecticide': i18n.t("serviceTypes.insecticide"),
-      'special': i18n.t("serviceTypes.special")
-    };
+  'myocide': i18n.t("serviceTypes.myocide"),
+  'disinfection': i18n.t("serviceTypes.disinfection"),
+  'insecticide': i18n.t("serviceTypes.insecticide"),
+  'special': i18n.t("serviceTypes.special"),
+  'certificate': i18n.t("serviceTypes.certificate"),
+};
     
     let label = labels[serviceType] || serviceType;
     
@@ -967,34 +992,49 @@ const appointmentPricePayload = buildVatPricePayload(
     return dateString;
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return i18n.t("admin.customerRequests.detailsModal.notSpecified") || 'Not specified';
-    
-    try {
-      // Handle different date formats
-      let date;
-      if (dateString.includes('T')) {
-        // ISO string
-        date = new Date(dateString);
-      } else {
-        // YYYY-MM-DD format
-        date = new Date(dateString + 'T00:00:00');
-      }
-      
-      if (isNaN(date.getTime())) {
-        return dateString;
-      }
-      
-      return date.toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-    } catch {
-      return dateString;
+  const formatDate = (dateValue, includeWeekday = true) => {
+  if (!dateValue) {
+    return i18n.t(
+      "admin.customerRequests.detailsModal.notSpecified"
+    );
+  }
+
+  try {
+    let date;
+
+    if (dateValue instanceof Date) {
+      date = new Date(dateValue);
+    } else {
+      const dateString = String(dateValue);
+
+      // Prevent timezone shifting for YYYY-MM-DD values
+      date = /^\d{4}-\d{2}-\d{2}$/.test(dateString)
+        ? new Date(`${dateString}T00:00:00`)
+        : new Date(dateString);
     }
-  };
+
+    if (Number.isNaN(date.getTime())) {
+      return String(dateValue);
+    }
+
+    const weekday = i18n.t(
+      `weekdays.short.${WEEKDAY_KEYS[date.getDay()]}`
+    );
+
+    const month = i18n.t(
+      `months.${MONTH_KEYS[date.getMonth()]}`
+    );
+
+    const formattedDate =
+      `${date.getDate()} ${month} ${date.getFullYear()}`;
+
+    return includeWeekday
+      ? `${weekday}, ${formattedDate}`
+      : formattedDate;
+  } catch {
+    return String(dateValue);
+  }
+};
 
   const formatDateTime = (dateString, timeString) => {
     const hasDate = !!dateString;
@@ -1134,7 +1174,9 @@ const appointmentPricePayload = buildVatPricePayload(
                           <View style={styles.customerDetails}>
                             <Text style={styles.customerName}>{request.customer_name}</Text>
                             <Text style={styles.requestDate}>
-                              {request.created_at ? new Date(request.created_at).toLocaleDateString() : i18n.t("admin.customerRequests.requestList.unknownDate")}
+                              {request.created_at
+  ? formatDate(request.created_at, false)
+  : i18n.t("admin.customerRequests.requestList.unknownDate")}
                             </Text>
                           </View>
                         </View>
@@ -1273,7 +1315,9 @@ const appointmentPricePayload = buildVatPricePayload(
           <View style={styles.footer}>
             <Text style={styles.footerText}>{i18n.t("admin.customerRequests.footer.system")}</Text>
             <Text style={styles.footerSubtext}>
-              {i18n.t("admin.customerRequests.footer.version", { date: new Date().toLocaleDateString() })}
+              {i18n.t("admin.customerRequests.footer.version", {
+  date: formatDate(new Date(), false)
+})}
             </Text>
             <Text style={styles.footerCopyright}>
               {i18n.t("admin.customerRequests.footer.copyright", { year: new Date().getFullYear() })}
@@ -1395,7 +1439,11 @@ const appointmentPricePayload = buildVatPricePayload(
                   <View style={styles.detailSection}>
                     <Text style={styles.detailLabel}>{i18n.t("admin.customerRequests.detailsModal.submitted")}</Text>
                     <Text style={styles.detailValue}>
-                      {selectedRequest.created_at ? new Date(selectedRequest.created_at).toLocaleString() : i18n.t("admin.customerRequests.requestList.unknownDate")}
+                      {selectedRequest.created_at
+  ? `${formatDate(selectedRequest.created_at)} ${i18n.t(
+      "admin.customerRequests.at"
+    )} ${formatTime(selectedRequest.created_at)}`
+  : i18n.t("admin.customerRequests.requestList.unknownDate")}
                     </Text>
                   </View>
                   
@@ -1531,7 +1579,7 @@ const appointmentPricePayload = buildVatPricePayload(
                     <TextInput
                       style={styles.formInput}
                       keyboardType="decimal-pad"
-                      placeholder="e.g. 80.00"
+                      placeholder={i18n.t("admin.schedule.servicePrice.placeholder")}
                       value={appointmentPrice}
                       onChangeText={setAppointmentPrice}
                       placeholderTextColor="#999"
@@ -1557,7 +1605,7 @@ const appointmentPricePayload = buildVatPricePayload(
                     <TextInput
                       style={styles.formInput}
                       keyboardType="decimal-pad"
-                      placeholder="e.g. 24"
+                      placeholder={i18n.t("admin.schedule.serviceVat.placeholder")}
                       value={appointmentVatPercent}
                       onChangeText={setAppointmentVatPercent}
                       placeholderTextColor="#999"

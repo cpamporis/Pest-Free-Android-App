@@ -16,8 +16,66 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Ionicons, Feather } from '@expo/vector-icons';
 import * as Sharing from "expo-sharing";
 import * as FileSystem from 'expo-file-system/legacy';
-import { formatTimeInGreece, formatDateInGreece } from "../../utils/timeZoneUtils";
+import {
+  formatTimeInGreece
+} from "../../utils/timeZoneUtils";
 import i18n from "../../services/i18n";
+
+const WEEKDAY_KEYS = [
+  "sun", "mon", "tue", "wed", "thu", "fri", "sat"
+];
+
+const MONTH_KEYS = [
+  "jan", "feb", "mar", "apr", "may", "jun",
+  "jul", "aug", "sep", "oct", "nov", "dec"
+];
+
+const CERTIFICATE_SERVICE_TYPES = [
+  "certificate",
+  "certification",
+  "st"
+];
+
+const normalizeVisitServiceType = (value) => {
+  const rawValue =
+    value && typeof value === "object"
+      ? value.serviceType ??
+        value.service_type ??
+        value.serviceCategory ??
+        value.service_category ??
+        ""
+      : value;
+
+  return String(rawValue || "").trim().toLowerCase();
+};
+
+const isCertificateServiceType = (value) =>
+  CERTIFICATE_SERVICE_TYPES.includes(
+    normalizeVisitServiceType(value)
+  );
+
+const getVisitDate = (visit) =>
+  visit.appointmentDate ??
+  visit.appointment_date ??
+  visit.startTime ??
+  visit.start_time ??
+  visit.date ??
+  visit.createdAt ??
+  visit.created_at ??
+  null;
+
+const getVisitYear = (value) => {
+  if (!value) return null;
+
+  const directYear = String(value).match(/^(\d{4})/);
+  if (directYear) return Number(directYear[1]);
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.getFullYear();
+};
 
 export default function CustomerVisitsScreen({ 
   onSelectVisit, 
@@ -39,22 +97,46 @@ export default function CustomerVisitsScreen({
         let visitsData = res.visits || [];
         
         // Process each visit to ensure consistent format
-        const processedVisits = visitsData.map(visit => ({
-          ...visit,
-          // Ensure visitId exists
-          visitId: visit.visitId || visit.id || visit.visit_id,
-          // Ensure serviceType is set
-          serviceType: visit.serviceType || visit.service_type || 'myocide',
-          // Format service type for display
-          serviceTypeDisplay: visit.serviceTypeDisplay || 
-                            formatServiceTypeDisplay(visit.serviceType || visit.service_type, 
-                                                      visit.serviceSubtype, 
-                                                      visit.otherPestName),
-          // Ensure timestamp exists
-          startTime: visit.startTime || visit.start_time || visit.createdAt,
-        }));
-        
-        setVisits(processedVisits);
+        const processedVisits = visitsData.map((visit) => {
+          const serviceType =
+            normalizeVisitServiceType(visit) || "myocide";
+
+          return {
+            ...visit,
+            visitId: visit.visitId || visit.id || visit.visit_id,
+            serviceType,
+
+            serviceTypeDisplay: isCertificateServiceType(serviceType)
+              ? i18n.t("serviceTypes.certificate")
+              : visit.serviceTypeDisplay ||
+                formatServiceTypeDisplay(
+                  serviceType,
+                  visit.serviceSubtype ?? visit.service_subtype,
+                  visit.otherPestName ?? visit.other_pest_name
+                ),
+
+            startTime:
+              visit.startTime ||
+              visit.start_time ||
+              visit.createdAt ||
+              visit.created_at,
+          };
+        });
+
+        const seenVisitIds = new Set();
+
+        const uniqueVisits = processedVisits.filter((visit) => {
+          if (!visit.visitId) return true;
+
+          const key = String(visit.visitId);
+
+          if (seenVisitIds.has(key)) return false;
+
+          seenVisitIds.add(key);
+          return true;
+        });
+
+        setVisits(uniqueVisits);
       } else {
         Alert.alert(i18n.t("common.error"), res?.error || i18n.t("customer.visits.errors.loadFailed"));
         setVisits([]);
@@ -78,89 +160,226 @@ export default function CustomerVisitsScreen({
     await loadVisits();
   };
 
-  const formatTime24WithSuffix = (dateString) => {
-    if (!dateString) return "—";
-    return formatTimeInGreece(dateString);
+  const formatVisitDate = (value) => {
+  if (!value) return "—";
+
+  const rawValue = String(value);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
+    ? new Date(`${rawValue}T00:00:00`)
+    : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return rawValue;
+
+  const weekday = i18n.t(
+    `weekdays.short.${WEEKDAY_KEYS[date.getDay()]}`
+  );
+
+  const month = i18n.t(
+    `months.${MONTH_KEYS[date.getMonth()]}`
+  );
+
+  return `${weekday}, ${date.getDate()} ${month} ${date.getFullYear()}`;
+};
+
+const formatVisitTime = (value) => {
+  if (!value) return "—";
+
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Athens",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).format(new Date(value));
+  } catch {
+    return formatTimeInGreece(value);
+  }
+};
+
+const getCertificateCopy = (year) => {
+  const locale = String(i18n.getLocale() || "").toLowerCase();
+
+  const isGreek =
+    locale.startsWith("el") ||
+    locale.startsWith("gr");
+
+  return {
+    label: isGreek ? "Πιστοποιητικό" : "Certificate",
+
+    title: isGreek
+      ? "Λήψη πιστοποιητικού"
+      : "Download Certificate",
+
+    unavailable: isGreek
+      ? "Το πιστοποιητικό είναι διαθέσιμο μόνο για το τρέχον έτος."
+      : "The certificate is available only for the current year.",
+
+    year,
   };
+};
 
 
   // Download PDF report
-  const downloadPDFReport = async (visit) => {
-    try {
-      setDownloadingId(visit.visitId); // Use visit.visitId
-      
-      const reportId = visit.visitId; // Use visit.visitId
-      
-      if (!reportId) {
-        Alert.alert(i18n.t("common.error"), i18n.t("customer.visits.errors.noReportId"));
-        return;
-      }
-      
-      const token = apiService.getCurrentToken();
-      if (!token) {
-        Alert.alert(i18n.t("common.error"), i18n.t("customer.visits.errors.authRequired"));
-        return;
-      }
-      
-      const dateStr = visit.startTime ? 
-        new Date(visit.startTime).toISOString().split('T')[0] : 
-        new Date().toISOString().split('T')[0];
-      
-      const safeName = (visit.customer_name || visit.customerName || 'customer')
-        .replace(/[^a-z0-9]/gi, '_')
-        .replace(/^_+|_+$/g, '');
-      
-      const fileName = `Service_Report_${safeName}_${dateStr}.pdf`;
-      
-      const API_BASE_URL = apiService.API_BASE_URL || "http://192.168.1.79:3000/api";
-      const lang = i18n.getLocale();
-      const pdfUrl = `${API_BASE_URL}/reports/pdf/${reportId}?lang=${lang}`;
-      
-      const downloadResult = await FileSystem.downloadAsync(
-        pdfUrl,
-        FileSystem.documentDirectory + fileName,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          }
-        }
-      );
-      
-      if (downloadResult.status === 200) {
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(downloadResult.uri, {
-            mimeType: "application/pdf",
-            dialogTitle: i18n.t("customer.visits.alerts.downloadComplete"),
-            UTI: "com.adobe.pdf",
-          });
-        } else {
-          Alert.alert(
-            i18n.t("customer.visits.alerts.downloadComplete"),
-            i18n.t("customer.visits.alerts.downloadCompleteMessage", { path: downloadResult.uri }),
-            [{ text: i18n.t("common.ok") || "OK" }]
-          );
-        }
-      } else {
-        throw new Error(i18n.t("customer.visits.alerts.downloadFailed") + ` ${downloadResult.status}`);
-      }
-      
-    } catch (error) {
-      console.error("❌ PDF download error:", error);
+  const downloadPDFReport = async (
+  visit,
+  documentType = "report"
+) => {
+  try {
+    const reportId = visit.visitId;
+    const isCertificate =
+      documentType === "certificate";
+
+    const certificateYear = getVisitYear(
+      getVisitDate(visit)
+    );
+
+    const currentYear = new Date().getFullYear();
+    const certificateCopy =
+      getCertificateCopy(certificateYear);
+
+    if (
+      isCertificate &&
+      certificateYear !== currentYear
+    ) {
       Alert.alert(
-        i18n.t("customer.visits.alerts.downloadFailed"),
-        error.message || i18n.t("customer.visits.errors.downloadFailed")
+        certificateCopy.title,
+        certificateCopy.unavailable
       );
-    } finally {
-      setDownloadingId(null);
+
+      return;
     }
-  };
+
+    if (!reportId) {
+      Alert.alert(
+        i18n.t("common.error"),
+        i18n.t("customer.visits.errors.noReportId")
+      );
+
+      return;
+    }
+
+    setDownloadingId(`${reportId}:${documentType}`);
+
+    const token = apiService.getCurrentToken();
+
+    if (!token) {
+      Alert.alert(
+        i18n.t("common.error"),
+        i18n.t("customer.visits.errors.authRequired")
+      );
+
+      return;
+    }
+
+    const dateStr = visit.startTime
+      ? new Date(visit.startTime)
+          .toISOString()
+          .split("T")[0]
+      : new Date().toISOString().split("T")[0];
+
+    const safeName = (
+      visit.customer_name ||
+      visit.customerName ||
+      "customer"
+    )
+      .replace(/[^a-z0-9]/gi, "_")
+      .replace(/^_+|_+$/g, "");
+
+    const fileName = isCertificate
+      ? `Certificate_${safeName}_${certificateYear}.pdf`
+      : `Service_Report_${safeName}_${dateStr}.pdf`;
+
+    const apiBaseUrl =
+      apiService.API_BASE_URL ||
+      "http://192.168.1.79:3000/api";
+
+    const encodedReportId =
+      encodeURIComponent(reportId);
+
+    const encodedLanguage = encodeURIComponent(
+      i18n.getLocale() || "en"
+    );
+
+    const pdfUrl = isCertificate
+      ? typeof apiService.getCertificatePdfUrl === "function"
+        ? apiService.getCertificatePdfUrl(reportId)
+        : `${apiBaseUrl}/certificates/pdf/${encodedReportId}`
+      : typeof apiService.getReportPdfUrl === "function"
+        ? apiService.getReportPdfUrl(
+            reportId,
+            i18n.getLocale()
+          )
+        : `${apiBaseUrl}/reports/pdf/${encodedReportId}?lang=${encodedLanguage}`;
+
+    const downloadResult = await FileSystem.downloadAsync(
+      pdfUrl,
+      FileSystem.documentDirectory + fileName,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (downloadResult.status !== 200) {
+      throw new Error(
+        `${i18n.t(
+          "customer.visits.alerts.downloadFailed"
+        )} ${downloadResult.status}`
+      );
+    }
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(downloadResult.uri, {
+        mimeType: "application/pdf",
+
+        dialogTitle: isCertificate
+          ? certificateCopy.title
+          : i18n.t(
+              "customer.visits.alerts.downloadComplete"
+            ),
+
+        UTI: "com.adobe.pdf",
+      });
+    } else {
+      Alert.alert(
+        i18n.t(
+          "customer.visits.alerts.downloadComplete"
+        ),
+
+        i18n.t(
+          "customer.visits.alerts.downloadCompleteMessage",
+          { path: downloadResult.uri }
+        ),
+
+        [{ text: i18n.t("common.ok") || "OK" }]
+      );
+    }
+  } catch (error) {
+    console.error("❌ PDF download error:", error);
+
+    Alert.alert(
+      i18n.t("customer.visits.alerts.downloadFailed"),
+
+      error.message ||
+        i18n.t(
+          "customer.visits.errors.downloadFailed"
+        )
+    );
+  } finally {
+    setDownloadingId(null);
+  }
+};
 
   const formatServiceTypeDisplay = (serviceType, subtype, otherPestName) => {
     if (!serviceType) return i18n.t("customer.visits.serviceTypes.default") || 'Service';
     
     const type = String(serviceType).toLowerCase();
+    if (isCertificateServiceType(type)) {
+      return i18n.t("serviceTypes.certificate");
+    }
     
-    if (type === 'myocide' || type.includes('myocide')) {
+    else if (type === 'myocide' || type.includes('myocide')) {
       return i18n.t("customer.visits.serviceTypes.myocide");
     } else if (type === 'disinfection' || type.includes('disinfection')) {
       return i18n.t("customer.visits.serviceTypes.disinfection");
@@ -220,7 +439,9 @@ export default function CustomerVisitsScreen({
 
     const visitPayload = {
       visitId: visitId,
-      serviceType: visit.serviceType || visit.service_type || "myocide",
+      serviceType:
+  normalizeVisitServiceType(visit) ||
+  "myocide",
       customerName: visit.customerName || visit.customer_name || i18n.t("customer.welcome.customer"),
       technicianName: visit.technicianName || visit.technician_name || i18n.t("customer.visits.card.technician"),
       startTime: visit.startTime || visit.start_time || visit.createdAt
@@ -229,10 +450,26 @@ export default function CustomerVisitsScreen({
   };
 
   const renderVisitItem = ({ item }) => {
-    const serviceType = item.serviceType || 'myocide';
-    const serviceDisplay = item.serviceTypeDisplay || formatServiceTypeDisplay(serviceType);
-    const iconName = getServiceIcon(serviceType);
-    const color = getServiceColor(serviceType);
+    const serviceType = item.serviceType || "myocide";
+
+const serviceDisplay = formatServiceTypeDisplay(
+  serviceType,
+  item.serviceSubtype ?? item.service_subtype,
+  item.otherPestName ?? item.other_pest_name
+);
+
+const iconName = getServiceIcon(serviceType);
+const color = getServiceColor(serviceType);
+
+const visitDate = getVisitDate(item);
+const certificateYear = getVisitYear(visitDate);
+
+const canDownloadCertificate =
+  isCertificateServiceType(serviceType) &&
+  certificateYear === new Date().getFullYear();
+
+const certificateCopy =
+  getCertificateCopy(certificateYear);
 
     return (
       <TouchableOpacity
@@ -257,9 +494,11 @@ export default function CustomerVisitsScreen({
           <View style={styles.detailRow}>
             <MaterialIcons name="calendar-today" size={16} color="#666" />
             <Text style={styles.detailText}>
-              {item.startTime 
-                ? formatDateInGreece(item.startTime)
-                : i18n.t("customer.visits.card.dateNotAvailable")}
+              {item.startTime
+  ? formatVisitDate(item.startTime)
+  : i18n.t(
+      "customer.visits.card.dateNotAvailable"
+    )}
             </Text>
           </View>
           
@@ -267,8 +506,10 @@ export default function CustomerVisitsScreen({
             <MaterialIcons name="schedule" size={16} color="#666" />
             <Text style={styles.detailText}>
               {item.startTime
-                ? formatTimeInGreece(item.startTime)
-                : i18n.t("customer.visits.card.timeNotAvailable")}
+  ? formatVisitTime(item.startTime)
+  : i18n.t(
+      "customer.visits.card.timeNotAvailable"
+    )}
             </Text>
           </View>
           
@@ -298,19 +539,68 @@ export default function CustomerVisitsScreen({
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={styles.downloadButton}
-              onPress={() => downloadPDFReport(item)}
-              disabled={downloadingId === item.visitId}
-            >
-              {downloadingId === item.visitId ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <MaterialIcons name="picture-as-pdf" size={16} color="#fff" />
-                  <Text style={styles.downloadButtonText}>{i18n.t("customer.visits.card.downloadPDF")}</Text>
-                </>
-              )}
-            </TouchableOpacity>
+  style={styles.downloadButton}
+  onPress={() =>
+    downloadPDFReport(item, "report")
+  }
+  disabled={
+    downloadingId === `${item.visitId}:report`
+  }
+>
+  {downloadingId === `${item.visitId}:report` ? (
+    <ActivityIndicator size="small" color="#fff" />
+  ) : (
+    <>
+      <MaterialIcons
+        name="picture-as-pdf"
+        size={16}
+        color="#fff"
+      />
+
+      <Text style={styles.downloadButtonText}>
+        {i18n.t(
+          "customer.visits.card.downloadPDF"
+        )}
+      </Text>
+    </>
+  )}
+</TouchableOpacity>
+
+{canDownloadCertificate && (
+  <TouchableOpacity
+    style={[
+      styles.downloadButton,
+      { backgroundColor: "#c3922e" },
+    ]}
+    onPress={() =>
+      downloadPDFReport(item, "certificate")
+    }
+    disabled={
+      downloadingId ===
+      `${item.visitId}:certificate`
+    }
+  >
+    {downloadingId ===
+    `${item.visitId}:certificate` ? (
+      <ActivityIndicator
+        size="small"
+        color="#fff"
+      />
+    ) : (
+      <>
+        <MaterialIcons
+          name="verified"
+          size={16}
+          color="#fff"
+        />
+
+        <Text style={styles.downloadButtonText}>
+          {certificateCopy.label}
+        </Text>
+      </>
+    )}
+  </TouchableOpacity>
+)}
           </View>
         </View>
       </TouchableOpacity>
@@ -382,7 +672,14 @@ export default function CustomerVisitsScreen({
       ) : (
         <FlatList
           data={visits}
-          keyExtractor={(item, index) => `${item.visitId}_${item.source || "visit"}_${index}`}
+          keyExtractor={(item, index) =>
+  String(
+    item.visitId ||
+    item.id ||
+    item.visit_id ||
+    `visit-${index}`
+  )
+}
           renderItem={renderVisitItem}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
@@ -416,8 +713,10 @@ const getServiceColor = (serviceType) => {
 
 const getServiceIcon = (serviceType) => {
   const type = String(serviceType || '').toLowerCase();
-  
-  if (type.includes('myocide')) {
+  if (isCertificateServiceType(type)) {
+  return "verified";
+}
+  else if (type.includes('myocide')) {
     return 'pest-control-rodent';
   } else if (type.includes('disinfection')) {
     return 'clean-hands';
@@ -432,9 +731,10 @@ const getServiceIcon = (serviceType) => {
 
 const formatServiceType = (serviceType) => {
   const type = String(serviceType || '').toLowerCase().trim();
-  
-  // Map service types to display names
-  if (type.includes('myocide') || type.includes('scheduled')) {
+  if (isCertificateServiceType(type)) {
+  return i18n.t("serviceTypes.certificate");
+}
+  else if (type.includes('myocide') || type.includes('scheduled')) {
     return i18n.t("customer.visits.serviceTypes.myocide");
   } else if (type.includes('disinfection')) {
     return i18n.t("customer.visits.serviceTypes.disinfection");

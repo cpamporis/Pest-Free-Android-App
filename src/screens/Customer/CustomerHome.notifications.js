@@ -61,6 +61,92 @@ export const notificationTypes = {
   },
 };
 
+const resolveNotificationServiceType = (notification) => {
+  const metadata =
+    notification.metadata &&
+    typeof notification.metadata === "object"
+      ? notification.metadata
+      : {};
+
+  const data =
+    notification.data &&
+    typeof notification.data === "object"
+      ? notification.data
+      : {};
+
+  const explicitType =
+    notification.serviceType ??
+    notification.service_type ??
+    notification.serviceCategory ??
+    notification.service_category ??
+    notification.workType ??
+    notification.work_type ??
+    notification.appointment?.serviceType ??
+    notification.appointment?.service_type ??
+    metadata.serviceType ??
+    metadata.service_type ??
+    data.serviceType ??
+    data.service_type ??
+    "";
+
+  const searchableText = [
+    explicitType,
+    notification.serviceTypeDisplay,
+    notification.service_type_display,
+    notification.title,
+    notification.description,
+    notification.message,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  const normalizedExplicitType = String(explicitType)
+    .trim()
+    .toLowerCase();
+
+  if (
+    normalizedExplicitType === "st" ||
+    searchableText.includes("certificate") ||
+    searchableText.includes("certification") ||
+    searchableText.includes("πιστοποι")
+  ) {
+    return "certificate";
+  }
+
+  if (
+    searchableText.includes("myocide") ||
+    searchableText.includes("rodent") ||
+    searchableText.includes("μυοκτον")
+  ) {
+    return "myocide";
+  }
+
+  if (
+    searchableText.includes("disinfection") ||
+    searchableText.includes("απολύμαν")
+  ) {
+    return "disinfection";
+  }
+
+  if (
+    searchableText.includes("insecticide") ||
+    searchableText.includes("απεντόμ")
+  ) {
+    return "insecticide";
+  }
+
+  if (
+    searchableText.includes("special") ||
+    searchableText.includes("ειδική") ||
+    searchableText.includes("ειδικη")
+  ) {
+    return "special";
+  }
+
+  return normalizedExplicitType || null;
+};
+
   const formatTimeAgo = (dateString) => {
     const now = new Date();
     const date = new Date(dateString);
@@ -139,7 +225,8 @@ export const notificationTypes = {
         // Process notifications with translations
         const notificationsWithReadStatus = result.notifications.map(notification => {
           const isRead = notification.status === "read" || !!notification.readAt || combinedReadIds.includes(notification.id);
-          
+          const resolvedServiceType =
+  resolveNotificationServiceType(notification);
           // Find notification type template
           const typeTemplate = Object.values(notificationTypes).find(nt => nt.type === notification.type);
           
@@ -166,11 +253,28 @@ export const notificationTypes = {
           }
           
           return {
-            ...notification,
-            title,
-            description,
-            isRead
-          };
+  ...notification,
+
+  serviceType: resolvedServiceType,
+
+  specialServiceSubtype:
+    notification.specialServiceSubtype ??
+    notification.special_service_subtype ??
+    notification.metadata?.specialServiceSubtype ??
+    notification.metadata?.special_service_subtype ??
+    null,
+
+  otherPestName:
+    notification.otherPestName ??
+    notification.other_pest_name ??
+    notification.metadata?.otherPestName ??
+    notification.metadata?.other_pest_name ??
+    null,
+
+  title,
+  description,
+  isRead,
+};
         });
         
         setNotifications(notificationsWithReadStatus);
