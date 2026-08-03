@@ -20,6 +20,9 @@
     "emailPlaceholder": "Enter your registered email",
     "submitButton": "Submit Recovery Request",
     "backButton": "Back to Login",
+    "adminContactTitle": "Organization administrator recovery",
+      "adminRecoveryTitle": "Are you an organization administrator?",
+      "adminRecoveryText": "If you have forgotten your administrator password, contact Pestify at the email below.",
     "footer": {
       "help": "Need Help? Contact Support",
       "contact": "info@pestify.gr • +30 6986244371",
@@ -29,7 +32,8 @@
       "noEmail": "Please enter your registered email",
       "invalidEmail": "Please enter a valid email address",
       "submitFailed": "Failed to submit recovery request",
-      "unexpected": "An unexpected error occurred. Please try again."
+      "unexpected": "An unexpected error occurred. Please try again.",
+      "notRegisteredCustomer": "Not registered"
     },
     "success": {
       "title": "Password Recovery Request Submitted",
@@ -180,12 +184,35 @@
         "logout": {
           "title": "Logout",
           "subtitle": "Sign out from the admin dashboard"
+        },
+        "changePassword": {
+          "title": "Change password",
+          "subtitle": "Update your organization administrator password"
         }
       },
       "footer": {
         "system": "Pestify Admin System",
         "version": "Version 1.2 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
+      }
+    },
+    "password": {
+      "title": "Change administrator password",
+      "description": "Enter your current password and choose a new password.",
+      "forcedDescription": "You are signed in with a temporary password. You must set a new password before continuing.",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Change password",
+      "successTitle": "Password changed",
+      "successMessage": "Your password was changed successfully.",
+      "errors": {
+        "required": "Please complete all password fields.",
+        "tooShort": "The new password must be at least 8 characters.",
+        "notMatching": "The new passwords do not match.",
+        "currentIncorrect": "The current password is incorrect.",
+        "samePassword": "The new password must be different from the current password.",
+        "failed": "Unable to change the password. Please try again."
       }
     },
 

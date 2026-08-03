@@ -49,7 +49,12 @@ export default function LoginScreen({
 
     if (result.role === "admin" || result.role === "super_admin") {
       await apiService.setAuthToken(result.token);
-      onAdminLogin(result.role); 
+
+      onAdminLogin(
+        result.role,
+        result.mustChangePassword === true
+      );
+
       return;
     }
 

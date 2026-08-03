@@ -15,6 +15,7 @@ import CustomerHomeScreen from "./screens/Customer/CustomerHomeScreen";
 import CustomerVisitsScreen from "./screens/Customer/CustomerVisitsScreen";
 import CustomerProfile from "./screens/Admin/CustomerProfile";
 import PasswordRecovery from "./screens/PasswordRecovery";
+import apiService from "./services/apiService";
 
 export default function RootApp() {
   const [loggedTechnician, setLoggedTechnician] = useState(null);
@@ -31,18 +32,25 @@ export default function RootApp() {
   const [adminView, setAdminView] = useState("home"); 
   const [adminCustomerId, setAdminCustomerId] = useState(null);
   const [authView, setAuthView] = useState("login"); 
+  const [
+  adminMustChangePassword,
+  setAdminMustChangePassword
+] = useState(false);
 
-  const handleLogout = () => {
-    setLoggedTechnician(null);
-    setIsAdmin(false);
-    setCurrentCustomer(null);
-    setCurrentSession(null);
-    setShowNavigation(false);
-    setShowReport(false);
-    setReportContext(null);
-    setReportRefreshKey(0);
-    setLoggedCustomer(null);
-  };
+  const handleLogout = async () => {
+  await apiService.clearAuthToken();
+
+  setLoggedTechnician(null);
+  setIsAdmin(false);
+  setAdminMustChangePassword(false);
+  setCurrentCustomer(null);
+  setCurrentSession(null);
+  setShowNavigation(false);
+  setShowReport(false);
+  setReportContext(null);
+  setReportRefreshKey(0);
+  setLoggedCustomer(null);
+};
 
   // Report refresh function
   const refreshReport = () => {
@@ -122,7 +130,13 @@ export default function RootApp() {
 
     return (
       <LoginScreen
-        onAdminLogin={() => setIsAdmin(true)}
+        onAdminLogin={(role, mustChangePassword = false) => {
+          setIsAdmin(true);
+
+          setAdminMustChangePassword(
+            role === "admin" && mustChangePassword
+          );
+        }}
         onTechnicianLogin={(tech) => setLoggedTechnician(tech)}
         onCustomerLogin={(customer) => setLoggedCustomer(customer)}
         onPasswordRecovery={() => setAuthView("passwordRecovery")}
@@ -136,6 +150,10 @@ export default function RootApp() {
       return (
         <AdminHomeScreen
           onLogout={handleLogout}
+          forcePasswordChange={adminMustChangePassword}
+          onPasswordChanged={() =>
+            setAdminMustChangePassword(false)
+          }
           onOpenCustomerProfile={(customerId) => {
             setAdminCustomerId(customerId);
             setAdminView("customerProfile");

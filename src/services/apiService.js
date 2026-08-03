@@ -426,7 +426,10 @@ const apiService = {
       return {
         success: true,
         role: result.role,
-        token: result.token
+        token: result.token,
+        mustChangePassword:
+          result.mustChangePassword === true ||
+          result.must_change_password === true
       };
     }
 
@@ -1505,14 +1508,22 @@ const apiService = {
     return getResult;
   },
 
-  async submitPasswordRecovery(email) {
-    return request("POST", "/customer-requests", {
-      customerEmail: email,
-      serviceType: "password_recovery",
-      description: "Password recovery request",
-      type: "password_recovery"
-    });
-  },
+  async changeAdminPassword(currentPassword, newPassword) {
+  return request("POST", "/admin/change-password", {
+    currentPassword,
+    newPassword
+  });
+},
+
+async submitPasswordRecovery(email) {
+  return request(
+    "POST",
+    "/customer-requests/password-recovery",
+    {
+      email: email.trim().toLowerCase()
+    }
+  );
+},
 
   async resetCustomerPassword(requestId, newPassword) {
     return request("POST", "/admin/reset-customer-password", {

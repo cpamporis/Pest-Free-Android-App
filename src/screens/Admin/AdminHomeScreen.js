@@ -9,6 +9,7 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  TextInput,
   RefreshControl
 } from "react-native";
 import { StyleSheet } from "react-native";
@@ -28,7 +29,11 @@ import Statistics from "./Statistics";
 import AdminTechCalendarPreview from "./AdminTechCalendarPreview"; //temporary
 import i18n from "../../services/i18n";
 
-export default function AdminHomeScreen({ onLogout }) {
+export default function AdminHomeScreen({
+  onLogout,
+  forcePasswordChange = false,
+  onPasswordChanged
+}) {
   const [customers, setCustomers] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [todayVisits, setTodayVisits] = useState(0);
@@ -47,6 +52,20 @@ export default function AdminHomeScreen({ onLogout }) {
     setScheduleCustomerId(customerId);
     setShowTechSchedule(true);
   };
+  const [showPasswordChange, setShowPasswordChange] =
+  useState(forcePasswordChange);
+
+const [currentAdminPassword, setCurrentAdminPassword] =
+  useState("");
+
+const [newAdminPassword, setNewAdminPassword] =
+  useState("");
+
+const [confirmAdminPassword, setConfirmAdminPassword] =
+  useState("");
+
+const [changingAdminPassword, setChangingAdminPassword] =
+  useState(false);
   const [adminReportContext, setAdminReportContext] = useState(null);
   const [showAdminReport, setShowAdminReport] = useState(false);
   const [showStatistics, setShowStatistics] = useState(false);
@@ -56,8 +75,14 @@ export default function AdminHomeScreen({ onLogout }) {
 
 
   useEffect(() => {
+    if (forcePasswordChange) {
+      setShowPasswordChange(true);
+      setScreenLoading(false);
+      return;
+    }
+
     loadAllData();
-  }, []);
+  }, [forcePasswordChange]);
 
   const loadAllData = async (forceRefresh = false) => {
     setScreenLoading(true);
@@ -130,6 +155,106 @@ export default function AdminHomeScreen({ onLogout }) {
       setScreenLoading(false);
     }
   };
+
+  const handleChangeAdminPassword = async () => {
+  if (
+    !currentAdminPassword ||
+    !newAdminPassword ||
+    !confirmAdminPassword
+  ) {
+    Alert.alert(
+      i18n.t("common.error"),
+      i18n.t("admin.password.errors.required")
+    );
+    return;
+  }
+
+  if (newAdminPassword.length < 8) {
+    Alert.alert(
+      i18n.t("common.error"),
+      i18n.t("admin.password.errors.tooShort")
+    );
+    return;
+  }
+
+  if (newAdminPassword !== confirmAdminPassword) {
+    Alert.alert(
+      i18n.t("common.error"),
+      i18n.t("admin.password.errors.notMatching")
+    );
+    return;
+  }
+
+  setChangingAdminPassword(true);
+
+  try {
+    const result = await apiService.changeAdminPassword(
+      currentAdminPassword,
+      newAdminPassword
+    );
+
+    if (!result?.success) {
+      const code =
+        result?.data?.code ||
+        result?.code;
+
+      const errorMessage =
+        code === "INCORRECT_CURRENT_PASSWORD"
+          ? i18n.t(
+              "admin.password.errors.currentIncorrect"
+            )
+          : code === "PASSWORDS_ARE_SAME"
+            ? i18n.t(
+                "admin.password.errors.samePassword"
+              )
+            : code === "PASSWORD_TOO_SHORT"
+              ? i18n.t(
+                  "admin.password.errors.tooShort"
+                )
+              : result?.error ||
+                i18n.t(
+                  "admin.password.errors.failed"
+                );
+
+      Alert.alert(
+        i18n.t("common.error"),
+        errorMessage
+      );
+
+      return;
+    }
+
+    Alert.alert(
+      i18n.t("admin.password.successTitle"),
+      i18n.t("admin.password.successMessage"),
+      [
+        {
+          text: i18n.t("common.ok"),
+          onPress: () => {
+            setCurrentAdminPassword("");
+            setNewAdminPassword("");
+            setConfirmAdminPassword("");
+            setShowPasswordChange(false);
+
+            onPasswordChanged?.();
+          }
+        }
+      ]
+    );
+  } catch (error) {
+    console.error(
+      "Administrator password change error:",
+      error
+    );
+
+    Alert.alert(
+      i18n.t("common.error"),
+      i18n.t("admin.password.errors.failed")
+    );
+  } finally {
+    setChangingAdminPassword(false);
+  }
+};
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -578,6 +703,40 @@ export default function AdminHomeScreen({ onLogout }) {
             </View>
             <MaterialIcons name="chevron-right" size={20} color="#F44336" />
           </TouchableOpacity>
+
+          <TouchableOpacity
+  style={styles.actionButton}
+  onPress={() => setShowPasswordChange(true)}
+  activeOpacity={0.7}
+>
+  <View style={styles.actionIconContainer}>
+    <MaterialIcons
+      name="lock-reset"
+      size={22}
+      color="#1f9c8b"
+    />
+  </View>
+
+  <View style={styles.actionContent}>
+    <Text style={styles.actionTitle}>
+      {i18n.t(
+        "admin.home.actions.changePassword.title"
+      )}
+    </Text>
+
+    <Text style={styles.actionSubtitle}>
+      {i18n.t(
+        "admin.home.actions.changePassword.subtitle"
+      )}
+    </Text>
+  </View>
+
+  <MaterialIcons
+    name="chevron-right"
+    size={20}
+    color="#666"
+  />
+</TouchableOpacity>
         </View>
 
         {/* FOOTER */}
@@ -679,6 +838,142 @@ export default function AdminHomeScreen({ onLogout }) {
             />
           </Modal>
         )}
+
+        {showPasswordChange && (
+  <Modal
+    animationType="slide"
+    visible
+    onRequestClose={() => {
+      if (!forcePasswordChange) {
+        setShowPasswordChange(false);
+      }
+    }}
+  >
+    <SafeAreaView
+      style={styles.passwordScreen}
+      edges={["top", "right", "bottom", "left"]}
+    >
+      <ScrollView
+        style={styles.passwordScrollView}
+        contentContainerStyle={
+          styles.passwordScrollContent
+        }
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.passwordHeader}>
+          <TouchableOpacity
+            style={styles.passwordCloseButton}
+            hitSlop={{
+              top: 8,
+              right: 8,
+              bottom: 8,
+              left: 8
+            }}
+            onPress={
+              forcePasswordChange
+                ? onLogout
+                : () =>
+                    setShowPasswordChange(false)
+            }
+          >
+            <MaterialIcons
+              name={
+                forcePasswordChange
+                  ? "logout"
+                  : "close"
+              }
+              size={26}
+              color="#fff"
+            />
+          </TouchableOpacity>
+
+          <Text style={styles.passwordHeaderTitle}>
+            {i18n.t("admin.password.title")}
+          </Text>
+
+          <View
+            style={styles.passwordHeaderSpacer}
+          />
+        </View>
+
+        <View style={styles.passwordContent}>
+          <MaterialIcons
+            name="lock-reset"
+            size={58}
+            color="#1f9c8b"
+          />
+
+          <Text style={styles.passwordDescription}>
+            {forcePasswordChange
+              ? i18n.t(
+                  "admin.password.forcedDescription"
+                )
+              : i18n.t(
+                  "admin.password.description"
+                )}
+          </Text>
+
+          <TextInput
+            style={styles.passwordInput}
+            placeholder={i18n.t(
+              "admin.password.currentPassword"
+            )}
+            secureTextEntry
+            autoCapitalize="none"
+            value={currentAdminPassword}
+            onChangeText={setCurrentAdminPassword}
+          />
+
+          <TextInput
+            style={styles.passwordInput}
+            placeholder={i18n.t(
+              "admin.password.newPassword"
+            )}
+            secureTextEntry
+            autoCapitalize="none"
+            value={newAdminPassword}
+            onChangeText={setNewAdminPassword}
+          />
+
+          <TextInput
+            style={styles.passwordInput}
+            placeholder={i18n.t(
+              "admin.password.confirmPassword"
+            )}
+            secureTextEntry
+            autoCapitalize="none"
+            value={confirmAdminPassword}
+            onChangeText={setConfirmAdminPassword}
+          />
+
+          <TouchableOpacity
+            style={[
+              styles.passwordSubmitButton,
+              changingAdminPassword && {
+                opacity: 0.6
+              }
+            ]}
+            disabled={changingAdminPassword}
+            onPress={handleChangeAdminPassword}
+          >
+            {changingAdminPassword ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text
+                style={styles.passwordSubmitText}
+              >
+                {i18n.t(
+                  "admin.password.submit"
+                )}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  </Modal>
+)}
       </ScrollView>
     </SafeAreaView>
   );
@@ -773,6 +1068,92 @@ const styles = StyleSheet.create({
   headerContent: {
     marginTop: 10,
   },
+  passwordScreen: {
+  flex: 1,
+  backgroundColor: "#f8f9fa",
+},
+
+passwordScrollView: {
+  flex: 1,
+},
+
+passwordScrollContent: {
+  flexGrow: 1,
+  backgroundColor: "#f8f9fa",
+},
+
+passwordHeader: {
+  backgroundColor: "#1f9c8b",
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+},
+
+passwordCloseButton: {
+  width: 44,
+  height: 44,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+passwordHeaderSpacer: {
+  width: 44,
+  height: 44,
+},
+
+passwordHeaderTitle: {
+  color: "#fff",
+  fontSize: 18,
+  fontWeight: "700",
+},
+
+passwordContent: {
+  flexGrow: 1,
+  padding: 24,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+passwordDescription: {
+  maxWidth: 500,
+  marginTop: 20,
+  marginBottom: 28,
+  color: "#666",
+  fontSize: 15,
+  lineHeight: 22,
+  textAlign: "center",
+},
+
+passwordInput: {
+  width: "100%",
+  maxWidth: 500,
+  backgroundColor: "#fff",
+  borderWidth: 1,
+  borderColor: "#e1e5e8",
+  borderRadius: 12,
+  paddingHorizontal: 16,
+  paddingVertical: 15,
+  marginBottom: 14,
+  fontSize: 16,
+},
+
+passwordSubmitButton: {
+  width: "100%",
+  maxWidth: 500,
+  backgroundColor: "#1f9c8b",
+  borderRadius: 12,
+  paddingVertical: 16,
+  alignItems: "center",
+  marginTop: 10,
+},
+
+passwordSubmitText: {
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: "700",
+},
   welcomeText: {
     fontSize: 14,
     color: "rgba(255, 255, 255, 0.9)",
