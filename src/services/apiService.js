@@ -422,10 +422,10 @@ const apiService = {
       }
     }
 
-    if (result.role === "admin" || result.role === "super_admin") {
+    if (result.role === "admin") {
       return {
         success: true,
-        role: result.role,
+        role: "admin",
         token: result.token,
         mustChangePassword:
           result.mustChangePassword === true ||
@@ -1513,6 +1513,20 @@ const apiService = {
     currentPassword,
     newPassword
   });
+},
+
+async changeAdminPassword(
+  currentPassword,
+  newPassword
+) {
+  return request(
+    "POST",
+    "/admin/change-password",
+    {
+      currentPassword,
+      newPassword
+    }
+  );
 },
 
 async submitPasswordRecovery(email) {
