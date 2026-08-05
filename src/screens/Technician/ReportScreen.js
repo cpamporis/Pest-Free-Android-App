@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Modal
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
@@ -29,6 +30,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
   const [baitTypes, setBaitTypes] = useState([]);
   const [chemicals, setChemicals] = useState([]);
   const [loadingMaterials, setLoadingMaterials] = useState(false);
+  const [selectedReportImage, setSelectedReportImage] = useState(null);
   const normalizeReportServiceType = (value) => {
   const type = String(value || "")
       .trim()
@@ -619,7 +621,12 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
             if (!imageUrl) return null;
 
             return (
-              <View key={index} style={{ marginRight: 12 }}>
+              <TouchableOpacity
+                key={index}
+                style={{ marginRight: 12 }}
+                onPress={() => setSelectedReportImage(imageUrl)}
+                activeOpacity={0.85}
+              >
                 <Image
                   source={{ uri: imageUrl }}
                   style={{
@@ -633,7 +640,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                     console.log("❌ ReportScreen image load error:", imageUrl, e.nativeEvent?.error)
                   }
                 />
-              </View>
+              </TouchableOpacity>
             );
           })}
         </ScrollView>
@@ -1828,6 +1835,44 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           </Text>
         </View>
       </ScrollView>
+      <Modal
+        visible={!!selectedReportImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedReportImage(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.92)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => setSelectedReportImage(null)}
+            style={{
+              position: "absolute",
+              top: 24,
+              right: 24,
+              zIndex: 10,
+              padding: 10,
+            }}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="close" size={32} color="#fff" />
+          </TouchableOpacity>
+
+          {selectedReportImage && (
+            <Image
+              source={{ uri: selectedReportImage }}
+              style={{ width: "95%", height: "90%" }}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
