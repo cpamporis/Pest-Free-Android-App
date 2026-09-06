@@ -391,26 +391,26 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
 };
 
   const formatDurationForDisplay = (report) => {
-    if (!report || report.duration === undefined || report.duration === null) {
+    const numericDuration = Number(report?.duration);
+
+    if (
+      !Number.isFinite(numericDuration) ||
+      numericDuration < 0
+    ) {
       return "00:00:00";
     }
 
-    let seconds = Number(report.duration);
+    const totalSeconds = Math.floor(numericDuration);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor(
+      (totalSeconds % 3600) / 60
+    );
+    const seconds = totalSeconds % 60;
 
-    // If duration is in milliseconds convert to seconds
-    if (seconds > 1000) {
-      seconds = Math.floor(seconds / 1000);
-    }
+    const pad = (value) =>
+      String(value).padStart(2, "0");
 
-    seconds = Math.max(0, Math.floor(seconds));
-
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    const pad = (n) => String(n).padStart(2, "0");
-
-    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
   };
 
   // Helper to get insecticide details from all possible fields
