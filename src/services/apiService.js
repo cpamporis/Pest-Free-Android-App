@@ -226,6 +226,13 @@ const apiService = {
   getTopPerformance,
   getRetentionRate,
   getVisitFrequency,
+  async getStatisticsDashboard(year = null) {
+    const query = year === null || year === undefined
+      ? ""
+      : `?year=${encodeURIComponent(String(year))}`;
+
+    return request("GET", `/statistics/v2/dashboard${query}`);
+  },
   updateRescheduleStatus(appointmentId, payload) {
     return apiService.updateAppointmentRescheduleStatus(appointmentId, payload);
   },
