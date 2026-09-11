@@ -36,6 +36,12 @@ export default function Statistics({ onClose }) {
   const [yearRevenue, setYearRevenue] = useState(0);
   const [technicianRevenue, setTechnicianRevenue] = useState([]);
   const [todayTotalRequests, setTodayTotalRequests] = useState(0);
+  const [statisticsContext, setStatisticsContext] = useState(null);
+  const [dashboardOverview, setDashboardOverview] = useState(null);
+  const [annualRevenueComparison, setAnnualRevenueComparison] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [showYearFilter, setShowYearFilter] = useState(false);
+  const [statisticsError, setStatisticsError] = useState("");
   
   // ENHANCED KPI STATES
   const [kpiData, setKpiData] = useState({
@@ -54,12 +60,16 @@ export default function Statistics({ onClose }) {
   const [showRevenueDetails, setShowRevenueDetails] = useState(false);
   const [selectedBarIndex, setSelectedBarIndex] = useState(null);
   const getCurrentMonthKey = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
+    if (/^\d{4}-\d{2}-\d{2}$/.test(statisticsContext?.asOfDate || "")) {
+      return statisticsContext.asOfDate.slice(0, 7);
+    }
 
-  return `${year}-${month}`;
-};
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+
+    return `${year}-${month}`;
+  };
 
 function parseMoney(value) {
   if (value === null || value === undefined || value === "") {
@@ -216,7 +226,7 @@ const completedAppointmentsDisplay =
   completedAppointmentRecords.length;
 
   useEffect(() => {
-    loadStatistics();
+    loadStatistics(null);
   }, []);
 
   useEffect(() => {
@@ -245,7 +255,125 @@ const completedAppointmentsDisplay =
     return () => clearInterval(interval);
   }, []);
 
-  const loadStatistics = async () => {
+  const applyDashboardResponse = (result) => {
+    const dashboard = result?.dashboard || {};
+    const overview = dashboard.overview || {};
+
+    setStatisticsContext(result.context || null);
+    setDashboardOverview(overview);
+    setAnnualRevenueComparison(
+      Array.isArray(dashboard.annualRevenueComparison)
+        ? dashboard.annualRevenueComparison
+        : []
+    );
+    setRevenueStats(dashboard.revenueStats || null);
+    setRevenueByService(
+      Array.isArray(dashboard.revenueByService)
+        ? dashboard.revenueByService
+        : []
+    );
+    setMonthlyRevenue(
+      Array.isArray(dashboard.monthlyRevenue)
+        ? dashboard.monthlyRevenue
+        : []
+    );
+    setTopCustomers(
+      Array.isArray(dashboard.topCustomers)
+        ? dashboard.topCustomers
+        : []
+    );
+    setYearRevenue(Number(dashboard.yearRevenue || 0));
+    setTechnicianRevenue(
+      Array.isArray(dashboard.technicianRevenue)
+        ? dashboard.technicianRevenue
+        : []
+    );
+    setKpiData({
+      revenueGrowth: Number(dashboard.kpiData?.revenueGrowth || 0),
+      customerGrowth: Number(dashboard.kpiData?.customerGrowth || 0),
+      avgTicketSize: Number(dashboard.kpiData?.avgTicketSize || 0),
+      visitFrequency: Number(dashboard.kpiData?.visitFrequency || 0)
+    });
+    setNewCustomersThisMonth(
+      Number(dashboard.newCustomersThisMonth || 0)
+    );
+    setBestTechnician(
+      dashboard.performanceData?.bestTechnician ||
+        i18n.t("admin.statistics.insights.notAvailable") ||
+        "N/A"
+    );
+    setTopService(dashboard.performanceData?.topService || null);
+    setTodayRequests(Number(overview.referenceDayRequests || 0));
+    setTodayTotalRequests(Number(overview.referenceDayRequests || 0));
+
+    // The v2 response contains aggregate data, so the screen no longer needs
+    // to download every customer and appointment just to count them.
+    setVisits([]);
+    setCustomers([]);
+    setTechnicians([]);
+    setAppointments([]);
+  };
+
+  const loadStatistics = async (year = selectedYear) => {
+    setLoading(true);
+    setStatisticsError("");
+
+    try {
+      const result = await apiService.getStatisticsDashboard(year);
+
+      if (result?.success && result.dashboard && result.context) {
+        applyDashboardResponse(result);
+        return true;
+      }
+
+      const message = result?.error || "Failed to load statistics";
+
+      // During a staged rollout, the current-year screen can still use the
+      // legacy endpoints if the additive backend endpoint is not available.
+      if (year === null || year === undefined) {
+        console.warn("Statistics v2 unavailable; using current dashboard", message);
+        setStatisticsContext(null);
+        setDashboardOverview(null);
+        setAnnualRevenueComparison([]);
+        await loadLegacyStatistics();
+        return true;
+      }
+
+      setStatisticsError(message);
+      return false;
+    } catch (error) {
+      if (year === null || year === undefined) {
+        console.warn("Statistics v2 failed; using current dashboard", error);
+        setStatisticsContext(null);
+        setDashboardOverview(null);
+        setAnnualRevenueComparison([]);
+        await loadLegacyStatistics();
+        return true;
+      }
+
+      setStatisticsError(error.message || "Failed to load statistics");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleYearChange = async (year) => {
+    const previousSelection = selectedYear;
+    const nextSelection =
+      year === statisticsContext?.currentYear ? null : year;
+
+    setShowYearFilter(false);
+    setSelectedYear(nextSelection);
+
+    const loaded = await loadStatistics(nextSelection);
+
+    if (!loaded) {
+      setSelectedYear(previousSelection);
+    }
+  };
+
+  const loadLegacyStatistics = async () => {
     setLoading(true);
 
     try {
@@ -612,16 +740,32 @@ const completedAppointmentsDisplay =
     return acc;
   }, {});
 
+  const customerCountDisplay = dashboardOverview?.customers ?? customers.length;
+  const technicianCountDisplay =
+    dashboardOverview?.technicians ?? technicians.length;
+  const appointmentCountDisplay =
+    dashboardOverview?.appointments ?? appointments.length;
+  const referenceDayAppointmentsDisplay =
+    dashboardOverview?.referenceDayAppointments ?? todayAppointments.length;
+  const completionRateDisplay =
+    dashboardOverview?.completionRate ??
+    (visits.length > 0
+      ? Math.round((completedAppointments.length / visits.length) * 100)
+      : 0);
+  const appointmentsByStatusDisplay =
+    dashboardOverview?.appointmentStatus || appointmentsByStatus;
+  const appointmentsByServiceDisplay =
+    dashboardOverview?.appointmentService || appointmentsByService;
+  const displayedYear =
+    statisticsContext?.selectedYear || new Date().getFullYear();
+  const availableYears = Array.isArray(statisticsContext?.availableYears)
+    ? statisticsContext.availableYears
+    : [];
+
   const isMonthCurrentMonth = (monthString) => {
     if (!monthString) return false;
     
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1;
-    
-    const [year, month] = monthString.split('-').map(Number);
-    
-    return year === currentYear && month === currentMonth;
+    return monthString === getCurrentMonthKey();
   };
 
   const calculateEnhancedKPIs = (customersData, appointmentsData, revenueStatsData, monthlyRevenueData, technicianRevenueData, revenueByServiceData) => {
@@ -791,7 +935,77 @@ const completedAppointmentsDisplay =
               {i18n.t("admin.statistics.header.subtitle")}
             </Text>
           </View>
+
+          {statisticsContext && (
+            <View style={styles.yearSelectorSection}>
+              <TouchableOpacity
+                style={styles.yearSelectorButton}
+                onPress={() => setShowYearFilter(!showYearFilter)}
+                activeOpacity={0.75}
+              >
+                <MaterialIcons name="calendar-today" size={18} color="#fff" />
+                <View style={styles.yearSelectorTextContainer}>
+                  <Text style={styles.yearSelectorLabel}>
+                    {i18n.t("admin.statistics.yearSelector.label")}
+                  </Text>
+                  <Text style={styles.yearSelectorValue}>{displayedYear}</Text>
+                </View>
+                <MaterialIcons
+                  name={showYearFilter ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                  size={23}
+                  color="#fff"
+                />
+              </TouchableOpacity>
+
+              {showYearFilter && (
+                <View style={styles.yearDropdownMenu}>
+                  {availableYears.map((year) => (
+                    <TouchableOpacity
+                      key={year}
+                      style={[
+                        styles.yearDropdownItem,
+                        year === displayedYear && styles.yearDropdownItemActive
+                      ]}
+                      onPress={() => handleYearChange(year)}
+                    >
+                      <Text
+                        style={[
+                          styles.yearDropdownText,
+                          year === displayedYear && styles.yearDropdownTextActive
+                        ]}
+                      >
+                        {year}
+                      </Text>
+                      {year === statisticsContext.currentYear && (
+                        <Text style={styles.liveBadge}>
+                          {i18n.t("admin.statistics.yearSelector.live")}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              <Text style={styles.yearContextText}>
+                {statisticsContext.isHistorical
+                  ? i18n.t("admin.statistics.yearSelector.finalized", {
+                      date: statisticsContext.asOfDate
+                    })
+                  : i18n.t("admin.statistics.yearSelector.liveThrough", {
+                      date: statisticsContext.asOfDate
+                    })}
+                {` • ${statisticsContext.timeZone}`}
+              </Text>
+            </View>
+          )}
         </View>
+
+        {!!statisticsError && (
+          <View style={styles.statisticsErrorBanner}>
+            <MaterialIcons name="error-outline" size={18} color="#b42318" />
+            <Text style={styles.statisticsErrorText}>{statisticsError}</Text>
+          </View>
+        )}
 
         {/* ENHANCED KPI SECTION */}
         <View style={styles.enhancedKpiSection}>
@@ -1144,13 +1358,21 @@ const completedAppointmentsDisplay =
           </View>
         </Section>
 
+        {/* ANNUAL REVENUE COMPARISON */}
+        <Section title={i18n.t("admin.statistics.annualComparison.title")}>
+          <AnnualRevenueComparisonChart
+            data={annualRevenueComparison}
+            selectedYear={displayedYear}
+          />
+        </Section>
+
         {/* OVERVIEW - ENHANCED DESIGN */}
         <Section title={i18n.t("admin.statistics.overview.title")}>
           <View style={styles.overviewGrid}>
             <OverviewCard 
               icon="people"
               title={i18n.t("admin.statistics.overview.customers")}
-              value={customers.length}
+              value={customerCountDisplay}
               color="#1f9c8b"
               subtitle={i18n.t("admin.statistics.overview.activeAccounts")}
             />
@@ -1158,7 +1380,7 @@ const completedAppointmentsDisplay =
             <OverviewCard 
               icon="engineering"
               title={i18n.t("admin.statistics.overview.technicians")}
-              value={technicians.length}
+              value={technicianCountDisplay}
               color="#1f9c8b"
               subtitle={i18n.t("admin.statistics.overview.teamMembers")}
             />
@@ -1166,7 +1388,7 @@ const completedAppointmentsDisplay =
             <OverviewCard 
               icon="event"
               title={i18n.t("admin.statistics.overview.appointments")}
-              value={appointments.length}
+              value={appointmentCountDisplay}
               color="#1f9c8b"
               subtitle={i18n.t("admin.statistics.overview.totalScheduled")}
             />
@@ -1174,7 +1396,7 @@ const completedAppointmentsDisplay =
             <OverviewCard 
               icon="today"
               title={i18n.t("admin.statistics.overview.todayVisits")}
-              value={todayAppointments.length}
+              value={referenceDayAppointmentsDisplay}
               color="#1f9c8b"
               subtitle={i18n.t("admin.statistics.overview.servicesToday")}
             />
@@ -1190,7 +1412,7 @@ const completedAppointmentsDisplay =
             <OverviewCard 
               icon="check-circle"
               title={i18n.t("admin.statistics.overview.completionRate")}
-              value={`${visits.length > 0 ? Math.round((completedAppointments.length / visits.length) * 100) : 0}%`}
+              value={`${completionRateDisplay}%`}
               color="#1f9c8b"
               subtitle={i18n.t("admin.statistics.overview.servicesCompleted")}
             />
@@ -1268,8 +1490,8 @@ const completedAppointmentsDisplay =
             <View style={styles.statusChartContainer}>
               {/* Pie chart visualization (simplified) */}
               <View style={styles.pieChart}>
-                {Object.entries(appointmentsByStatus).map(([status, count]) => {
-                  const total = Object.values(appointmentsByStatus).reduce((a, b) => a + b, 0);
+                {Object.entries(appointmentsByStatusDisplay).map(([status, count]) => {
+                  const total = Object.values(appointmentsByStatusDisplay).reduce((a, b) => a + b, 0);
                   const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
                   const color = getAppointmentStatusColor(status);
                   
@@ -1289,14 +1511,14 @@ const completedAppointmentsDisplay =
               </View>
               
               <View style={styles.statusStats}>
-                <Text style={styles.statusTotal}>{appointments.length}</Text>
+                <Text style={styles.statusTotal}>{appointmentCountDisplay}</Text>
                 <Text style={styles.statusLabel}>{i18n.t("admin.statistics.appointmentStatus.totalAppointments")}</Text>
               </View>
             </View>
             
             <View style={styles.statusList}>
-              {Object.entries(appointmentsByStatus).map(([status, count]) => {
-                const total = Object.values(appointmentsByStatus).reduce((a, b) => a + b, 0);
+              {Object.entries(appointmentsByStatusDisplay).map(([status, count]) => {
+                const total = Object.values(appointmentsByStatusDisplay).reduce((a, b) => a + b, 0);
                 const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
                 const color = getAppointmentStatusColor(status);
                 
@@ -1320,8 +1542,8 @@ const completedAppointmentsDisplay =
           icon="business-center"
         >
           <View style={styles.serviceDistribution}>
-            {Object.entries(appointmentsByService).map(([type, count], index) => {
-              const total = Object.values(appointmentsByService).reduce((a, b) => a + b, 0);
+            {Object.entries(appointmentsByServiceDisplay).map(([type, count], index) => {
+              const total = Object.values(appointmentsByServiceDisplay).reduce((a, b) => a + b, 0);
               const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
               const colors = ['#1f9c8b'];
               
@@ -1343,10 +1565,14 @@ const completedAppointmentsDisplay =
         <View style={styles.footer}>
           <Text style={styles.footerText}>{i18n.t("admin.statistics.footer.system")}</Text>
           <Text style={styles.footerSubtext}>
-            {i18n.t("admin.statistics.footer.version", { date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) })}
+            {i18n.t("admin.statistics.footer.version", {
+              date:
+                statisticsContext?.asOfDate ||
+                new Date().toLocaleDateString()
+            })}
           </Text>
           <Text style={styles.footerCopyright}>
-            {i18n.t("admin.statistics.footer.copyright", { year: new Date().getFullYear() })}
+            {i18n.t("admin.statistics.footer.copyright", { year: displayedYear })}
           </Text>
         </View>
       </ScrollView>
@@ -1470,6 +1696,104 @@ const completedAppointmentsDisplay =
 /* =======================
    COMPONENTS
    ======================= */
+
+function AnnualRevenueComparisonChart({ data, selectedYear }) {
+  const rows = Array.isArray(data)
+    ? [...data].sort((a, b) => Number(a.year) - Number(b.year))
+    : [];
+  const maxRevenue = Math.max(
+    0,
+    ...rows.map((item) => Number(item.revenue || 0))
+  );
+
+  if (rows.length === 0) {
+    return (
+      <View style={styles.annualEmptyState}>
+        <MaterialIcons name="bar-chart" size={42} color="#cbd5e1" />
+        <Text style={styles.annualEmptyText}>
+          {i18n.t("admin.statistics.annualComparison.noData")}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.annualChartCard}>
+      <Text style={styles.annualChartDescription}>
+        {i18n.t("admin.statistics.annualComparison.description")}
+      </Text>
+
+      {rows.map((item) => {
+        const revenue = Number(item.revenue || 0);
+        const growth =
+          item.growthPercentage === null ||
+          item.growthPercentage === undefined
+            ? null
+            : Number(item.growthPercentage);
+        const color =
+          growth === null
+            ? "#64748b"
+            : growth > 0
+              ? "#1f9c8b"
+              : growth < 0
+                ? "#e74c3c"
+                : "#64748b";
+        const barWidth = maxRevenue > 0
+          ? `${Math.max(2, (revenue / maxRevenue) * 100)}%`
+          : "0%";
+
+        return (
+          <View
+            key={item.year}
+            style={[
+              styles.annualRow,
+              Number(item.year) === Number(selectedYear) &&
+                styles.annualRowSelected
+            ]}
+          >
+            <View style={styles.annualRowHeader}>
+              <Text style={styles.annualYear}>{item.year}</Text>
+              <Text style={styles.annualRevenueValue}>
+                €{revenue.toLocaleString()}
+              </Text>
+              <View
+                style={[
+                  styles.annualGrowthBadge,
+                  { backgroundColor: `${color}18` }
+                ]}
+              >
+                {growth !== null && (
+                  <MaterialIcons
+                    name={growth > 0 ? "trending-up" : growth < 0 ? "trending-down" : "trending-flat"}
+                    size={15}
+                    color={color}
+                  />
+                )}
+                <Text style={[styles.annualGrowthText, { color }]}>
+                  {growth === null
+                    ? i18n.t("admin.statistics.annualComparison.baseline")
+                    : `${growth > 0 ? "+" : ""}${growth.toFixed(1)}%`}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.annualBarTrack}>
+              <View
+                style={[
+                  styles.annualBarFill,
+                  {
+                    backgroundColor: color,
+                    width: barWidth
+                  }
+                ]}
+              />
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 function ChartCard({ title, children }) {
   return (
@@ -2021,6 +2345,97 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontFamily: 'System',
   },
+  yearSelectorSection: {
+    alignItems: "flex-start",
+    marginTop: 20,
+    zIndex: 20
+  },
+  yearSelectorButton: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    backgroundColor: "rgba(255, 255, 255, 0.16)",
+    borderColor: "rgba(255, 255, 255, 0.35)",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 54,
+    paddingHorizontal: 14
+  },
+  yearSelectorTextContainer: {
+    flex: 1,
+    marginLeft: 10
+  },
+  yearSelectorLabel: {
+    color: "rgba(255, 255, 255, 0.76)",
+    fontSize: 11,
+    fontWeight: "600"
+  },
+  yearSelectorValue: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "800",
+    marginTop: 1
+  },
+  yearDropdownMenu: {
+    alignSelf: "stretch",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    marginTop: 7,
+    overflow: "hidden"
+  },
+  yearDropdownItem: {
+    alignItems: "center",
+    borderBottomColor: "#edf2f7",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 46,
+    paddingHorizontal: 15
+  },
+  yearDropdownItemActive: {
+    backgroundColor: "#ecfdf5"
+  },
+  yearDropdownText: {
+    color: "#334155",
+    fontSize: 16,
+    fontWeight: "700"
+  },
+  yearDropdownTextActive: {
+    color: "#167b6d"
+  },
+  liveBadge: {
+    backgroundColor: "#dcfce7",
+    borderRadius: 999,
+    color: "#167b6d",
+    fontSize: 10,
+    fontWeight: "800",
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
+  yearContextText: {
+    color: "rgba(255, 255, 255, 0.86)",
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 8
+  },
+  statisticsErrorBanner: {
+    alignItems: "center",
+    backgroundColor: "#fef3f2",
+    borderColor: "#fecdca",
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginTop: 14,
+    padding: 12
+  },
+  statisticsErrorText: {
+    color: "#b42318",
+    flex: 1,
+    fontSize: 12,
+    marginLeft: 8
+  },
   footer: {
     alignItems: "center",
     paddingHorizontal: 24,
@@ -2177,6 +2592,79 @@ const styles = StyleSheet.create({
     color: '#999',
     padding: 20,
     fontSize: 14,
+  },
+  annualChartCard: {
+    backgroundColor: "#f8fafc",
+    borderColor: "#e2e8f0",
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14
+  },
+  annualChartDescription: {
+    color: "#64748b",
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 12
+  },
+  annualRow: {
+    borderRadius: 10,
+    marginBottom: 9,
+    padding: 9
+  },
+  annualRowSelected: {
+    backgroundColor: "#ecfdf5"
+  },
+  annualRowHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginBottom: 7
+  },
+  annualYear: {
+    color: "#0f172a",
+    fontSize: 15,
+    fontWeight: "800",
+    width: 48
+  },
+  annualRevenueValue: {
+    color: "#334155",
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "700"
+  },
+  annualGrowthBadge: {
+    alignItems: "center",
+    borderRadius: 999,
+    flexDirection: "row",
+    minHeight: 27,
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
+  annualGrowthText: {
+    fontSize: 11,
+    fontWeight: "800",
+    marginLeft: 3
+  },
+  annualBarTrack: {
+    backgroundColor: "#e2e8f0",
+    borderRadius: 999,
+    height: 9,
+    overflow: "hidden"
+  },
+  annualBarFill: {
+    borderRadius: 999,
+    height: "100%"
+  },
+  annualEmptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 130,
+    padding: 20
+  },
+  annualEmptyText: {
+    color: "#64748b",
+    fontSize: 13,
+    marginTop: 9,
+    textAlign: "center"
   },
   
   // EXISTING STYLES

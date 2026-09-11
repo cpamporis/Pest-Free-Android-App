@@ -918,6 +918,18 @@
         "title": "Performance Dashboard",
         "subtitle": "Real-time business insights and performance metrics"
       },
+      "yearSelector": {
+        "label": "Statistics year",
+        "live": "LIVE",
+        "finalized": "Finalized through {{date}}",
+        "liveThrough": "Live through {{date}}"
+      },
+      "annualComparison": {
+        "title": "Annual Revenue Comparison",
+        "description": "Total revenue and year-over-year change against the previous available year.",
+        "baseline": "Baseline",
+        "noData": "Annual revenue comparison will appear when revenue is available."
+      },
       "kpi": {
         "title": "Business Performance Dashboard",
         "monthlyRevenue": "Monthly Revenue",
