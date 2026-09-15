@@ -21,6 +21,7 @@ import {
   debugTimeConversion 
 } from "../../utils/timeZoneUtils";
 import i18n from "../../services/i18n";
+import AdminHeaderSessionActions from "../../components/AdminHeaderSessionActions";
 
 
 export default function ReportScreen({ route, navigation, context, onBack }) { 
@@ -1618,13 +1619,15 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.closeButton} 
-            onPress={onBack || (() => navigation.goBack())} // Use navigation.goBack() as fallback
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+          <AdminHeaderSessionActions>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={onBack || (() => navigation.goBack())} // Use navigation.goBack() as fallback
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+          </AdminHeaderSessionActions>
           <View style={styles.brandContainer}>
             <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
             <View style={styles.adminBadge}>
@@ -1687,13 +1690,15 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                 <Text style={styles.adminBadgeText}>{i18n.t("technician.report.badge")}</Text>
               </View>
             </View>
-            <TouchableOpacity 
-              style={styles.closeButton} 
-              onPress={onBack || (() => navigation.goBack())}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="close" size={22} color="#fff" />
-            </TouchableOpacity>
+            <AdminHeaderSessionActions>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={onBack || (() => navigation.goBack())}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="close" size={22} color="#fff" />
+              </TouchableOpacity>
+            </AdminHeaderSessionActions>
           </View>
 
           <View style={styles.headerContent}>

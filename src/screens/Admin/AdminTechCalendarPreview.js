@@ -13,8 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import apiService from "../../services/apiService";
 import i18n from "../../services/i18n";
+import AdminHeaderSessionActions from "../../components/AdminHeaderSessionActions";
 
-export default function AdminTechCalendarPreview() {
+export default function AdminTechCalendarPreview({ onClose }) {
   const [appointments, setAppointments] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [selectedTech, setSelectedTech] = useState(null);
@@ -617,6 +618,17 @@ const getSpecialServiceLabel = (subtype) => {
               <Text style={styles.badgeText}>{i18n.t("admin.calendar.header.badge")}</Text>
             </View>
           </View>
+          {onClose ? (
+            <AdminHeaderSessionActions>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={onClose}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="close" size={22} color="#fff" />
+              </TouchableOpacity>
+            </AdminHeaderSessionActions>
+          ) : null}
         </View>
 
         <View style={styles.headerContent}>

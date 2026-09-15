@@ -21,6 +21,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import apiService, { API_BASE_URL } from "../../services/apiService";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
 import i18n from "../../services/i18n";
+import AdminHeaderSessionActions from "../../components/AdminHeaderSessionActions";
 
 function normalizeCustomerSearch(value) {
   const text = String(value ?? "").trim().toLocaleLowerCase();
@@ -1202,18 +1203,22 @@ function buildVatPricePayload(netValue, vatValue) {
           <View style={styles.headerTop}>
             <View style={styles.brandContainer}>
               <Image source={pestfreeLogo} style={styles.logo} resizeMode="contain" />
-              <View style={styles.adminBadge}>
-                <MaterialIcons name="schedule" size={14} color="#fff" />
-                <Text style={styles.adminBadgeText}>{i18n.t("admin.schedule.header.badge")}</Text>
-              </View>
             </View>
-            <TouchableOpacity 
-              style={styles.closeButton} 
-              onPress={onClose}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="close" size={22} color="#fff" />
-            </TouchableOpacity>
+
+            <AdminHeaderSessionActions>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={onClose}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="close" size={22} color="#fff" />
+              </TouchableOpacity>
+            </AdminHeaderSessionActions>
+          </View>
+
+          <View style={[styles.adminBadge, { alignSelf: "flex-start", marginLeft: 0 }]}>
+            <MaterialIcons name="schedule" size={14} color="#fff" />
+            <Text style={styles.adminBadgeText}>{i18n.t("admin.schedule.header.badge")}</Text>
           </View>
 
           <View style={styles.headerContent}>

@@ -2,41 +2,34 @@
   "expo": {
     "name": "Pestify",
     "slug": "snack-afcf5c09-a1e0-4fe9-8bfa-23c265329215",
-
-    "version": "1.2.1",  
-
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-
     "updates": {
       "url": "https://u.expo.dev/c4d59ab4-62e2-4bf4-9c30-1eca7b914a47",
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
-
     "runtimeVersion": {
       "policy": "appVersion"
     },
-
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cpamporis.pestfree",
-      "buildNumber": "2",   
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to upload inspection photos.",
         "NSCameraUsageDescription": "This app uses the camera to take inspection photos during field inspections."
       }
     },
-
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
@@ -54,19 +47,15 @@
         }
       }
     },
-
     "web": {
       "favicon": "./assets/favicon.png"
     },
-
     "extra": {
       "eas": {
         "projectId": "c4d59ab4-62e2-4bf4-9c30-1eca7b914a47"
       }
     },
-
     "owner": "cpamporis",
-
     "plugins": [
       "expo-font",
       [
@@ -74,7 +63,8 @@
         {
           "photosPermission": "The app needs access to your photos to upload property maps."
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }
