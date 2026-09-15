@@ -1,5 +1,5 @@
 // RootApp.js - COMPLETE VERSION WITH REPORT REFRESH
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text } from "react-native";
 import LoginScreen from "./screens/LoginScreen";
 import AdminHomeScreen from "./screens/Admin/AdminHomeScreen";
@@ -16,8 +16,17 @@ import CustomerVisitsScreen from "./screens/Customer/CustomerVisitsScreen";
 import CustomerProfile from "./screens/Admin/CustomerProfile";
 import PasswordRecovery from "./screens/PasswordRecovery";
 import apiService from "./services/apiService";
+import { useAdminSession } from "./security/AdminSessionContext";
+import { ProtectedAdminSurface } from "./components/AdminSessionTimer";
 
 export default function RootApp() {
+  const {
+    session: administratorSession,
+    expiredAt: administratorSessionExpiredAt,
+    startAdminSession,
+    clearAdminSession,
+    broadcastLogout
+  } = useAdminSession();
   const [loggedTechnician, setLoggedTechnician] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState(null);
@@ -37,7 +46,30 @@ export default function RootApp() {
   setAdminMustChangePassword
 ] = useState(false);
 
+  useEffect(() => {
+    if (!administratorSessionExpiredAt) {
+      return;
+    }
+
+    setIsAdmin(false);
+    setAdminMustChangePassword(false);
+    setAdminView("home");
+    setAdminCustomerId(null);
+    setAuthView("login");
+  }, [administratorSessionExpiredAt]);
+
   const handleLogout = async () => {
+  if (administratorSession) {
+    try {
+      await apiService.logoutAdminSession();
+    } catch {
+      // Local logout still proceeds if the network is unavailable.
+    }
+
+    broadcastLogout();
+    clearAdminSession(false);
+  }
+
   await apiService.clearAuthToken();
 
   setLoggedTechnician(null);
@@ -50,6 +82,9 @@ export default function RootApp() {
   setReportContext(null);
   setReportRefreshKey(0);
   setLoggedCustomer(null);
+  setAdminView("home");
+  setAdminCustomerId(null);
+  setAuthView("login");
 };
 
   // Report refresh function
@@ -130,7 +165,12 @@ export default function RootApp() {
 
     return (
       <LoginScreen
-        onAdminLogin={(role, mustChangePassword = false) => {
+        onAdminLogin={(role, mustChangePassword = false, session) => {
+          if (role !== "admin") {
+            throw new Error("Administrator role is not available here");
+          }
+
+          startAdminSession(role, session);
           setIsAdmin(true);
 
           setAdminMustChangePassword(
@@ -148,29 +188,33 @@ export default function RootApp() {
   if (isAdmin) {
     if (adminView === "home") {
       return (
-        <AdminHomeScreen
-          onLogout={handleLogout}
-          forcePasswordChange={adminMustChangePassword}
-          onPasswordChanged={() =>
-            setAdminMustChangePassword(false)
-          }
-          onOpenCustomerProfile={(customerId) => {
-            setAdminCustomerId(customerId);
-            setAdminView("customerProfile");
-          }}
-        />
+        <ProtectedAdminSurface showTimer={false}>
+          <AdminHomeScreen
+            onLogout={handleLogout}
+            forcePasswordChange={adminMustChangePassword}
+            onPasswordChanged={() =>
+              setAdminMustChangePassword(false)
+            }
+            onOpenCustomerProfile={(customerId) => {
+              setAdminCustomerId(customerId);
+              setAdminView("customerProfile");
+            }}
+          />
+        </ProtectedAdminSurface>
       );
     }
 
     if (adminView === "customerProfile" && adminCustomerId) {
       return (
-        <CustomerProfile
-          customerId={adminCustomerId}
-          onBack={() => {
-            setAdminCustomerId(null);
-            setAdminView("home");
-          }}
-        />
+        <ProtectedAdminSurface>
+          <CustomerProfile
+            customerId={adminCustomerId}
+            onBack={() => {
+              setAdminCustomerId(null);
+              setAdminView("home");
+            }}
+          />
+        </ProtectedAdminSurface>
       );
     }
   }
