@@ -1,6 +1,8 @@
 // apiService.js - Pestify Android production client
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
+import { fetch as expoFetch } from "expo/fetch";
+import { File as ExpoFile } from "expo-file-system";
 import { normalizeAppointment } from "./normalizeAppointment";
 
 const {
@@ -459,6 +461,34 @@ async function request(method, endpoint, body = null) {
   }
 }
 
+function normalizeNativeMultipartBody(formData) {
+  if (!formData || typeof formData.entries !== "function") {
+    return formData;
+  }
+
+  const normalizedFormData = new FormData();
+  let replacedLegacyUriPart = false;
+
+  for (const [fieldName, value] of formData.entries()) {
+    const isLegacyReactNativeFile =
+      value &&
+      typeof value === "object" &&
+      typeof value.uri === "string" &&
+      typeof value.bytes !== "function";
+
+    if (isLegacyReactNativeFile) {
+      // expo/fetch accepts File/Blob values, not React Native's former
+      // `{ uri, type, name }` multipart convention.
+      normalizedFormData.append(fieldName, new ExpoFile(value.uri));
+      replacedLegacyUriPart = true;
+    } else {
+      normalizedFormData.append(fieldName, value);
+    }
+  }
+
+  return replacedLegacyUriPart ? normalizedFormData : formData;
+}
+
 async function uploadCustomerMap(formData) {
   await authStorageReady;
 
@@ -471,12 +501,12 @@ async function uploadCustomerMap(formData) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/upload-image`, {
+    const response = await expoFetch(`${API_BASE_URL}/upload-image`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${authToken}`
       },
-      body: formData
+      body: normalizeNativeMultipartBody(formData)
     });
     const text = await response.text();
     let json = null;
@@ -569,7 +599,8 @@ const apiService = {
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
       };
 
-      const response = await fetch(`${API_BASE_URL}/customer-requests`, {
+      const requestFn = isMultipart ? expoFetch : fetch;
+      const response = await requestFn(`${API_BASE_URL}/customer-requests`, {
         method: "POST",
         headers: isMultipart
           ? headers // DO NOT set Content-Type for multipart
@@ -578,7 +609,7 @@ const apiService = {
               "Content-Type": "application/json"
             },
         body: isMultipart
-          ? requestData
+          ? normalizeNativeMultipartBody(requestData)
           : JSON.stringify(requestData)
       });
 
@@ -854,10 +885,10 @@ const apiService = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
-      const response = await fetch(`${API_BASE_URL}/service-logs`, {
+      const response = await expoFetch(`${API_BASE_URL}/service-logs`, {
         method: "POST",
         headers, // No Content-Type here - let browser set it
-        body: formData,
+        body: normalizeNativeMultipartBody(formData),
         signal: controller.signal
       });
 
