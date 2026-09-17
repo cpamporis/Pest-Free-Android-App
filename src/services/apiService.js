@@ -459,6 +459,53 @@ async function request(method, endpoint, body = null) {
   }
 }
 
+async function uploadCustomerMap(formData) {
+  await authStorageReady;
+
+  if (!authToken) {
+    return {
+      success: false,
+      error: "Authentication required",
+      status: 401
+    };
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/upload-image`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authToken}`
+      },
+      body: formData
+    });
+    const text = await response.text();
+    let json = null;
+
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = null;
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: json?.error || `Request failed with status ${response.status}`,
+        status: response.status,
+        data: json
+      };
+    }
+
+    return json || { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      networkError: true
+    };
+  }
+}
+
 const apiService = {
   // TOKEN MANAGEMENT
   setAuthToken,
@@ -466,6 +513,7 @@ const apiService = {
   getCurrentToken,
   verifyTokenWithBackend,
   request,
+  uploadCustomerMap,
   getEnhancedKPIs,
   getTopPerformance,
   getRetentionRate,
