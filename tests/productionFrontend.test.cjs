@@ -126,6 +126,35 @@ test("customer map uploads use the active secure administrator token", () => {
   );
 });
 
+test("Android multipart uploads use expo/fetch with Expo File parts", () => {
+  const source = read("src/services/apiService.js");
+
+  assert.match(
+    source,
+    /import \{ fetch as expoFetch \} from "expo\/fetch"/
+  );
+  assert.match(
+    source,
+    /import \{ File as ExpoFile \} from "expo-file-system"/
+  );
+  assert.match(
+    source,
+    /function normalizeNativeMultipartBody\(formData\)/
+  );
+  assert.match(source, /new ExpoFile\(value\.uri\)/);
+  assert.match(source, /const requestFn = isMultipart \? expoFetch : fetch/);
+  assert.doesNotMatch(
+    source,
+    /body: formData[,\n]/,
+    "multipart requests must not bypass URI-part normalization"
+  );
+  assert.equal(
+    (source.match(/normalizeNativeMultipartBody\(/g) || []).length,
+    4,
+    "the helper and all three Android multipart request paths must be present"
+  );
+});
+
 test("CustomerProfile requests reports only from actual visit history", () => {
   const source = read("src/screens/Admin/CustomerProfile.js");
 
