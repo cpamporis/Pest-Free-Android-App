@@ -1051,9 +1051,19 @@
         "emptyText": "Start by adding your first technician to the system",
         "addFirst": "Add First Technician",
         "years": "years",
-        "id": "ID: {{id}}"
-      },
-      "actions": {
+      "id": "ID: {{id}}"
+    },
+    "priceVisibility": {
+      "label": "Show appointment prices",
+      "description": "Allow this technician to see final appointment prices including VAT.",
+      "alertTitle": "Appointment price visibility",
+      "enableAlert": "If enabled, {{name}} will see the final prices of assigned appointments, including VAT. Continue?",
+      "disableAlert": "If disabled, appointment prices will no longer be shown to {{name}}. Continue?",
+      "enableAction": "Enable",
+      "disableAction": "Disable",
+      "updateFailed": "Failed to update appointment price visibility."
+    },
+    "actions": {
         "edit": "Edit",
         "delete": "Delete"
       },
@@ -1737,8 +1747,9 @@
         },
         "completedMessage": "This appointment has already been completed",
         "viewDetails":"View Details",
-        "todayCount": "Appointments today",
-        "status": {
+      "todayCount": "Appointments today",
+      "priceWithVat": "Price incl. VAT: {{price}}",
+      "status": {
           "cancelled": "Cancelled",
           "completed": "Completed",
           "scheduled": "Scheduled",
