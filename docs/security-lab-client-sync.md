@@ -8,9 +8,10 @@ permissions and appointment duration estimates. It targets only
 `https://security-lab-security-lab.up.railway.app/api`. Authentication storage
 and administrator session broadcasts use `pestify.security-lab.*` names.
 Uploaded-image URLs in customer requests derive from that same API origin.
-Package manifests, lockfiles, SDK/runtime versions, native app identities and
-EAS configuration are unchanged from the source baseline. No native build,
-OTA publication, store submission, or public Web deployment was performed.
+Package manifests, lockfiles and SDK/runtime versions are unchanged from the
+source baseline. The Lab branch adds a separate Android identity/profile only;
+no native build, OTA publication, store submission or public deployment was
+performed.
 
 ## Deployment gate
 
@@ -19,7 +20,12 @@ Before using it, identify the actual installed Lab app, local checkout and runti
 iOS already has a separate `Pestify Dev` variant: the existing configuration
 requires `APP_VARIANT=development` to select `com.cpamporis.pestfree.dev`.
 The name alone does not prove which source/API the running app uses.
-Android still needs a confirmed separate Lab app identity/profile.
+Android now has a source-level Lab identity/profile. The `security-lab` EAS
+profile sets `APP_VARIANT=security-lab`, selects the app name `Pestify Dev`, the
+package `com.cpamporis.pestfree.dev`, the scheme `pestify-android-dev` and the
+`security-lab` channel. OTA updates are disabled in this variant so it cannot
+consume the Production update stream. The profile produces an internally
+distributed APK and has no submit profile.
 Web requires a distinct Lab origin and freshly generated assets; never serve this
 branch on the Production origin.
 Do not use Production EAS profiles/channels, upload to Production hosting, or merge
@@ -37,5 +43,11 @@ are explicitly adapted from Production to Lab. These source tests do not replace
 a device/browser check of login, refresh, upload/download, report URLs or cache
 isolation. No application encryption, E2EE or private-file cutover is included.
 
-Verification: 26 tests passed, 0 failed, 0 skipped on Node 24.19.0.
+No Android Lab build has been requested or produced. Before any future build,
+verify the resolved Expo config locally, use only
+`eas build -p android --profile security-lab`, create separate credentials for
+the Lab package if prompted and never submit the resulting APK to Google Play.
+
+Verification after the identity/profile gate: 28 tests passed, 0 failed,
+0 skipped on Node 24.19.0.
 No dependency installation was required for these tests.
