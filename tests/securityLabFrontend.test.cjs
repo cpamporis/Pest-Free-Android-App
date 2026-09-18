@@ -17,6 +17,66 @@ function javascriptFiles(directory) {
   });
 }
 
+function evaluateAppConfig(variant) {
+  const previousVariant = process.env.APP_VARIANT;
+
+  try {
+    if (variant === undefined) {
+      delete process.env.APP_VARIANT;
+    } else {
+      process.env.APP_VARIANT = variant;
+    }
+
+    const appConfig = require("../app.config.js");
+    const staticConfig = JSON.parse(read("app.json")).expo;
+    return appConfig({ config: staticConfig });
+  } finally {
+    if (previousVariant === undefined) {
+      delete process.env.APP_VARIANT;
+    } else {
+      process.env.APP_VARIANT = previousVariant;
+    }
+  }
+}
+
+test("Android Security Lab uses a separate identity and disables OTA", () => {
+  const staticConfig = JSON.parse(read("app.json")).expo;
+  const production = evaluateAppConfig(undefined);
+  const securityLab = evaluateAppConfig("security-lab");
+  const eas = JSON.parse(read("eas.json"));
+  const labProfile = eas.build["security-lab"];
+
+  assert.deepEqual(production, staticConfig);
+  assert.equal(production.name, "Pestify");
+  assert.equal(production.android.package, "com.cpamporis.pestfree");
+  assert.equal(production.updates.enabled, undefined);
+  assert.equal(eas.build.production.channel, "production");
+
+  assert.equal(securityLab.name, "Pestify Dev");
+  assert.equal(securityLab.scheme, "pestify-android-dev");
+  assert.equal(
+    securityLab.android.package,
+    "com.cpamporis.pestfree.dev"
+  );
+  assert.equal(securityLab.updates.enabled, false);
+  assert.equal(securityLab.updates.checkAutomatically, "NEVER");
+  assert.equal(securityLab.extra.pestifyEnvironment, "security-lab");
+
+  assert.equal(labProfile.developmentClient, true);
+  assert.equal(labProfile.distribution, "internal");
+  assert.equal(labProfile.channel, "security-lab");
+  assert.equal(labProfile.env.APP_VARIANT, "security-lab");
+  assert.equal(labProfile.android.buildType, "apk");
+  assert.equal(eas.submit["security-lab"], undefined);
+});
+
+test("Android configuration rejects unknown variants", () => {
+  assert.throws(
+    () => evaluateAppConfig("production"),
+    /Unsupported APP_VARIANT/
+  );
+});
+
 test("Android authentication uses the Lab API and SecureStore", () => {
   const source = read("src/services/apiService.js");
   const pkg = JSON.parse(read("package.json"));
