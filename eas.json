@@ -8,6 +8,17 @@
       "developmentClient": true,
       "distribution": "internal"
     },
+    "security-lab": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "security-lab",
+      "env": {
+        "APP_VARIANT": "security-lab"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "preview": {
       "distribution": "internal"
     },
