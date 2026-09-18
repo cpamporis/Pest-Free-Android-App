@@ -341,6 +341,9 @@
         "appointmentDate": "Appointment Date",
         "selectDate": "Select date"
       },
+      "estimatedDuration": {
+        "label": "Estimated Appointment Duration"
+      },
       "serviceType": {
         "title": "Service Type",
         "selectService": "Select Service Type",

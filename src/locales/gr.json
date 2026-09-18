@@ -336,6 +336,9 @@
         "appointmentDate": "Ημερομηνία Ραντεβού",
         "selectDate": "Επιλέξτε ημερομηνία"
       },
+      "estimatedDuration": {
+        "label": "Εκτιμώμενος Χρόνος Ραντεβού"
+      },
       "serviceType": {
         "title": "Τύπος Υπηρεσίας",
         "selectService": "Επιλογή Τύπου Υπηρεσίας",
