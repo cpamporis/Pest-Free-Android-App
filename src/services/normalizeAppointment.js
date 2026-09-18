@@ -53,6 +53,26 @@ export function normalizeAppointment(a) {
     otherPestName:
       a.other_pest_name ?? null,
 
+    servicePrice:
+      a.service_price ??
+      a.servicePrice ??
+      null,
+
+    serviceNetPrice:
+      a.service_net_price ??
+      a.serviceNetPrice ??
+      null,
+
+    serviceVatPercent:
+      a.service_vat_percent ??
+      a.serviceVatPercent ??
+      null,
+
+    serviceVatAmount:
+      a.service_vat_amount ??
+      a.serviceVatAmount ??
+      null,
+
     visitId:
       a.visit_id ?? null
   };

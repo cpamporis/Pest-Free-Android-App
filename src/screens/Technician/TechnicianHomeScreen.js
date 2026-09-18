@@ -116,6 +116,52 @@ const getCertificateServiceLabel = () => {
     : "Certificate";
 };
 
+const resolveAppointmentGrossPrice = (appointment) => {
+  const rawValue =
+    appointment?.servicePrice ??
+    appointment?.service_price;
+
+  if (rawValue === null || rawValue === undefined || rawValue === "") {
+    return null;
+  }
+
+  const numericValue = Number(
+    typeof rawValue === "string"
+      ? rawValue.replace(",", ".")
+      : rawValue
+  );
+
+  return Number.isFinite(numericValue) && numericValue >= 0
+    ? numericValue
+    : null;
+};
+
+const formatEuroPrice = (value) => {
+  const currentLanguage = String(
+    i18n.resolvedLanguage ||
+    i18n.language ||
+    i18n.locale ||
+    "en"
+  ).toLowerCase();
+
+  try {
+    return new Intl.NumberFormat(
+      currentLanguage.startsWith("el") ||
+      currentLanguage.startsWith("gr")
+        ? "el-GR"
+        : "en-IE",
+      {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }
+    ).format(value);
+  } catch {
+    return `€${Number(value).toFixed(2)}`;
+  }
+};
+
 export default function TechnicianHomeScreen({
   technician,
   onLogout,
@@ -912,6 +958,7 @@ export default function TechnicianHomeScreen({
                 const isCompleted = appointment.status === "completed" 
                 const serviceType =
                   resolveAppointmentServiceType(appointment);
+                const grossPrice = resolveAppointmentGrossPrice(appointment);
 
 
                 return (
@@ -994,6 +1041,24 @@ export default function TechnicianHomeScreen({
                               <MaterialIcons name="location-on" size={14} color="#666" />
                               <Text style={styles.addressText} numberOfLines={1}>
                                 {customer.address}
+                              </Text>
+                            </View>
+                          )}
+
+                          {grossPrice !== null && (
+                            <View style={styles.priceContainer}>
+                              <MaterialIcons
+                                name="payments"
+                                size={15}
+                                color="#1f9c8b"
+                              />
+                              <Text style={styles.priceText}>
+                                {i18n.t(
+                                  "technician.home.appointments.priceWithVat",
+                                  {
+                                    price: formatEuroPrice(grossPrice)
+                                  }
+                                )}
                               </Text>
                             </View>
                           )}
@@ -1577,6 +1642,23 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     flex: 1,
     fontFamily: 'System',
+  },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(31, 156, 139, 0.1)",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 12,
+  },
+  priceText: {
+    color: "#14796c",
+    fontSize: 13,
+    fontWeight: "700",
+    marginLeft: 6,
+    fontFamily: "System",
   },
   serviceTypeContainer: {
     flexDirection: "row",
