@@ -11,7 +11,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
-  Image
+  Image,
+  Switch
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
@@ -240,6 +241,7 @@ export default function TechniciansScreen({ onClose }) {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [technicianToDelete, setTechnicianToDelete] = useState(null);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [updatingPriceVisibilityId, setUpdatingPriceVisibilityId] = useState(null);
   const activeTechs = technicians.filter(t => t.isActive !== false);
   const [usage, setUsage] = useState(null);
 
@@ -377,6 +379,83 @@ export default function TechniciansScreen({ onClose }) {
   const openEditModal = (tech) => {
     setSelectedTechnician(tech);
     setShowEditModal(true);
+  };
+
+  const updatePriceVisibility = async (tech, nextValue) => {
+    setUpdatingPriceVisibilityId(tech.technicianId);
+
+    try {
+      const result = await apiService.updateTechnician(
+        tech.technicianId,
+        { canViewAppointmentPrices: nextValue }
+      );
+
+      if (!result?.success) {
+        throw new Error(
+          result?.error ||
+          i18n.t("admin.technicians.priceVisibility.updateFailed")
+        );
+      }
+
+      setTechnicians(current =>
+        current.map(item =>
+          item.technicianId === tech.technicianId
+            ? {
+                ...item,
+                canViewAppointmentPrices: nextValue
+              }
+            : item
+        )
+      );
+    } catch (error) {
+      Alert.alert(
+        i18n.t("common.error"),
+        error.message ||
+          i18n.t("admin.technicians.priceVisibility.updateFailed")
+      );
+    } finally {
+      setUpdatingPriceVisibilityId(null);
+    }
+  };
+
+  const confirmPriceVisibilityChange = (tech, nextValue) => {
+    const title = i18n.t(
+      "admin.technicians.priceVisibility.alertTitle"
+    );
+    const message = i18n.t(
+      nextValue
+        ? "admin.technicians.priceVisibility.enableAlert"
+        : "admin.technicians.priceVisibility.disableAlert",
+      {
+        name: `${tech.firstName} ${tech.lastName}`.trim()
+      }
+    );
+
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined" &&
+      typeof window.confirm === "function"
+    ) {
+      if (window.confirm(`${title}\n\n${message}`)) {
+        updatePriceVisibility(tech, nextValue);
+      }
+      return;
+    }
+
+    Alert.alert(title, message, [
+      {
+        text: i18n.t("common.cancel"),
+        style: "cancel"
+      },
+      {
+        text: i18n.t(
+          nextValue
+            ? "admin.technicians.priceVisibility.enableAction"
+            : "admin.technicians.priceVisibility.disableAction"
+        ),
+        onPress: () => updatePriceVisibility(tech, nextValue)
+      }
+    ]);
   };
 
   if (loading) {
@@ -597,6 +676,48 @@ export default function TechniciansScreen({ onClose }) {
                         : tech.technicianId })}
                     </Text>
                   </View>
+                </View>
+
+                <View style={styles.priceVisibilityRow}>
+                  <View style={styles.priceVisibilityCopy}>
+                    <View style={styles.priceVisibilityTitleRow}>
+                      <MaterialIcons
+                        name="payments"
+                        size={18}
+                        color="#1f9c8b"
+                      />
+                      <Text style={styles.priceVisibilityTitle}>
+                        {i18n.t(
+                          "admin.technicians.priceVisibility.label"
+                        )}
+                      </Text>
+                    </View>
+                    <Text style={styles.priceVisibilityDescription}>
+                      {i18n.t(
+                        "admin.technicians.priceVisibility.description"
+                      )}
+                    </Text>
+                  </View>
+
+                  <Switch
+                    value={tech.canViewAppointmentPrices === true}
+                    onValueChange={nextValue =>
+                      confirmPriceVisibilityChange(tech, nextValue)
+                    }
+                    disabled={
+                      updatingPriceVisibilityId === tech.technicianId
+                    }
+                    trackColor={{
+                      false: "#d1d5db",
+                      true: "rgba(31, 156, 139, 0.45)"
+                    }}
+                    thumbColor={
+                      tech.canViewAppointmentPrices === true
+                        ? "#1f9c8b"
+                        : "#f4f4f5"
+                    }
+                    ios_backgroundColor="#d1d5db"
+                  />
                 </View>
 
                 <View style={styles.techActions}>
@@ -952,6 +1073,37 @@ const styles = StyleSheet.create({
     color: "#666",
     fontWeight: "600",
     fontFamily: 'System',
+  },
+  priceVisibilityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+    marginTop: 16,
+    paddingTop: 16,
+  },
+  priceVisibilityCopy: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  priceVisibilityTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  priceVisibilityTitle: {
+    marginLeft: 8,
+    color: "#2c3e50",
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "System",
+  },
+  priceVisibilityDescription: {
+    marginTop: 4,
+    color: "#6b7280",
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: "System",
   },
   techActions: {
     flexDirection: "row",
