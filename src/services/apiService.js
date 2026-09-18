@@ -1,4 +1,4 @@
-// apiService.js - Pestify Android production client
+// apiService.js - Pestify Android Security Lab client
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { fetch as expoFetch } from "expo/fetch";
@@ -9,21 +9,21 @@ const {
   isValidAuthenticatedPrincipal
 } = require("../security/authResponsePolicy");
 
-const PRODUCTION_API_ORIGIN =
-  "https://field-inspections-backend-production.up.railway.app";
+const SECURITY_LAB_API_ORIGIN =
+  "https://security-lab-security-lab.up.railway.app";
 
-export const API_BASE_URL = `${PRODUCTION_API_ORIGIN}/api`;
+export const API_BASE_URL = `${SECURITY_LAB_API_ORIGIN}/api`;
 
 if (
-  API_BASE_URL !== `${PRODUCTION_API_ORIGIN}/api` ||
-  API_BASE_URL.includes("security-lab")
+  API_BASE_URL !== `${SECURITY_LAB_API_ORIGIN}/api` ||
+  API_BASE_URL.includes("production")
 ) {
-  throw new Error("Production API configuration refused");
+  throw new Error("Security Lab API configuration refused");
 }
 
 const STORAGE_KEYS = Object.freeze({
-  authToken: "pestify.production.auth-token.v1",
-  mfaDevice: "pestify.production.mfa-device.v1"
+  authToken: "pestify.security-lab.auth-token.v1",
+  mfaDevice: "pestify.security-lab.mfa-device.v1"
 });
 
 const LEGACY_AUTH_TOKEN_KEY = "authToken";

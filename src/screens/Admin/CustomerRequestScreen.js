@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Feather, Entypo, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import apiService from "../../services/apiService";
+import apiService, { API_BASE_URL } from "../../services/apiService";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
 import { incrementTodayRequests } from './Statistics';
 import ImageViewing from "react-native-image-viewing";
@@ -51,7 +51,7 @@ export default function CustomerRequestScreen({ onClose }) {
   const [disinfectionDetails, setDisinfectionDetails] = useState('');
   const [otherPestName, setOtherPestName] = useState(selectedRequest?.other_pest_name || '');
   const IMAGE_BASE =
-  "https://field-inspections-backend-production.up.railway.app/uploads/";
+  `${API_BASE_URL.replace(/\/api\/?$/, "")}/uploads/`;
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [verifyPassword, setVerifyPassword] = useState("");

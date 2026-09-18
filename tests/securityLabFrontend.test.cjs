@@ -17,19 +17,19 @@ function javascriptFiles(directory) {
   });
 }
 
-test("Android authentication uses the production API and SecureStore", () => {
+test("Android authentication uses the Lab API and SecureStore", () => {
   const source = read("src/services/apiService.js");
   const pkg = JSON.parse(read("package.json"));
   const app = JSON.parse(read("app.json"));
 
   assert.match(
     source,
-    /https:\/\/field-inspections-backend-production\.up\.railway\.app/
+    /https:\/\/security-lab-security-lab\.up\.railway\.app/
   );
   assert.match(source, /SecureStore\.setItemAsync/);
   assert.match(source, /SecureStore\.WHEN_UNLOCKED_THIS_DEVICE_ONLY/);
-  assert.match(source, /pestify\.production\.auth-token\.v1/);
-  assert.match(source, /pestify\.production\.mfa-device\.v1/);
+  assert.match(source, /pestify\.security-lab\.auth-token\.v1/);
+  assert.match(source, /pestify\.security-lab\.mfa-device\.v1/);
   assert.doesNotMatch(source, /localStorage/);
   assert.equal(pkg.dependencies["expo-secure-store"], "~15.0.8");
   assert.ok(app.expo.plugins.includes("expo-secure-store"));
@@ -91,7 +91,7 @@ test("administrator session refresh is manual and all admin headers show it", ()
   }
 });
 
-test("legacy token storage is purged and Security Lab is unreachable", () => {
+test("legacy token storage is purged and Production is unreachable", () => {
   const apiSource = read("src/services/apiService.js");
 
   assert.match(apiSource, /LEGACY_AUTH_TOKEN_KEY = "authToken"/);
@@ -101,7 +101,7 @@ test("legacy token storage is purged and Security Lab is unreachable", () => {
   const violations = javascriptFiles(path.join(root, "src"))
     .filter(file =>
       fs.readFileSync(file, "utf8").includes(
-        "security-lab-security-lab.up.railway.app"
+        "field-inspections-backend-production.up.railway.app"
       )
     )
     .map(file => path.relative(root, file));
