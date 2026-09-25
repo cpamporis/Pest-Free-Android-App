@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import apiService from "../../services/apiService";
+import ProtectedImage from "../../components/ProtectedImage";
 import { formatTime } from "../../utils/timeUtils";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
 import { 
@@ -628,7 +629,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                 onPress={() => setSelectedReportImage(imageUrl)}
                 activeOpacity={0.85}
               >
-                <Image
+                <ProtectedImage
                   source={{ uri: imageUrl }}
                   style={{
                     width: 160,
@@ -1870,7 +1871,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           </TouchableOpacity>
 
           {selectedReportImage && (
-            <Image
+            <ProtectedImage
               source={{ uri: selectedReportImage }}
               style={{ width: "95%", height: "90%" }}
               resizeMode="contain"

@@ -19,6 +19,7 @@ import { PanGestureHandler, PinchGestureHandler } from "react-native-gesture-han
 import Animated from "react-native-reanimated";
 import { formatTime } from "../../utils/timeUtils";
 import apiService, { API_BASE_URL } from "../../services/apiService";
+import ProtectedImage from "../../components/ProtectedImage";
 import BaitStationForm from "../../components/BaitStationForm";
 import { Dimensions } from "react-native";
 import AtoxicStationForm from "../../components/AtoxicStationForm";
@@ -1465,7 +1466,7 @@ useEffect(() => {
             {selectedMap?.image && (
               <View style={{marginTop: 20, width: '100%'}}>
                 <Text style={{fontWeight: 'bold', marginBottom: 10}}>Image Preview:</Text>
-                <Image
+                <ProtectedImage
                   source={{ uri: currentImageUri }}
                   style={{width: 200, height: 200, alignSelf: 'center', borderWidth: 1, borderColor: '#ccc'}}
                   onError={(e) => {
@@ -1566,7 +1567,7 @@ useEffect(() => {
                   <TouchableOpacity activeOpacity={1} onPress={handleMapPress}>
                     {/* Show image only if we have a valid URI and no error */}
                     {currentImageUri && !imageError ? (
-                      <Image
+                      <ProtectedImage
                         source={{ uri: currentImageUri }}
                         style={styles.map}
                         resizeMode="contain"
@@ -2082,7 +2083,7 @@ useEffect(() => {
 
         return (
           <View key={`existing-${index}`} style={styles.photoWrapper}>
-            <Image
+            <ProtectedImage
               source={{ uri: imageUri }}
               style={styles.viewerImage}
               resizeMode="cover"
@@ -2103,7 +2104,7 @@ useEffect(() => {
 
       {(reportImages || []).map((img, index) => (
         <View key={`new-${index}`} style={styles.photoWrapper}>
-          <Image
+          <ProtectedImage
             source={{ uri: img.uri }}
             style={styles.viewerImage}
           />
