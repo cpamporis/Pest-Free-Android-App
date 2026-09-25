@@ -17,9 +17,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons, FontAwesome5, Feather, Entypo, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import apiService, { API_BASE_URL } from "../../services/apiService";
+import ProtectedImage from "../../components/ProtectedImage";
 import pestfreeLogo from "../../../assets/pestfree_logo.png";
 import { incrementTodayRequests } from './Statistics';
 import ImageViewing from "react-native-image-viewing";
+import { authenticatedImageSource } from "../../components/ProtectedImage";
 import i18n from "../../services/i18n";
 import AdminHeaderSessionActions from "../../components/AdminHeaderSessionActions";
 
@@ -61,6 +63,19 @@ export default function CustomerRequestScreen({ onClose }) {
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
   const [viewerImages, setViewerImages] = useState([]);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [privateImageToken, setPrivateImageToken] =
+    useState(apiService.getCurrentToken());
+
+  useEffect(
+    () => apiService.subscribePrivateImageSession(token => {
+      setPrivateImageToken(token);
+      if (!token) {
+        setIsImageViewerVisible(false);
+        setViewerImages([]);
+      }
+    }),
+    []
+  );
   const APPOINTMENT_CATEGORIES = [
     { id: "first_time", label: i18n.t("admin.schedule.appointmentCategory.first_time") },
     { id: "follow_up", label: i18n.t("admin.schedule.appointmentCategory.follow_up") },
@@ -265,11 +280,7 @@ function buildVatPricePayload(netValue, vatValue) {
   const openImageViewer = (images, index) => {
     if (!images || !Array.isArray(images) || images.length === 0) return;
 
-    const formatted = images.map(img => ({
-      uri: IMAGE_BASE + img
-    }));
-
-    setViewerImages(formatted);
+    setViewerImages(images.map(img => ({ uri: IMAGE_BASE + img })));
     setViewerIndex(index);
     setIsImageViewerVisible(true);
   };
@@ -1253,7 +1264,7 @@ const appointmentPricePayload = buildVatPricePayload(
                                 onPress={() => openImageViewer(request.images, index)}
                                 activeOpacity={0.8}
                               >
-                                <Image
+                                <ProtectedImage
                                   source={{ uri: IMAGE_BASE + img }}
                                   style={{
                                     width: 70,
@@ -1401,7 +1412,7 @@ const appointmentPricePayload = buildVatPricePayload(
                               onPress={() => openImageViewer(imagesArray, index)}
                               activeOpacity={0.8}
                             >
-                              <Image
+                              <ProtectedImage
                                 source={{ uri: IMAGE_BASE + img }}
                                 style={{
                                   width: 70,
@@ -2252,9 +2263,11 @@ const appointmentPricePayload = buildVatPricePayload(
         </View>
       </Modal>
       <ImageViewing
-        images={viewerImages}
+        images={viewerImages
+          .map(source => authenticatedImageSource(source, privateImageToken))
+          .filter(Boolean)}
         imageIndex={viewerIndex}
-        visible={isImageViewerVisible}
+        visible={!!privateImageToken && isImageViewerVisible}
         onRequestClose={() => setIsImageViewerVisible(false)}
         swipeToCloseEnabled={true}
         doubleTapToZoomEnabled={true}

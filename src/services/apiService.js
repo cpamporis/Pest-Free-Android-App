@@ -95,6 +95,22 @@ function normalizeCustomerAma(customer) {
 }
 
 let authToken = null;
+const privateImageSessionListeners = new Set();
+
+function subscribePrivateImageSession(listener) {
+  privateImageSessionListeners.add(listener);
+  return () => privateImageSessionListeners.delete(listener);
+}
+
+function notifyPrivateImageSession() {
+  for (const listener of privateImageSessionListeners) {
+    try {
+      listener(authToken);
+    } catch {
+      // A viewer must never interrupt login or logout.
+    }
+  }
+}
 let authStorageInitializationError = null;
 
 async function purgeLegacyAuthToken() {
@@ -192,8 +208,10 @@ async function setAuthToken(token) {
     }
 
     authToken = token ? String(token) : null;
+    notifyPrivateImageSession();
   } catch (error) {
     authToken = null;
+    notifyPrivateImageSession();
     throw new Error("Authentication could not be stored securely");
   }
 }
@@ -203,6 +221,7 @@ async function clearAuthToken() {
   await authStorageReady;
 
   authToken = null;
+  notifyPrivateImageSession();
   let clearFailed = false;
 
   try {
@@ -541,6 +560,7 @@ const apiService = {
   setAuthToken,
   clearAuthToken,
   getCurrentToken,
+  subscribePrivateImageSession,
   verifyTokenWithBackend,
   request,
   uploadCustomerMap,
