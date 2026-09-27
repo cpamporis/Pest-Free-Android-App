@@ -69,7 +69,7 @@
     "refresh": "Refresh",
     "back": "Back",
     "confirm": "Confirm",
-    "version": "Version 1.2 • Date: {{date}}",
+    "version": "Version 1.3 • Date: {{date}}",
     "copyright": "© {{year}} Pestify. All rights reserved.",
     "required": "Required",
     "optional": "Optional",
@@ -192,7 +192,7 @@
       },
       "footer": {
         "system": "Pestify Admin System",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
@@ -248,7 +248,7 @@
       },
       "footer": {
         "system": "Compliance Monitoring System",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
@@ -469,7 +469,7 @@
       },
       "footer": {
         "system": "Technician's Schedule Management System",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
@@ -578,7 +578,7 @@
       },
       "footer": {
         "system": "Customer Profile Display",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
    },
@@ -708,7 +708,7 @@
      },
       "footer": {
         "system": "Customer Request Management System",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
@@ -844,7 +844,7 @@
       },
       "footer": {
         "system": "Customer Management System",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
@@ -908,7 +908,7 @@
       },
       "footer": {
         "system": "Materials Management System",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
@@ -1029,7 +1029,7 @@
       },
       "footer": {
         "system": "Business Analytics Dashboard",
-        "version": "Version 1.2 • Data updated: {{date}}",
+        "version": "Version 1.3 • Data updated: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
@@ -1112,7 +1112,7 @@
       },
       "footer": {
         "system": "Technician Management System",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     }
@@ -1771,7 +1771,7 @@
       },
       "footer": {
         "system": "Pestify Technician Portal",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       }
     },
@@ -1916,7 +1916,7 @@
       "footer": {
         "system": "Technician's Report",
         "id": "ID: {{id}}",
-        "version": "Version 1.2 • Date: {{date}}",
+        "version": "Version 1.3 • Date: {{date}}",
         "copyright": "© {{year}} Pestify. All rights reserved."
       },
       "errors": {
@@ -2000,7 +2000,7 @@
       "certificationSection": "Certification Details",
       "noMapInspection": "No map inspection was performed",
       "missingCustomerData": "Missing customer information",
-      "missingCustomerDataMessage": "TIN and AMA must be added to the customer profile before completing certification.",
+      "missingCustomerDataMessage": "TIN must be added to the customer profile before completing certification.",
       "noData": "No certification data",
       "noDataMessage": "Add an inspection result, treated area, chemical, note, or photograph."
     },
@@ -2209,5 +2209,50 @@
   "language": {
     "en": "EN",
     "gr": "GR"
+  },
+  "business": {
+    "cashTrackingHelp": "Completed work already included in the previous revenue is treated as paid. New receipts are recorded from:",
+    "customerType": "Customer category",
+    "private": "Private individual",
+    "business": "Business",
+    "choose": "Select…",
+    "privateCertificate": "Private certificates include both TIN and AMA.",
+    "businessCertificate": "Business certificates include TIN, without AMA.",
+    "frequency": "Contract frequency",
+    "totalVisits": "How many visits in total? (1–12)",
+    "chooseCustomerType": "Select Private individual or Business in the customer record.",
+    "scheduledVisits": "{{count}} appointments scheduled.",
+    "repeat7": "Weekly · 7 days",
+    "repeat14": "Biweekly · 14 days",
+    "repeat30": "Monthly · 30 days",
+    "repeat90": "Quarterly · 90 days",
+    "repeat180": "Six Month · 180 days",
+    "repeat365": "Yearly · 365 days",
+    "recurrenceHelp": "All visits are scheduled now at fixed day intervals. Quarterly schedules 4 visits, six-monthly 2, and yearly 1. Check certificate validity dates for later visits.",
+    "paymentQuestion": "Has the customer paid for the service in full?",
+    "paymentHelp": "Choose Yes only if the full charge for this appointment has been received. Otherwise, the Admin records the amount received in the customer profile.",
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "close": "Close",
+    "balance": "Balance",
+    "recordPayment": "Record payment received",
+    "amountReceived": "Amount received (€)",
+    "fullBalance": "Fill full balance",
+    "confirmPayment": "Confirm payment received",
+    "recentPayments": "Recent payments",
+    "legacyPaid": "Previously paid work",
+    "noBalance": "No recorded outstanding balance.",
+    "allocationHelp": "The amount is applied to the oldest unpaid work first. Only record money already received.",
+    "invalidAmount": "Enter a positive amount with at most two decimal places, no greater than the balance.",
+    "loadFailed": "The balance could not be checked. Please retry.",
+    "paymentFailed": "The payment was not confirmed. Retry the same attempt.",
+    "retryPending": "Check / retry pending payment",
+    "pendingHelp": "A payment attempt is pending. Retrying uses the same reference to prevent a duplicate entry.",
+    "unavailable": "The new payment features are not yet available on the server.",
+    "appointmentRequired": "Payment tracking requires a scheduled appointment with a recorded charge.",
+    "chooseOptions": "Set the customer category in Customers and select a frequency and visit count for the contract.",
+    "cashBasis": "Revenue from previously paid work and new receipts",
+    "trackingHelp": "Historical work included in the previous revenue is shown as paid. Outstanding balances apply to the new payment tracking."
   }
 }
