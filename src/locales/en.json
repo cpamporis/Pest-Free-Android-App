@@ -2211,7 +2211,7 @@
     "gr": "GR"
   },
   "business": {
-    "cashTrackingHelp": "Historical work is retained, but is not treated as confirmed receipts. Tracking started:",
+    "cashTrackingHelp": "Completed work already included in the previous revenue is treated as paid. New receipts are recorded from:",
     "customerType": "Customer category",
     "private": "Private individual",
     "business": "Business",
@@ -2238,6 +2238,7 @@
     "fullBalance": "Fill full balance",
     "confirmPayment": "Confirm payment received",
     "recentPayments": "Recent payments",
+    "legacyPaid": "Previously paid work",
     "noBalance": "No recorded outstanding balance.",
     "allocationHelp": "The amount is applied to the oldest unpaid work first. Only record money already received.",
     "invalidAmount": "Enter a positive amount with at most two decimal places, no greater than the balance.",
@@ -2248,7 +2249,7 @@
     "unavailable": "The new payment features are not yet available on the server.",
     "appointmentRequired": "Payment tracking requires a scheduled appointment with a recorded charge.",
     "chooseOptions": "Choose Private individual or Business and, for a contract, a repeat frequency.",
-    "cashBasis": "Revenue from recorded receipts",
-    "trackingHelp": "Balances cover work completed with the new payment tracking. Historical work is not automatically classified as paid or unpaid."
+    "cashBasis": "Revenue from previously paid work and new receipts",
+    "trackingHelp": "Historical work included in the previous revenue is shown as paid. Outstanding balances apply to the new payment tracking."
   }
 }

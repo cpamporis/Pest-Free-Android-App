@@ -269,7 +269,7 @@ const completedAppointmentsDisplay =
         : []
     );
     setRevenueStats(dashboard.revenueStats || null);
-    setRevenueTracking(dashboard.revenueBasis === "cash_received" ? dashboard.trackingStartedAt : null);
+    setRevenueTracking(dashboard.revenueBasis === "legacy_assumed_paid_plus_receipts" ? dashboard.trackingStartedAt : null);
     setRevenueByService(
       Array.isArray(dashboard.revenueByService)
         ? dashboard.revenueByService
