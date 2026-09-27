@@ -1,3 +1,4 @@
+import useServiceSettlement from "../../components/useServiceSettlement";
 // MyocideScreen.js - Android
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
@@ -145,6 +146,8 @@ const markAppointmentCompleted = async (appointmentId, visitId, sessionRef) => {
 // ------------------ MAP SCREEN WITH TIMER ------------------
 
 function MapScreen({ customer, onBack, session, technician, onGenerateReport }) {
+  const { confirmPayment, finishPaymentAttempt, paymentDialog } = useServiceSettlement(session);
+
 
   const [sessionVisitId, setSessionVisitId] = useState(
     session?.visitId ?? null
@@ -581,6 +584,10 @@ useEffect(() => {
 // In MyocideScreen.js - Update the handleSaveAll function
 
   const handleSaveAll = async () => {
+  const settlement = await confirmPayment();
+  if (!settlement) return;
+  try {
+
     // Transform stations to the format expected by the backend
     const stationsToSend = loggedStations.map(station => ({
       station_id: station.stationId,
@@ -654,6 +661,8 @@ useEffect(() => {
 
     try {
       const formData = new FormData();
+    if (settlement.paymentReceived !== undefined) formData.append("paymentReceived", String(settlement.paymentReceived));
+    if (session?.appointmentId) formData.append("appointmentId", String(session.appointmentId));
 
       // 🔥 FIX FOR ANDROID: Create a properly structured data object and stringify it completely
       const requestData = {
@@ -752,7 +761,9 @@ useEffect(() => {
     } finally {
       setSaving(false);
     }
-  };
+
+  } finally { finishPaymentAttempt(); }
+};
 
   const handleSaveResponse = async (result, isEdit = false) => {
 
@@ -1488,6 +1499,8 @@ useEffect(() => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 110 : 0}
     >
+      {paymentDialog}
+
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.container}>
           {/* Top Bar with Timer */}

@@ -1,3 +1,4 @@
+import CustomerBalancePanel from "../../components/CustomerBalancePanel";
 //Admin/CustomerProfile.js
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
@@ -1326,6 +1327,8 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                 </View>
               </>
             )}
+
+            <CustomerBalancePanel customerId={customerId} onPaymentRecorded={() => loadCustomer()} />
 
             {/* BASIC INFO */}
             <View style={styles.sectionHeader}>
