@@ -1,3 +1,5 @@
+import { createMaterialsCatalogClient } from "./materialsCatalogClient";
+import { Platform } from "react-native";
 // apiService.js - Pestify Android Security Lab client
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
@@ -556,6 +558,24 @@ async function uploadCustomerMap(formData) {
 }
 
 const apiService = {
+  commercialCapabilities: () => request("GET","/chargeable-materials/capabilities"),
+  commercialCatalog: () => request("GET","/chargeable-materials/catalog"),
+  commercialCreateCategory: body => request("POST","/chargeable-materials/categories",body),
+  commercialUpdateItem: (id,body) => request("PUT",`/chargeable-materials/items/${encodeURIComponent(id)}`,body),
+  commercialDeleteItem: id => request("DELETE",`/chargeable-materials/items/${encodeURIComponent(id)}`),
+  commercialCreateItem: body => request("POST","/chargeable-materials/items",body),
+  commercialAppointment: id => request("GET",`/chargeable-materials/appointments/${encodeURIComponent(id)}`),
+  commercialSave: (id,body) => request("PUT",`/chargeable-materials/appointments/${encodeURIComponent(id)}`,body),
+  commercialRequests: () => request("GET","/chargeable-materials/requests"),
+  commercialReject: id => request("POST",`/chargeable-materials/requests/${encodeURIComponent(id)}/reject`,{}),
+  async commercialSendRequest(id, form) {
+    await authStorageReady;
+    const response = await expoFetch(`${API_BASE_URL}/chargeable-materials/appointments/${encodeURIComponent(id)}/requests`, {
+      method:"POST",headers:{Authorization:`Bearer ${authToken}`},body:normalizeNativeMultipartBody(form)
+    });
+    const data=await response.json();return response.ok?data:{success:false,error:data.error||"REQUEST_FAILED"};
+  },
+  ...createMaterialsCatalogClient({ request, ready: () => authStorageReady, token: () => authToken, baseUrl: API_BASE_URL }),
   // TOKEN MANAGEMENT
   setAuthToken,
   clearAuthToken,
@@ -1233,6 +1253,7 @@ const apiService = {
     if (!business?.enabled || business.version !== 1) return { success: false, status: 503, error: "Business features are not enabled on this server" };
 
     const appointmentData = {
+      ...(payload.materials !== undefined ? {materials:payload.materials} : {}),
       technicianId: payload.technicianId,
       customerId: payload.customerId || null,
       legacyCustomerKey: payload.legacyCustomerKey || null,
@@ -1476,8 +1497,8 @@ const apiService = {
     }
   },
 
-  async postBaitTypes(types) {
-    return request("POST", "/materials/bait-types", { baitTypes: types });
+  async postBaitTypes(types, expectedCatalogVersion) {
+    return request("POST", "/materials/bait-types", { baitTypes: types, expectedCatalogVersion });
   },
 
   async getChemicals() {
@@ -1501,8 +1522,8 @@ const apiService = {
     return [];
   },
 
-  async postChemicals(chemicals) {
-    return request("POST", "/materials/chemicals", { chemicals: chemicals });
+  async postChemicals(chemicals, expectedCatalogVersion) {
+    return request("POST", "/materials/chemicals", { chemicals: chemicals, expectedCatalogVersion });
   },
 
   async deleteCustomerMap(customerId, mapId) {

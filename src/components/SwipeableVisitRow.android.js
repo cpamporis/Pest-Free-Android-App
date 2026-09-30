@@ -1,3 +1,4 @@
+import SdsDownloadButton from "./SdsDownloadButton";
 // components/SwipeableVisitRow.android.js
 import React, { useState } from 'react';
 import {
@@ -443,6 +444,7 @@ export default function SwipeableVisitRow({
           </View>
 
           <View style={styles.actionButtons}>
+<SdsDownloadButton reportId={visit.visitId || visit.logId || visit.id} style={{maxWidth:84}}/>
             <TouchableOpacity
               onPress={() => handleDownloadPDF("report")}
               style={[

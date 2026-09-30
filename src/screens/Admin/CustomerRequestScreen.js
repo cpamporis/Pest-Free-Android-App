@@ -1,3 +1,4 @@
+import TechnicianRequestsPanel from "../../components/TechnicianRequestsPanel";
 // CustomerRequestScreen.js - UPDATED MODAL STYLING
 import React, { useState, useEffect } from "react";
 import {
@@ -27,6 +28,9 @@ import AdminHeaderSessionActions from "../../components/AdminHeaderSessionAction
 
 export default function CustomerRequestScreen({ onClose }) {
   const [requests, setRequests] = useState([]);
+  const [technicianRequests, setTechnicianRequests] = useState([]);
+  const [technicianRequestsError, setTechnicianRequestsError] = useState('');
+  const pendingCount = requests.length + technicianRequests.length;
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -256,6 +260,16 @@ function buildVatPricePayload(netValue, vatValue) {
         return formattedRequests;
       });
       
+      setTechnicianRequestsError('');
+      const capabilities = await apiService.commercialCapabilities();
+      if (capabilities.success === false) {
+        setTechnicianRequestsError('Δεν ήταν δυνατή η φόρτωση των αιτημάτων τεχνικών. Δοκιμάστε ανανέωση.');
+      } else if (capabilities.enabled) {
+        const result = await apiService.commercialRequests();
+        if (result.success) setTechnicianRequests((result.requests || []).filter(r => r.status === 'pending'));
+        else setTechnicianRequestsError('Δεν ήταν δυνατή η φόρτωση των αιτημάτων τεχνικών. Δοκιμάστε ανανέωση.');
+      } else setTechnicianRequests([]);
+
       // Load technicians
       const techsResult = await apiService.getTechnicians();
       
@@ -1117,10 +1131,10 @@ const appointmentPricePayload = buildVatPricePayload(
                 <View style={[styles.statIconContainer, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
                   <MaterialIcons name="pending-actions" size={20} color="#1f9c8b" />
                 </View>
-                <Text style={styles.statNumber}>{requests.length}</Text>
+                <Text style={styles.statNumber}>{pendingCount}</Text>
                 <Text style={styles.statLabel}>{i18n.t("admin.customerRequests.overview.pendingRequests")}</Text>
-                <Text style={[styles.statTrend, requests.length > 0 && { color: '#1f9c8b' }]}>
-                  {requests.length > 0 ? i18n.t("admin.customerRequests.overview.actionRequired") : i18n.t("admin.customerRequests.overview.allClear")}
+                <Text style={[styles.statTrend, pendingCount > 0 && { color: '#1f9c8b' }]}>
+                  {pendingCount > 0 ? i18n.t("admin.customerRequests.overview.actionRequired") : i18n.t("admin.customerRequests.overview.allClear")}
                 </Text>
               </View>
 
@@ -1129,7 +1143,7 @@ const appointmentPricePayload = buildVatPricePayload(
                   <MaterialIcons name="today" size={20} color="#1f9c8b" />
                 </View>
                 <Text style={styles.statNumber}>
-                  {requests.filter(r => {
+                  {[...technicianRequests, ...requests].filter(r => {
                     if (!r.created_at) return false;
                     const today = new Date().toISOString().split('T')[0];
                     const requestDate = new Date(r.created_at).toISOString().split('T')[0];
@@ -1155,7 +1169,7 @@ const appointmentPricePayload = buildVatPricePayload(
 
           {/* REQUESTS LIST */}
           <View style={styles.section}>
-            {requests.length === 0 ? (
+            {pendingCount === 0 && !technicianRequestsError ? (
               <View style={styles.emptyState}>
                 <MaterialIcons name="check-circle" size={64} color="#1f9c8b" />
                 <Text style={styles.emptyTitle}>{i18n.t("admin.customerRequests.emptyState.title")}</Text>
@@ -1172,13 +1186,19 @@ const appointmentPricePayload = buildVatPricePayload(
                 <View style={styles.sectionHeader}>
                   <MaterialIcons name="list-alt" size={20} color="#2c3e50" />
                   <Text style={styles.sectionTitle}>
-                    {requests.length === 1
-                      ? i18n.t("admin.customerRequests.requestList.title_one", { count: requests.length })
-                      : i18n.t("admin.customerRequests.requestList.title_other", { count: requests.length })}
+                    {pendingCount === 1
+                      ? i18n.t("admin.customerRequests.requestList.title_one", { count: pendingCount })
+                      : i18n.t("admin.customerRequests.requestList.title_other", { count: pendingCount })}
                   </Text>
                 </View>
 
                 <View style={styles.requestsList}>
+                  {!!technicianRequestsError && <TouchableOpacity onPress={loadData} style={{paddingVertical:12}}>
+                    <Text style={{color:'#b93838'}}>{technicianRequestsError}</Text>
+                  </TouchableOpacity>}
+                  <TechnicianRequestsPanel requests={technicianRequests} onChanged={loadData}
+                    onOpenImages={openImageViewer} styles={styles}/>
+
                   {requests.map((request) => (
                     
                     <View key={request.id} style={styles.requestCard}>

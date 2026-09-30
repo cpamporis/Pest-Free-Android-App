@@ -1,3 +1,4 @@
+import CommercialServicePanel from "../../components/CommercialServicePanel";
 import useServiceSettlement from "../../components/useServiceSettlement";
 // InsecticideScreen.js - PROFESSIONAL STYLING
 import React, { useEffect, useRef, useState } from 'react';
@@ -694,6 +695,7 @@ export default function InsecticideScreen({
       };
       const formData = new FormData();
     if (settlement.paymentReceived !== undefined) formData.append("paymentReceived", String(settlement.paymentReceived));
+    if (settlement.commercialRevision !== undefined) formData.append("commercialRevision", String(settlement.commercialRevision));
     if (session?.appointmentId) formData.append("appointmentId", String(session.appointmentId));
 
       // 🔥 FIX: Properly stringify arrays/objects
@@ -1116,6 +1118,8 @@ export default function InsecticideScreen({
                 : i18n.t("technician.specialServices.serviceSetup") || 'Service Setup'}
             </Text>
           </View>
+
+          <CommercialServicePanel appointmentId={session?.appointmentId} started={serviceStarted} completed={serviceCompleted} buttonStyle={styles.navigateButton} textStyle={styles.navigateText}/>
 
           <TouchableOpacity 
             style={styles.navigateButton}

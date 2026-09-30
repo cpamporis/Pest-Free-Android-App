@@ -210,8 +210,8 @@ test("Android multipart uploads use expo/fetch with Expo File parts", () => {
   );
   assert.equal(
     (source.match(/normalizeNativeMultipartBody\(/g) || []).length,
-    4,
-    "the helper and all three Android multipart request paths must be present"
+    5,
+    "the helper and all four Android multipart request paths must be present"
   );
 });
 

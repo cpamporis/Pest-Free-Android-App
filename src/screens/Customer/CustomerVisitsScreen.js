@@ -1,3 +1,4 @@
+import SdsDownloadButton from "../../components/SdsDownloadButton";
 // CustomerVisitsScreen.js - FIXED VERSION with i18n
 import React, { useEffect, useState } from "react";
 import {
@@ -530,6 +531,7 @@ const certificateCopy =
 
         <View style={styles.cardFooter}>
           <View style={styles.footerActions}>
+            <SdsDownloadButton reportId={item.visitId || item.logId || item.id} />
             <TouchableOpacity
               style={styles.viewButton}
               onPress={() => handleViewDetails(item)}
@@ -935,6 +937,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   footerActions: {
+    flexWrap: "wrap",
+    gap: 6,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

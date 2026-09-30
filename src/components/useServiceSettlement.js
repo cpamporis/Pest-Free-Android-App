@@ -11,6 +11,8 @@ export default function useServiceSettlement(session) {
   const alive = useRef(true);
   const busy = useRef(false);
   const pendingChoice = useRef(undefined);
+  const pendingRevision = useRef(undefined);
+  const [paymentHelp,setPaymentHelp]=useState(i18n.t("business.paymentHelp"));
   useEffect(() => { alive.current = true; return () => { alive.current = false; resolver.current?.(null); }; }, []);
   function answer(value) { setOpen(false); resolver.current?.(value); resolver.current = null; }
   async function confirmPayment() {
@@ -22,11 +24,20 @@ export default function useServiceSettlement(session) {
       const capabilities = await apiService.getBusinessCapabilities();
       if (!alive.current) { busy.current = false; return null; }
       if (!capabilities?.success || !capabilities.enabled) throw new Error(i18n.t("business.unavailable"));
-      if (pendingChoice.current !== undefined) return { paymentReceived: pendingChoice.current };
+      if (pendingChoice.current !== undefined) return { paymentReceived: pendingChoice.current, commercialRevision:pendingRevision.current };
+      let help=i18n.t("business.paymentHelp");
+      const commercial=await apiService.commercialCapabilities();
+      if(commercial.enabled) {
+        const quote=await apiService.commercialAppointment(session.appointmentId);
+        if(!quote.success) throw Error(quote.error||"Αποτυχία φόρτωσης χρέωσης");
+        pendingRevision.current=quote.revision;
+        if(quote.pricingVisible) help=`${help}\nΣύνολο υπηρεσίας και υλικών: ${(quote.totalCents/100).toFixed(2)} €`;
+      }
+      setPaymentHelp(help);
       const choice = await new Promise(resolve => {
         resolver.current = resolve;
         if (Platform.OS === "web") { resolver.current = resolve; setOpen(true); }
-        else Alert.alert(i18n.t("business.paymentQuestion"), i18n.t("business.paymentHelp"), [
+        else Alert.alert(i18n.t("business.paymentQuestion"), help, [
           { text: i18n.t("business.no"), onPress: () => resolve(false) },
           { text: i18n.t("business.yes"), onPress: () => resolve(true) },
           { text: i18n.t("business.cancel"), style: "cancel", onPress: () => resolve(null) }
@@ -34,7 +45,7 @@ export default function useServiceSettlement(session) {
       });
       if (choice === null) { busy.current = false; return null; }
       pendingChoice.current = choice;
-      return { paymentReceived: choice };
+      return { paymentReceived: choice, commercialRevision:pendingRevision.current };
     } catch (error) {
       busy.current = false;
       if (Platform.OS === "web") window.alert(error.message);
@@ -42,11 +53,11 @@ export default function useServiceSettlement(session) {
       return null;
     }
   }
-  function finishPaymentAttempt() { busy.current = false; }
+  function finishPaymentAttempt() { busy.current = false; pendingChoice.current=undefined; pendingRevision.current=undefined; }
   const paymentDialog = Platform.OS !== "web" ? null : <Modal transparent visible={open} onRequestClose={() => answer(null)}>
     <View style={styles.shade}><View style={styles.card} accessibilityViewIsModal>
       <Text style={styles.title}>{i18n.t("business.paymentQuestion")}</Text>
-      <Text style={styles.help}>{i18n.t("business.paymentHelp")}</Text>
+      <Text style={styles.help}>{paymentHelp}</Text>
       <View style={styles.actions}>
         <Pressable accessibilityRole="button" onPress={() => answer(false)} style={styles.no}><Text>{i18n.t("business.no")}</Text></Pressable>
         <Pressable accessibilityRole="button" onPress={() => answer(true)} style={styles.yes}><Text style={{ color: "#fff" }}>{i18n.t("business.yes")}</Text></Pressable>

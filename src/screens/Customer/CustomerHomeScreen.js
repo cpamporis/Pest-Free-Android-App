@@ -630,6 +630,9 @@ export default function CustomerHomeScreen({
                         {home.getServiceTypeLabel(appointment.serviceType, appointment.specialServiceSubtype, appointment.otherPestName)}
                       </Text>
                       
+                      {appointment.totalPriceCents != null && <Text style={[styles.appointmentService,{fontSize:14,marginBottom:10}]}>
+                        Συνολικό κόστος με ΦΠΑ: {(Number(appointment.totalPriceCents)/100).toFixed(2)} €
+                      </Text>}
                       {appointment.technician && (
                         <View style={styles.technicianInfo}>
                           <MaterialIcons name="engineering" size={14} color="#666" />

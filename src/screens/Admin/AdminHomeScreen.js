@@ -10,7 +10,8 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
-  RefreshControl
+  RefreshControl,
+  AppState
 } from "react-native";
 import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -84,6 +85,26 @@ const [changingAdminPassword, setChangingAdminPassword] =
 
     loadAllData();
   }, [forcePasswordChange]);
+
+  useEffect(() => {
+    if (forcePasswordChange || showCustomerRequests) return;
+    let alive = true, inFlight = false;
+    const refreshRequestBadge = async () => {
+      if (AppState.currentState !== 'active' || inFlight) return;
+      inFlight = true;
+      try {
+        const result = await apiService.getTodayCustomerRequestsCount();
+        if (alive && result.success) setTodayCustomerRequests(Number(result.count) || 0);
+      } catch {
+        // Keep the last confirmed count on transient network failures.
+      } finally { inFlight = false; }
+    };
+    const timer = setInterval(refreshRequestBadge, 30000);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') refreshRequestBadge();
+    });
+    return () => {alive = false; clearInterval(timer); subscription.remove();};
+  }, [forcePasswordChange, showCustomerRequests]);
 
   const loadAllData = async (forceRefresh = false) => {
     setScreenLoading(true);
@@ -552,19 +573,25 @@ const [changingAdminPassword, setChangingAdminPassword] =
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.moduleCard}
+            style={[styles.moduleCard, todayCustomerRequests > 0 && {borderColor:'#F44336',borderWidth:1}]}
             onPress={() => setShowCustomerRequests(true)}
             activeOpacity={0.7}
           >
-            <View style={[styles.moduleIconContainer, { backgroundColor: '#1f9c8b' }]}>
-              <MaterialIcons name="request-page" size={24} color="#fff" />
+            <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
+              <View style={[styles.moduleIconContainer, {backgroundColor:todayCustomerRequests > 0 ? '#F44336' : '#1f9c8b'}]}>
+                <MaterialIcons name="request-page" size={24} color="#fff" />
+              </View>
+              {todayCustomerRequests > 0 && <View accessibilityLabel={`${todayCustomerRequests} εκκρεμή αιτήματα`}
+                style={{backgroundColor:'#F44336',minWidth:28,height:28,borderRadius:14,paddingHorizontal:7,alignItems:'center',justifyContent:'center'}}>
+                <Text style={{color:'#fff',fontWeight:'700'}}>{todayCustomerRequests}</Text>
+              </View>}
             </View>
             <Text style={styles.moduleTitle}>{i18n.t("admin.home.modules.customerRequests.title")}</Text>
             <Text style={styles.moduleDescription}>
               {i18n.t("admin.home.modules.customerRequests.description")}
             </Text>
             <View style={styles.moduleFooter}>
-              <Text style={[styles.moduleCount, todayCustomerRequests > 0 && { color: '#1f9c8b' }]}>
+              <Text style={[styles.moduleCount, todayCustomerRequests > 0 && { color: '#F44336' }]}>
                 {todayCustomerRequests === 1
                   ? i18n.t("admin.home.modules.customerRequests.pending_one", { count: todayCustomerRequests })
                   : i18n.t("admin.home.modules.customerRequests.pending_other", { count: todayCustomerRequests })}
