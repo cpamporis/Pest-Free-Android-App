@@ -1,3 +1,4 @@
+import { unavailable } from "../../utils/stationCondition";
 import CustomerBalancePanel from "../../components/CustomerBalancePanel";
 //Admin/CustomerProfile.js
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -384,6 +385,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                   date: visit.appointmentDate || visit.startTime,
                   station_id: station.station_id || station.station_number,
                   station_type: station.station_type,
+                  condition: station.condition, access: station.access,
                   consumption: station.consumption,
                   rodents_captured: station.rodents_captured,
                   mosquitoes: station.mosquitoes,
@@ -425,6 +427,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                 date: visit.appointmentDate || visit.startTime,
                 station_id: station.station_id || station.station_number,
                 station_type: station.station_type,
+                  condition: station.condition, access: station.access,
                 consumption: station.consumption,
                 rodents_captured: station.rodents_captured,
                 mosquitoes: station.mosquitoes,
@@ -525,7 +528,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
     cutoff.setMonth(now.getMonth() - monthsBack);
 
     return trendData.filter(d => {
-      if (!d.date) return false;
+      if (!d.date || unavailable(d)) return false;
       const dDate = new Date(d.date);
       return dDate >= cutoff;
     });
@@ -561,13 +564,13 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
     }
 
     const current = data.filter(d => {
-      if (!d.date) return false;
+      if (!d.date || unavailable(d)) return false;
       const dDate = new Date(d.date);
       return dDate >= currentStart && dDate <= now;
     });
 
     const previous = data.filter(d => {
-      if (!d.date) return false;
+      if (!d.date || unavailable(d)) return false;
       const dDate = new Date(d.date);
       return dDate >= previousStart && dDate < previousEnd;
     }); 
@@ -578,6 +581,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
     const stationMap = new Map();
     
     trendData.forEach(entry => {
+      if (unavailable(entry)) return;
       if (entry.station_type === "BS") {
         const key = entry.station_id;
         if (!stationMap.has(key)) {
@@ -617,6 +621,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
     const monthlyMap = new Array(12).fill(0).map(() => ({ total: 0, count: 0 }));
 
     trendData.forEach(entry => {
+      if (unavailable(entry)) return;
       if (!entry.date) {
         console.warn("⚠️ Entry missing date:", entry);
         return;
@@ -677,6 +682,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
   };
 
   const getStationValue = (station) => {
+    if (unavailable(station)) return null;
     switch(selectedDevice) {
       case "BS":
         return normalizeNumber(station.consumption);
@@ -714,6 +720,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
   const stationMap = new Map();
   
   filtered.forEach(station => {
+    if (unavailable(station)) return;
     const stationId = station.station_id;
     if (!stationId) return;
     
@@ -754,6 +761,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
     let count = 0;
     
     data.forEach(entry => {
+      if (unavailable(entry)) return;
       let value = 0;
       
       if (selectedDevice === "BS") {

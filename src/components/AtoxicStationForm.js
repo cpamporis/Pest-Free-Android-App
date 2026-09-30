@@ -1,3 +1,4 @@
+import StationConditionPicker from "./StationConditionPicker";
 // AtoxicStationForm.js - Updated
 import React, { useState } from "react";
 import {
@@ -48,14 +49,14 @@ function AtoxicStationForm({
 
   // Add this effect to reset form when access changes to "No"
   React.useEffect(() => {
-    if (access === "No") {
+    if (access === "No" || condition === "Damaged" || condition === "Missing") {
+      if (access === "No") setCondition(null);
       setCapture(null);
       setRodentsCaptured("");
-      setCondition(null);
       setTriggered(null);
       setReplacedSurface(null);
     }
-  }, [access]);
+  }, [access, condition]);
 
 
 
@@ -63,15 +64,15 @@ function AtoxicStationForm({
 
 
     // ACCESS EXCEPTION
-    if (access === "No") {
+    if (access === "No" || condition === "Damaged" || condition === "Missing") {
       onStationLogged({
         stationId,
         stationType,
-        access: "No",
+        access: access || "Yes",
         // Set other fields to null explicitly
         capture: null,
         rodentsCaptured: null,
-        condition: null,
+        condition,
         triggered: stationType === "ST" ? null : undefined,
         replacedSurface: stationType === "RM" ? null : undefined,
         technicianId: technician?.id,
@@ -169,7 +170,7 @@ function AtoxicStationForm({
             })}
           </Text>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {/* Capture */}
             <Text style={styles.label}>{i18n.t("components.stationForms.atoxicStation.capture")}</Text>
             <View style={styles.row}>
@@ -179,16 +180,16 @@ function AtoxicStationForm({
                   style={[
                     styles.toggle, 
                     capture === v && styles.active,
-                    access === "No" && styles.disabled // Disable when access is "No"
+                    (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabled // Disable when access is "No"
                   ]}
                   onPress={() => {
-                    if (access !== "No") setCapture(v);
+                    if ((access !== "No" && condition !== "Damaged" && condition !== "Missing")) setCapture(v);
                   }}
-                  disabled={access === "No"}
+                  disabled={(access === "No" || condition === "Damaged" || condition === "Missing")}
                 >
                   <Text style={[
                     capture === v && styles.activeText,
-                    access === "No" && styles.disabledText
+                    (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledText
                   ]}>
                     {v === "Yes" ? i18n.t("components.stationForms.common.yes") : i18n.t("components.stationForms.common.no")}
                   </Text>
@@ -196,16 +197,16 @@ function AtoxicStationForm({
               ))}
             </View>
 
-            {capture === "Yes" && access !== "No" && (
+            {capture === "Yes" && (access !== "No" && condition !== "Damaged" && condition !== "Missing") && (
               <>
                 <Text style={styles.label}>{i18n.t("components.stationForms.atoxicStation.rodentsCaptured")}</Text>
                 <TextInput
-                  style={[styles.input, access === "No" && styles.disabledInput]}
+                  style={[styles.input, (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledInput]}
                   keyboardType="numeric"
                   value={rodentsCaptured}
                   onChangeText={setRodentsCaptured}
                   placeholder={i18n.t("components.stationForms.atoxicStation.rodentsPlaceholder")}
-                  editable={access !== "No"}
+                  editable={(access !== "No" && condition !== "Damaged" && condition !== "Missing")}
                 />
               </>
             )}
@@ -221,16 +222,16 @@ function AtoxicStationForm({
                       style={[
                         styles.toggle, 
                         triggered === v && styles.active,
-                        access === "No" && styles.disabled
+                        (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabled
                       ]}
                       onPress={() => {
-                        if (access !== "No") setTriggered(v);
+                        if ((access !== "No" && condition !== "Damaged" && condition !== "Missing")) setTriggered(v);
                       }}
-                      disabled={access === "No"}
+                      disabled={(access === "No" || condition === "Damaged" || condition === "Missing")}
                     >
                       <Text style={[
                         triggered === v && styles.activeText,
-                        access === "No" && styles.disabledText
+                        (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledText
                       ]}>
                         {v === "Yes" ? i18n.t("components.stationForms.common.yes") : i18n.t("components.stationForms.common.no")}
                       </Text>
@@ -250,16 +251,16 @@ function AtoxicStationForm({
                       style={[
                         styles.toggle, 
                         replacedSurface === v && styles.active,
-                        access === "No" && styles.disabled
+                        (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabled
                       ]}
                       onPress={() => {
-                        if (access !== "No") setReplacedSurface(v);
+                        if ((access !== "No" && condition !== "Damaged" && condition !== "Missing")) setReplacedSurface(v);
                       }}
-                      disabled={access === "No"}
+                      disabled={(access === "No" || condition === "Damaged" || condition === "Missing")}
                     >
                       <Text style={[
                         replacedSurface === v && styles.activeText,
-                        access === "No" && styles.disabledText
+                        (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledText
                       ]}>
                         {v === "Yes" ? i18n.t("components.stationForms.common.yes") : i18n.t("components.stationForms.common.no")}
                       </Text>
@@ -269,41 +270,17 @@ function AtoxicStationForm({
               </>
             )}
 
-            {/* Condition */}
-            <Text style={styles.label}>{i18n.t("components.stationForms.common.condition")}</Text>
-            <View style={styles.row}>
-              {["Functional", "Damaged"].map(v => (
-                <TouchableOpacity
-                  key={v}
-                  style={[
-                    styles.toggle, 
-                    condition === v && styles.active,
-                    access === "No" && styles.disabled
-                  ]}
-                  onPress={() => {
-                    if (access !== "No") setCondition(v);
-                  }}
-                  disabled={access === "No"}
-                >
-                  <Text style={[
-                    condition === v && styles.activeText,
-                    access === "No" && styles.disabledText
-                  ]}>
-                    {v === "Functional" 
-                      ? i18n.t("components.stationForms.common.functional") 
-                      : i18n.t("components.stationForms.common.damaged")}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
+            <StationConditionPicker value={condition} onChange={setCondition} disabled={access === "No"} />
             {/* Access */}
+            <View style={{opacity:["Damaged","Missing"].includes(condition)?0.45:1}}>
+
             <Text style={styles.label}>{i18n.t("components.stationForms.common.access")}</Text>
             <View style={styles.row}>
               {["Yes", "No"].map(v => (
                 <TouchableOpacity
                   key={v}
                   style={[styles.toggle, access === v && styles.active]}
+                  disabled={condition === "Damaged" || condition === "Missing"}
                   onPress={() => {
                     setAccess(v);
                   }}
@@ -313,6 +290,7 @@ function AtoxicStationForm({
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
             </View>
           </ScrollView>
 

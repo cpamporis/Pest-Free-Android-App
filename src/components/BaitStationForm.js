@@ -1,3 +1,4 @@
+import StationConditionPicker from "./StationConditionPicker";
 //BaitStationForm.js
 import React, { useState, useEffect} from "react";
 import {
@@ -76,15 +77,16 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
   }, []);
 
   const saveData = async () => {
-    if (access === "No") {
+    if (access === "No" || condition === "Damaged" || condition === "Missing") {
       onStationLogged({
         stationId,
         stationType: "BS", // ADD THIS
-        access: "No",
+        access: access || "Yes",
         // Explicitly set other fields to null
         consumption: null,
+        dosage_g: null,
         baitType: null,
-        condition: null,
+        condition,
         technicianId: technician?.id,
         technicianName: technician?.name,
         visitId: timerData?.visitId,
@@ -159,13 +161,16 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
   };
 
   React.useEffect(() => {
-    if (access === "No") {
+    if (access === "No" || condition === "Damaged" || condition === "Missing") {
+      if (access === "No") setCondition(null);
       setConsumption("");
       setBaitType("");
-      setCondition(null);
       setDosageG(null);
+      setShowConsumptionDropdown(false);
+      setShowBaitTypeDropdown(false);
+      setShowDosageDropdown(false);
     }
-  }, [access]);
+  }, [access, condition]);
 
   return (
     <Modal
@@ -190,7 +195,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
             </View>
           )}
 
-          <ScrollView
+          <ScrollView keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 10 }}
           >
@@ -202,23 +207,23 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
               <TouchableOpacity
                 style={[
                   styles.dropdown, 
-                  access === "No" && styles.disabledDropdown
+                  (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledDropdown
                 ]}
                 onPress={() => {
-                  if (access !== "No") setShowConsumptionDropdown(prev => !prev);
+                  if ((access !== "No" && condition !== "Damaged" && condition !== "Missing")) setShowConsumptionDropdown(prev => !prev);
                 }}
-                disabled={access === "No"}
+                disabled={(access === "No" || condition === "Damaged" || condition === "Missing")}
               >
                 <Text style={[
                   styles.dropdownText,
                   !consumption && { color: "#999" },
-                  access === "No" && styles.disabledText
+                  (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledText
                 ]}>
                   {consumption || i18n.t("components.stationForms.baitStation.selectConsumption")}
                 </Text>
               </TouchableOpacity>
 
-              {showConsumptionDropdown && access !== "No" && (
+              {showConsumptionDropdown && (access !== "No" && condition !== "Damaged" && condition !== "Missing") && (
                 <View style={styles.dropdownMenu}>
                   {BAIT_CONSUMPTION_OPTIONS.map(option => (
                     <TouchableOpacity
@@ -240,7 +245,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
             <View style={styles.inputContainer}>
               <Text style={[
                 styles.inputLabel,
-                access === "No" && styles.disabledText
+                (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledText
               ]}>
                 {i18n.t("components.stationForms.baitStation.baitType")}
               </Text>
@@ -248,27 +253,27 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
               <TouchableOpacity
                 style={[
                   styles.dropdown,
-                  access === "No" && styles.disabledDropdown
+                  (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledDropdown
                 ]}
                 onPress={() => {
-                  if (access !== "No") {
+                  if ((access !== "No" && condition !== "Damaged" && condition !== "Missing")) {
                     setShowBaitTypeDropdown(prev => !prev);
                   }
                 }}
-                disabled={access === "No"}
+                disabled={(access === "No" || condition === "Damaged" || condition === "Missing")}
               >
                 <Text
                   style={[
                     styles.dropdownText,
                     !baitType && { color: "#999" },
-                    access === "No" && styles.disabledText
+                    (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledText
                   ]}
                 >
                   {baitType || i18n.t("components.stationForms.baitStation.selectBaitType")}
                 </Text>
               </TouchableOpacity>
 
-              {showBaitTypeDropdown && access !== "No" && (
+              {showBaitTypeDropdown && (access !== "No" && condition !== "Damaged" && condition !== "Missing") && (
                 <View style={styles.dropdownMenu}>
                   {baitTypes.length === 0 && (
                     <Text style={styles.dropdownEmpty}>
@@ -306,27 +311,27 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
               <TouchableOpacity
                 style={[
                   styles.dropdown,
-                  access === "No" && styles.disabledDropdown
+                  (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledDropdown
                 ]}
                 onPress={() => {
-                  if (access !== "No") {
+                  if ((access !== "No" && condition !== "Damaged" && condition !== "Missing")) {
                     setShowDosageDropdown(prev => !prev);
                   }
                 }}
-                disabled={access === "No"}
+                disabled={(access === "No" || condition === "Damaged" || condition === "Missing")}
               >
                 <Text
                   style={[
                     styles.dropdownText,
                     !dosageG && { color: "#999" },
-                    access === "No" && styles.disabledText
+                    (access === "No" || condition === "Damaged" || condition === "Missing") && styles.disabledText
                   ]}
                 >
                   {dosageG ? `${dosageG}g` : i18n.t("components.stationForms.baitStation.selectDosage")}
                 </Text>
               </TouchableOpacity>
 
-              {showDosageDropdown && access !== "No" && (
+              {showDosageDropdown && (access !== "No" && condition !== "Damaged" && condition !== "Missing") && (
                 <View style={styles.dropdownMenu}>
                   {DOSAGE_OPTIONS.map(value => (
                     <TouchableOpacity
@@ -346,62 +351,10 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
               )}
             </View>
 
-            {/* Condition */}
-            <View style={styles.toggleContainer}>
-              <Text style={[
-                styles.toggleLabel,
-                access === "No" && styles.disabledText
-              ]}>
-                {i18n.t("components.stationForms.common.condition")}
-              </Text>
-              <View style={styles.toggleButtonsContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    condition === "Functional" && styles.toggleActive,
-                    access === "No" && styles.disabledToggle
-                  ]}
-                  onPress={() => {
-                    if (access !== "No") setCondition("Functional");
-                  }}
-                  disabled={access === "No"}
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      condition === "Functional" && styles.toggleTextActive,
-                      access === "No" && styles.disabledText
-                    ]}
-                  >
-                    {i18n.t("components.stationForms.common.functional")}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    condition === "Damaged" && styles.toggleActive,
-                    access === "No" && styles.disabledToggle
-                  ]}
-                  onPress={() => {
-                    if (access !== "No") setCondition("Damaged");
-                  }}
-                  disabled={access === "No"}
-                >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      condition === "Damaged" && styles.toggleTextActive,
-                      access === "No" && styles.disabledText
-                    ]}
-                  >
-                    {i18n.t("components.stationForms.common.damaged")}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
+            <StationConditionPicker value={condition} onChange={setCondition} disabled={access === "No"} />
             {/* Access */}
+            <View style={{opacity:["Damaged","Missing"].includes(condition)?0.45:1}}>
+
             <View style={styles.toggleContainer}>
               <Text style={styles.toggleLabel}>{i18n.t("components.stationForms.common.access")}</Text>
               <View style={styles.toggleButtonsContainer}>
@@ -410,6 +363,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
                     styles.toggleButton,
                     access === "Yes" && styles.toggleActive,
                   ]}
+                  disabled={condition === "Damaged" || condition === "Missing"}
                   onPress={() => setAccess("Yes")}
                 >
                   <Text
@@ -427,6 +381,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
                     styles.toggleButton,
                     access === "No" && styles.toggleActive,
                   ]}
+                  disabled={condition === "Damaged" || condition === "Missing"}
                   onPress={() => setAccess("No")}
                 >
                   <Text
@@ -439,6 +394,7 @@ function BaitStationForm({ stationId, onClose, customerId, technician, timerData
                   </Text>
                 </TouchableOpacity>
               </View>
+            </View>
             </View>
           </ScrollView>
 

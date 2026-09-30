@@ -1,3 +1,4 @@
+import StationConditionPicker from "./StationConditionPicker";
 //components/PheromoneTrapForm.js
 import React, { useEffect, useState } from "react";
 import {
@@ -26,7 +27,7 @@ function PheromoneTrapForm({
   const [pheromoneType, setPheromoneType] = useState(existingStationData?.pheromoneType || "");
   const [replacedPheromone, setReplacedPheromone] = useState(existingStationData?.replacedPheromone || null);
   const [insectsCaptured, setInsectsCaptured] = useState(existingStationData?.insectsCaptured || "");
-  const [damaged, setDamaged] = useState(existingStationData?.damaged || null);
+  const [condition, setCondition] = useState(existingStationData?.condition || (existingStationData?.damaged === "Yes" ? "Damaged" : existingStationData?.damaged === "No" ? "Functional" : null));
   const [access, setAccess] = useState(existingStationData?.access || null);
 
   const [loading, setLoading] = useState(false);
@@ -60,25 +61,27 @@ function PheromoneTrapForm({
   }, []);
 
   useEffect(() => {
-    if (access === "No") {
+    if (access === "No" || condition === "Damaged" || condition === "Missing") {
+      if (access === "No") setCondition(null);
       setPheromoneType("");
       setReplacedPheromone(null);
       setInsectsCaptured("");
-      setDamaged(null);
+      
       setShowDropdown(false);
     }
-  }, [access]);
+  }, [access, condition]);
 
   const saveData = async () => {
-    if (access === "No") {
+    if (access === "No" || condition === "Damaged" || condition === "Missing") {
       onStationLogged({
         stationId,
         stationType: "PT",
-        access: "No",
+        access: access || "Yes",
         pheromoneType: null,
         replacedPheromone: null,
         insectsCaptured: null,
         damaged: null,
+        condition,
         technicianId: technician?.id,
         technicianName: technician?.name,
         visitId: timerData?.visitId,
@@ -105,7 +108,7 @@ function PheromoneTrapForm({
     }
 
     // insectsCaptured: allow empty, since user may want to leave blank.
-    if (!damaged) {
+    if (!condition) {
       Alert.alert(
         i18n.t("components.stationForms.common.incompleteForm"),
         i18n.t("components.stationForms.pheromoneTrap.error.damagedRequired")
@@ -127,7 +130,8 @@ function PheromoneTrapForm({
       pheromoneType,
       replacedPheromone,
       insectsCaptured,
-      damaged,
+      condition,
+      damaged: condition === "Damaged" ? "Yes" : "No",
       access,
       technicianId: technician?.id,
       technicianName: technician?.name,
@@ -138,7 +142,7 @@ function PheromoneTrapForm({
     onClose();
   };
 
-  const disabled = access === "No";
+  const disabled = access === "No" || condition === "Damaged" || condition === "Missing";
 
   return (
     <Modal transparent animationType="fade" visible statusBarTranslucent>
@@ -148,7 +152,7 @@ function PheromoneTrapForm({
             {i18n.t("components.stationForms.pheromoneTrap.title", { id: stationId })}
           </Text>
 
-          <ScrollView
+          <ScrollView keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 10 }}
           >
@@ -257,56 +261,16 @@ function PheromoneTrapForm({
               />
             </View>
 
-            {/* Damaged */}
-            <View style={styles.toggleContainer}>
-              <Text style={[styles.toggleLabel, disabled && styles.disabledText]}>
-                {i18n.t("components.stationForms.pheromoneTrap.damaged")}
-              </Text>
-              <View style={styles.toggleButtonsContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    damaged === "Yes" && styles.toggleActive,
-                    disabled && styles.disabledToggle
-                  ]}
-                  onPress={() => { if (!disabled) setDamaged("Yes"); }}
-                  disabled={disabled}
-                >
-                  <Text style={[
-                    styles.toggleText,
-                    damaged === "Yes" && styles.toggleTextActive,
-                    disabled && styles.disabledText
-                  ]}>
-                    {i18n.t("components.stationForms.common.yes")}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    damaged === "No" && styles.toggleActive,
-                    disabled && styles.disabledToggle
-                  ]}
-                  onPress={() => { if (!disabled) setDamaged("No"); }}
-                  disabled={disabled}
-                >
-                  <Text style={[
-                    styles.toggleText,
-                    damaged === "No" && styles.toggleTextActive,
-                    disabled && styles.disabledText
-                  ]}>
-                    {i18n.t("components.stationForms.common.no")}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
+            <StationConditionPicker value={condition} onChange={setCondition} disabled={access === "No"} />
             {/* Access (same as BS) */}
+            <View style={{opacity:["Damaged","Missing"].includes(condition)?0.45:1}}>
+
             <View style={styles.toggleContainer}>
               <Text style={styles.toggleLabel}>{i18n.t("components.stationForms.common.access")}</Text>
               <View style={styles.toggleButtonsContainer}>
                 <TouchableOpacity
                   style={[styles.toggleButton, access === "Yes" && styles.toggleActive]}
+                  disabled={condition === "Damaged" || condition === "Missing"}
                   onPress={() => setAccess("Yes")}
                 >
                   <Text style={[styles.toggleText, access === "Yes" && styles.toggleTextActive]}>
@@ -316,6 +280,7 @@ function PheromoneTrapForm({
 
                 <TouchableOpacity
                   style={[styles.toggleButton, access === "No" && styles.toggleActive]}
+                  disabled={condition === "Damaged" || condition === "Missing"}
                   onPress={() => setAccess("No")}
                 >
                   <Text style={[styles.toggleText, access === "No" && styles.toggleTextActive]}>
@@ -323,6 +288,7 @@ function PheromoneTrapForm({
                   </Text>
                 </TouchableOpacity>
               </View>
+            </View>
             </View>
           </ScrollView>
 

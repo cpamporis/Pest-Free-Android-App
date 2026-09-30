@@ -1,3 +1,5 @@
+import { MaterialSelector, Action as CommercialAction, money } from "../../components/ChargeableMaterials";
+import CommercialEditor from "../../components/CommercialEditor";
 import AppointmentBusinessFields from "../../components/AppointmentBusinessFields";
 import { appointmentOptionsValid } from "../../utils/customerBilling";
 // AdminTechSchedule.js - Professional Styled Version
@@ -102,6 +104,11 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   });
   const [complianceValidUntil, setComplianceValidUntil] = useState("");
   const [showCompliancePicker, setShowCompliancePicker] = useState(false);
+  const [commercialEditing,setCommercialEditing]=useState(null);
+  const [commercialEnabled,setCommercialEnabled]=useState(false);
+  const [selectedMaterials,setSelectedMaterials]=useState([]);
+  const [materialTotal,setMaterialTotal]=useState(0);
+  useEffect(()=>{apiService.commercialCapabilities().then(r=>setCommercialEnabled(r.enabled===true));},[]);
   const [servicePrice, setServicePrice] = useState("");
   const [serviceVatPercent, setServiceVatPercent] = useState("24");
   const [appointmentCategory, setAppointmentCategory] = useState("first_time");
@@ -576,6 +583,7 @@ function buildVatPricePayload(netValue, vatValue) {
         recurrenceDays: appointmentCategory === "contract_service" ? recurrenceDays : null,
         totalVisits: appointmentCategory === "contract_service" ? totalVisits : null,
         ...pricePayload,
+        ...(commercialEnabled ? {materials:selectedMaterials} : {}),
         status: "scheduled",
         ...(complianceValidUntil && {
           compliance_valid_until: complianceValidUntil
@@ -616,6 +624,7 @@ function buildVatPricePayload(netValue, vatValue) {
         return Alert.alert(i18n.t("common.error"), res.error || i18n.t("admin.schedule.addCustomer.createFailed") || "Failed to create appointment");
       }
 
+      setSelectedMaterials([]);
       await loadAppointments();
       Alert.alert(i18n.t("common.success"),
         res.scheduledVisits > 1
@@ -1740,6 +1749,7 @@ function buildVatPricePayload(netValue, vatValue) {
           <MaterialIcons name="expand-more" size={24} color="#666" />
         </TouchableOpacity>
 
+        <MaterialSelector containerStyle={{marginHorizontal:24}} value={selectedMaterials} onChange={setSelectedMaterials} onTotal={setMaterialTotal}/>
         <AppointmentBusinessFields category={appointmentCategory} recurrenceDays={recurrenceDays}
           containerStyle={[styles.serviceSelector, styles.businessFieldsCard]}
           onRecurrenceChange={setRecurrenceDays} totalVisits={totalVisits} onTotalVisitsChange={setTotalVisits} />
@@ -1791,19 +1801,9 @@ function buildVatPricePayload(netValue, vatValue) {
             onChangeText={setServiceVatPercent}
           />
 
-          <Text
-            style={{
-              marginTop: 8,
-              fontSize: 14,
-              fontWeight: "600",
-              color: "#2c3e50"
-            }}
-          >
-            {i18n.t("admin.schedule.servicePrice.totalWithVat") ||
-              "Total with VAT"}: €{buildVatPricePayload(
-                servicePrice,
-                serviceVatPercent
-              ).servicePrice.toFixed(2)}
+          <Text style={{ marginTop: 8, fontSize: 14, fontWeight: "600", color: "#2c3e50" }}>
+            Κόστος Υπηρεσίας με ΦΠΑ: €
+            {buildVatPricePayload(servicePrice, serviceVatPercent).servicePrice.toFixed(2)}
           </Text>
         </View>
 
@@ -1857,6 +1857,7 @@ function buildVatPricePayload(netValue, vatValue) {
                       </Text>
                     </View>
                     <View style={{ flexDirection: "row", gap: 8 }}>
+                      {commercialEnabled && item.status !== "cancelled" && <CommercialAction label="Χρέωση / Υλικά" onPress={()=>setCommercialEditing(item.id)} />}
                       {/* Edit Button - Only show for non-completed, non-cancelled appointments */}
                       {!isCompletedOrCancelled && (item.serviceType === 'insecticide' || item.serviceType === 'disinfection' || item.serviceType === 'special' || item.serviceType === 'myocide' || item.serviceType === "certificate") && (
                         <TouchableOpacity
@@ -1910,6 +1911,9 @@ function buildVatPricePayload(netValue, vatValue) {
                     </Text>
                   </View>
                   
+                  <Text style={{marginTop:12,fontWeight:'700',color:'#2c3e50'}}>
+                    Συνολικό κόστος με ΦΠΑ: {money(item.totalPriceCents ?? Math.round(Number(item.servicePrice ?? item.service_price ?? 0)*100))}
+                  </Text>
                   {item.status === 'completed' && (
                     <View style={styles.completedBadge}>
                       <MaterialIcons name="check-circle" size={12} color="#1f9c8b" />
@@ -2363,19 +2367,9 @@ function buildVatPricePayload(netValue, vatValue) {
                     />
                   </View>
 
-                  <Text
-                    style={{
-                      marginTop: 8,
-                      fontSize: 14,
-                      fontWeight: "600",
-                      color: "#2c3e50"
-                    }}
-                  >
-                    {i18n.t("admin.schedule.servicePrice.totalWithVat") ||
-                      "Total with VAT"}: €{buildVatPricePayload(
-                        editServicePrice,
-                        editServiceVatPercent
-                      ).servicePrice.toFixed(2)}
+                  <Text style={{ marginTop: 8, fontSize: 14, fontWeight: "600", color: "#2c3e50" }}>
+                    Κόστος Υπηρεσίας με ΦΠΑ: €
+                    {buildVatPricePayload(editServicePrice, editServiceVatPercent).servicePrice.toFixed(2)}
                   </Text>
                 </View>
 
@@ -2801,7 +2795,8 @@ function buildVatPricePayload(netValue, vatValue) {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    {commercialEditing&&<CommercialEditor appointmentId={commercialEditing} onClose={()=>setCommercialEditing(null)} onSaved={loadAppointments}/>}
+</SafeAreaView>
   );
 }
 
@@ -3626,6 +3621,7 @@ customerSearchClearButton: {
     justifyContent: "flex-end",
     backgroundColor: "#0008",
     padding: 20,
+    paddingHorizontal: 24,
   },
   appointmentModalContainer: {
     backgroundColor: '#fff',

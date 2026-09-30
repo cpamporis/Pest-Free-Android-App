@@ -154,6 +154,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       ),
       serviceSubtype: logData.service_subtype || logData.serviceSubtype,
       notes: logData.notes || "",
+      businessNotes: logData.businessNotes || [],
       visitId: logData.visit_id || logData.visitId || visitId,
 
       insecticideDetails: logData.insecticide_details || logData.insecticideDetails,
@@ -165,6 +166,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
 
       chemicalsUsed: logData.chemicals_used || logData.chemicalsUsed || [],
       treatedAreas: logData.treated_areas || logData.treatedAreas || [],
+      chargeableMaterials: logData.chargeableMaterials || [],
       images: logData.images || [],
 
       start_time: logData.service_start_time || logData.serviceStartTime,
@@ -582,6 +584,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       Yes: i18n.t("components.stationForms.common.yes"),
       No: i18n.t("components.stationForms.common.no"),
       Functional: i18n.t("components.stationForms.common.functional"),
+      Missing: "Λείπει",
       Damaged: i18n.t("components.stationForms.common.damaged"),
     };
 
@@ -589,7 +592,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
   };
 
   const renderServiceNotes = () => {
-    if (!report || !report.notes) return null;
+    if (!report || (!report.notes && !report.businessNotes?.length)) return null;
     
     return (
       <View style={styles.section}>
@@ -599,6 +602,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
         </View>
         <View style={styles.notesCard}>
           <Text style={styles.notesText}>{report.notes}</Text>
+          {report.businessNotes?.map((note,index)=><Text key={index} style={[styles.notesText,{marginTop:12}]}>Σχόλιο Επιχείρησης: {note}</Text>)}
         </View>
       </View>
     );
@@ -677,8 +681,8 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
 
   // Helper to render service details section
   const renderServiceDetails = () => {
-  if (!report || report.serviceType === 'myocide') return null;
-  
+  if (!report) return null;
+
   const serviceDetails = getServiceDetailsLabel(report);
   
   return (
@@ -810,7 +814,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
               {report.treatedAreas.flatMap((area, areaIndex) => {
                 const areaChemicals = area.chemicals || [];
                 
-                if (areaChemicals.length === 0 && (area.concentrationPercent || area.volumeMl)) {
+                if (areaChemicals.length === 0) {
                   return (
                     <View key={`area-${areaIndex}-0`} style={styles.tableRow}>
                       <Text style={[styles.tableCell, { flex: 2 }]}>
@@ -1378,7 +1382,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                       : "—"}
                   </Text>
                   <Text style={[styles.tableCell, { flex: 0.8 }]}>{s.replace_bulb || "—"}</Text>
-                  <Text style={[styles.tableCell, { flex: 0.8 }]}>{s.condition || "—"}</Text>
+                  <Text style={[styles.tableCell, { flex: 0.8 }]}>{translateToggleValue(s.condition)}</Text>
                   <Text style={[styles.tableCell, { flex: 0.8 }]}>{s.access || "—"}</Text>
                   <Text style={[styles.tableCell, { flex: 0.8 }]}>{getStationStatus("LT", s)}</Text>
                 </View>
@@ -1402,7 +1406,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                 <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>{i18n.t("technician.report.stationTables.pheromone")}</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 1 }]}>{i18n.t("technician.report.stationTables.replacedPheromone")}</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 2 }]}>{i18n.t("technician.report.stationTables.insects")}</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>{i18n.t("technician.report.stationTables.damaged")}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1 }]}>{i18n.t("technician.report.stationTables.condition")}</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 1 }]}>{i18n.t("technician.report.stationTables.access")}</Text>
               </View>
 
@@ -1425,7 +1429,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
                   </Text>
 
                   <Text style={[styles.tableCell, { flex: 1 }]}>
-                    {translateToggleValue(s.damaged)}
+                    {translateToggleValue(s.condition || (s.damaged === "Yes" ? "Damaged" : s.damaged === "No" ? "Functional" : null))}
                   </Text>
 
                   <Text style={[styles.tableCell, { flex: 1 }]}>
@@ -1488,20 +1492,24 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
   const renderHealthSafetySection = () => {
     if (!report) return null;
 
-    // 🔹 SOURCE OF TRUTH
-    const materials =
-      report.serviceType === 'myocide'
-        ? report.baitsUsed || []
-        : report.chemicalsUsed || [];
+    // Certificates include both rodent bait and chemical treatments.
+    const materials = [
+      ...(['myocide', 'certificate'].includes(report.serviceType)
+        ? (report.baitsUsed || []).map(material => ({ material, type: 'bait' }))
+        : []),
+      ...(report.serviceType !== 'myocide'
+        ? (report.chemicalsUsed || []).map(material => ({ material, type: 'chemical' }))
+        : []),
+    ];
 
     if (materials.length === 0) return null;
 
-    const materialsWithSafety = materials.map(m => ({
+    const materialsWithSafety = materials.map(({ material, type }) => ({
       ...getMaterialSafetyInfo(
-        typeof m === 'string' ? m : m.name,
-        report.serviceType === 'myocide' ? 'bait' : 'chemical'
+        typeof material === 'string' ? material : material.name,
+        type
       ),
-      originalType: report.serviceType === 'myocide' ? 'bait' : 'chemical'
+      originalType: type
     }));
 
     return (
@@ -1521,9 +1529,11 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           </View>
 
           <Text style={styles.healthSafetySubtitle}>
-            {report.serviceType === 'myocide'
-              ? i18n.t("technician.report.healthSafety.baitsUsed")
-              : i18n.t("technician.report.healthSafety.chemicalsUsed")}
+            {report.serviceType === 'certificate'
+              ? i18n.t("technician.report.healthSafety.materialsUsed")
+              : report.serviceType === 'myocide'
+                ? i18n.t("technician.report.healthSafety.baitsUsed")
+                : i18n.t("technician.report.healthSafety.chemicalsUsed")}
           </Text>
 
           {materialsWithSafety.map((material, index) => (
@@ -1821,6 +1831,16 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
           renderServiceDetails()}
         
         
+        {!!report.chargeableMaterials?.length && <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="inventory-2" size={20} color="#2c3e50"/>
+            <Text style={styles.sectionTitle}>Υλικά</Text>
+          </View>
+          {report.chargeableMaterials.map((material,index) => <View key={`${material.itemId}-${index}`} style={styles.tableRow}>
+            <Text style={[styles.tableCell,{flex:3}]}>{material.name}</Text>
+            <Text style={[styles.tableCell,{flex:1}]}>Ποσότητα: {material.quantity}</Text>
+          </View>)}
+        </View>}
         {renderTreatmentPhotos()}  
       
         {renderServiceNotes()}
