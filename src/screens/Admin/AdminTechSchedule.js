@@ -1,3 +1,5 @@
+import {normalizeAppointment} from "../../services/normalizeAppointment";
+import {recurrencePatch, editOptionsValid} from "../../utils/appointmentEdit";
 import { MaterialSelector, Action as CommercialAction, money } from "../../components/ChargeableMaterials";
 import CommercialEditor from "../../components/CommercialEditor";
 import AppointmentBusinessFields from "../../components/AppointmentBusinessFields";
@@ -116,6 +118,9 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   const [recurrenceDays, setRecurrenceDays] = useState(null);
   const [totalVisits, setTotalVisits] = useState(null);
   const [editCustomerType, setEditCustomerType] = useState("");
+  const [editCommercial,setEditCommercial] = useState(null);
+  const [editMaterials,setEditMaterials] = useState([]);
+  const [editMaterialsTotal,setEditMaterialsTotal] = useState(0);
   const [editRecurrenceDays, setEditRecurrenceDays] = useState(null);
   const [editTotalVisits, setEditTotalVisits] = useState(null);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -822,21 +827,36 @@ function buildVatPricePayload(netValue, vatValue) {
     return label;
   }
 
-  function handleEditAppointment(appointment) {
+  async function handleEditAppointment(appointment) {
+    if (processing) return;
+    setProcessing(true);
+    try {
+    setEditCommercial(null); setEditMaterials([]);
+    const capabilities = await apiService.commercialCapabilities();
+    if (!capabilities?.success) throw Error(capabilities?.error || 'Αποτυχία φόρτωσης ραντεβού');
+    let commercial = null;
+    if (capabilities.enabled) {
+      commercial = await apiService.commercialAppointment(appointment.id);
+      if (!commercial?.success || !commercial.terms?.lines) throw Error(commercial?.error || 'Αποτυχία φόρτωσης υλικών');
+      if (commercial.appointment) appointment = {...appointment,...normalizeAppointment(commercial.appointment)};
+      setEditCommercial(commercial);
+      setEditMaterials(commercial.terms.lines.filter(l=>l.kind==='material').map(l=>({itemId:l.key,quantity:Number(l.quantity)})));
+    }
+
     
     setEditingAppointment(appointment);
     const currentCustomer = customers.find(c =>
       String(c.customerId) === String(appointment.customerId ?? appointment.customer_id));
     setEditCustomerType(currentCustomer?.customerType || appointment.customerType || appointment.customer_type || "");
-    setEditRecurrenceDays(appointment.recurrenceDays ?? appointment.recurrence_days ?? null);
-    setEditTotalVisits(appointment.recurrenceTotalVisits ?? appointment.recurrence_total_visits ?? null);
+    setEditRecurrenceDays((appointment.recurrenceDays ?? appointment.recurrence_days) == null ? null : Number(appointment.recurrenceDays ?? appointment.recurrence_days));
+    setEditTotalVisits((appointment.recurrenceTotalVisits ?? appointment.recurrence_total_visits) == null ? null : Number(appointment.recurrenceTotalVisits ?? appointment.recurrence_total_visits));
     
     // Populate all fields from the appointment
     setEditServiceType(appointment.serviceType || 'myocide');
     setEditSpecialServiceSubtype(appointment.specialServiceSubtype || appointment.special_service_subtype || null);
     setEditOtherPestName(appointment.otherPestName || appointment.other_pest_name || '');
     setEditInsecticideDetails(appointment.insecticideDetails || appointment.insecticide_details || '');
-    setEditDisinfectionDetails(appointment.disinfection_details || '');
+    setEditDisinfectionDetails(appointment.disinfectionDetails || appointment.disinfection_details || '');
     const storedNetPrice =
       appointment.serviceNetPrice ??
       appointment.service_net_price ??
@@ -969,11 +989,20 @@ function buildVatPricePayload(netValue, vatValue) {
 
     setEditTechnicianId(technicianId);
     
+    const serviceLine = commercial?.terms.lines.find(l=>l.kind==='service');
+    if (serviceLine) {
+      setEditServicePrice((serviceLine.netCents/100).toFixed(2));
+      setEditServiceVatPercent(String(serviceLine.vatBasisPoints/100));
+    }
     setShowEditModal(true);
+    } catch(e) {
+      if (Platform.OS==='web') window.alert(e.message);
+      else Alert.alert(i18n.t('common.error'),e.message);
+    } finally {setProcessing(false);}
   }
 
   async function saveEditedDetails() {
-    if (!appointmentOptionsValid(editCustomerType, editAppointmentCategory, editRecurrenceDays, editTotalVisits)) {
+    if (!editingAppointment || !editOptionsValid(editingAppointment, editCustomerType, editAppointmentCategory, editRecurrenceDays, editTotalVisits)) {
       if (Platform.OS === "web") window.alert(i18n.t("business.chooseOptions"));
       else Alert.alert(i18n.t("common.error"), i18n.t("business.chooseOptions"));
       return;
@@ -1097,9 +1126,7 @@ function buildVatPricePayload(netValue, vatValue) {
       // Build the update payload
       const payload = {
         ...editPricePayload,
-        appointmentCategory: editAppointmentCategory,
-        recurrenceDays: editAppointmentCategory === "contract_service" ? editRecurrenceDays : null,
-        totalVisits: editAppointmentCategory === "contract_service" ? editTotalVisits : null,
+        ...recurrencePatch(editingAppointment, editAppointmentCategory, editRecurrenceDays, editTotalVisits),
         serviceType: editServiceType,
         specialServiceSubtype: editSpecialServiceSubtype,
         otherPestName: '',
@@ -1129,6 +1156,12 @@ function buildVatPricePayload(netValue, vatValue) {
           "Certification Service";
       }
       
+      if (editCommercial) {
+        payload.commercial = {expectedRevision:editCommercial.revision,
+          serviceNetPrice:editPricePayload.serviceNetPrice,serviceVatPercent:editPricePayload.serviceVatPercent,
+          materials:editMaterials};
+        for (const field of ['servicePrice','serviceNetPrice','serviceVatPercent','serviceVatAmount']) delete payload[field];
+      }
       const result = await apiService.updateAppointment(appointmentIdToUpdate, payload);
       
       if (result?.success) {
@@ -2373,6 +2406,11 @@ function buildVatPricePayload(netValue, vatValue) {
                   </Text>
                 </View>
 
+                {editCommercial && <View style={styles.formGroup}>
+                  <MaterialSelector value={editMaterials} onChange={setEditMaterials}
+                    snapshotLines={editCommercial.terms.lines} onTotal={setEditMaterialsTotal}/>
+                  <Text style={styles.formLabel}>Συνολικό κόστος ραντεβού: {money(Math.round(buildVatPricePayload(editServicePrice,editServiceVatPercent).servicePrice*100)+editMaterialsTotal)}</Text>
+                </View>}
                 {/* APPOINTMENT CATEGORY */}
                 <AppointmentBusinessFields category={editAppointmentCategory} recurrenceDays={editRecurrenceDays}
                   containerStyle={styles.formGroup}

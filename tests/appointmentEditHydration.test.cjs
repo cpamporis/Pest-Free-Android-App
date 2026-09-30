@@ -1,0 +1,11 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('fs'),path=require('path'),vm=require('vm');
+test('edit form hydrates saved appointment data, contract numbers and material snapshots',async()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../src/screens/Admin/AdminTechSchedule.js'),'utf8');
+ const start=source.indexOf('  async function handleEditAppointment(appointment) {');const end=source.indexOf('\n  async function saveEditedDetails()',start);assert.ok(start>=0&&end>start);
+ const code=source.slice(start,end);const state={};const context={processing:false,customers:[],appointments:[],console,Platform:{OS:'web'},window:{alert:m=>{throw Error(m);}},i18n:{t:k=>k},parseDecimalInput:v=>v==null?null:Number(v),roundMoney:v=>Math.round(v*100)/100};
+ for(const name of code.match(/\bset[A-Z]\w*/g)||[])context[name]=v=>{state[name]=v;};
+ const normalizeSource=fs.readFileSync(path.join(__dirname,'../src/services/normalizeAppointment.js'),'utf8').replace('export function','function');context.normalizeAppointment=vm.runInNewContext(normalizeSource+';normalizeAppointment');
+ context.apiService={commercialCapabilities:async()=>({success:true,enabled:true}),commercialAppointment:async()=>({success:true,revision:5,appointment:{id:'a',appointment_category:'contract_service',recurrence_days:'30',recurrence_total_visits:'6',service_type:'insecticide',insecticide_details:'Kitchen',technician_id:'tech',appointment_time:'10:45',service_net_price:100,service_vat_percent:24},terms:{lines:[{kind:'service',netCents:18000,vatBasisPoints:2400},{kind:'material',key:'item',quantity:'3',unitNetCents:1000,vatBasisPoints:1300}]}})};
+ const fn=vm.runInNewContext(code+';handleEditAppointment',context);await fn({id:'a',serviceType:'myocide'});
+ assert.equal(state.setEditServiceType,'insecticide');assert.equal(state.setEditInsecticideDetails,'Kitchen');assert.equal(state.setEditRecurrenceDays,30);assert.equal(state.setEditTotalVisits,6);assert.equal(state.setEditServicePrice,'180.00');assert.equal(state.setEditTime,'10:45');assert.equal(state.setEditMaterials[0].itemId,'item');assert.equal(state.setEditMaterials[0].quantity,3);assert.equal(state.setEditCommercial.revision,5);assert.equal(state.setShowEditModal,true);assert.equal(state.setProcessing,false);
+});
