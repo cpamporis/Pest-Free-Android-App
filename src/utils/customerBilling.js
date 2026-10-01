@@ -13,6 +13,7 @@ function newPaymentReference() {
   return `pay_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}_${Math.random().toString(36).slice(2)}`;
 }
 function appointmentOptionsValid(type, category, days, totalVisits) {
+  if (category !== "contract_service") return true;
   return ["private", "business"].includes(type) &&
     (category !== "contract_service" || (RECURRENCE_DAYS.includes(Number(days)) &&
       (![7, 14, 30].includes(Number(days)) ||
