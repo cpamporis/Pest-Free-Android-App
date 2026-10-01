@@ -1,3 +1,4 @@
+import {groupStationsByMap} from "../../utils/stationMapIdentity";
 // ReportScreen.js - FIXED VERSION
 import React, { useEffect, useState } from "react";
 import { 
@@ -1007,6 +1008,10 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
         </View>
 
         {/* BAIT STATIONS */}
+        {groupStationsByMap(report.stations || [], String(i18n.locale || "el").startsWith("en") ? "Unassigned floor plan" : "Χωρίς προσδιορισμένη κάτοψη").map(mapGroup => {
+          const stationsByType = Object.fromEntries(["BS", "RM", "ST", "LT", "PT"].map(type => [type, mapGroup.stations.filter(s => String(s.station_type || s.stationType || "BS").toUpperCase() === type).sort((a,b) => Number(a.station_number ?? a.station_id) - Number(b.station_number ?? b.station_id))]));
+          return <View key={mapGroup.id || "unassigned"}>
+            <Text style={{fontWeight:"700",fontSize:18,color:"#263238",marginVertical:14}}>{mapGroup.name}</Text>
         {stationsByType.BS.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -1440,6 +1445,9 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
             </View>
           </View>
         )}
+
+          </View>;
+        })}
 
         {(!report.stations || report.stations.length === 0) && (
           <View style={styles.emptyDataCard}>

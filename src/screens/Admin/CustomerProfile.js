@@ -1,3 +1,4 @@
+import MapStationAnalysis from "../../components/MapStationAnalysis";
 import { unavailable } from "../../utils/stationCondition";
 import CustomerBalancePanel from "../../components/CustomerBalancePanel";
 //Admin/CustomerProfile.js
@@ -383,6 +384,8 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
               visit.stations.forEach(station => {
                 extractedTrends.push({
                   date: visit.appointmentDate || visit.startTime,
+                  map_id: station.map_id ?? station.mapId ?? "",
+                  map_name: station.map_name ?? station.mapName ?? null,
                   station_id: station.station_id || station.station_number,
                   station_type: station.station_type,
                   condition: station.condition, access: station.access,
@@ -425,7 +428,9 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
             visit.stations.forEach(station => {
               extractedTrends.push({
                 date: visit.appointmentDate || visit.startTime,
-                station_id: station.station_id || station.station_number,
+                map_id: station.map_id ?? station.mapId ?? "",
+                  map_name: station.map_name ?? station.mapName ?? null,
+                  station_id: station.station_id || station.station_number,
                 station_type: station.station_type,
                   condition: station.condition, access: station.access,
                 consumption: station.consumption,
@@ -1580,82 +1585,7 @@ export default function CustomerProfile({ customer, onClose, onOpenReport }) {
                 </View>
               </View>
 
-              {/* Latest Service Chart */}
-              {latestService && latestService.stations && (
-                <>
-                  <Text style={styles.chartSubTitle}>
-                    {i18n.t("admin.customerProfile.charts.latestService")}
-                  </Text>
-                  {renderDeviceChart()}
-                </>
-              )}
-
-              {/* Comparison Chart */}
-              {renderComparisonChart()}
-
-              {/* Monthly Activity Trend */}
-              {renderMonthlyActivityChart()}
-
-              {/* Top 10 Most Active Bait Stations */}
-              {topStations.length > 0 && (
-                <>
-                  <Text style={styles.chartSubTitle}>
-                    {i18n.t("admin.customerProfile.charts.topStations.title")}
-                  </Text>
-                  <View style={styles.topStationsContainer}>
-                    {topStations.map((station, index) => (
-                      <View key={station.stationId} style={styles.topStationRow}>
-                        <View style={styles.topStationRank}>
-                          <View style={[
-                            styles.rankBadge,
-                            index === 0 && styles.rankBadgeGold,
-                            index === 1 && styles.rankBadgeSilver,
-                            index === 2 && styles.rankBadgeBronze
-                          ]}>
-                            <Text style={styles.rankText}>#{index + 1}</Text>
-                          </View>
-                        </View>
-                        
-                        <View style={styles.topStationInfo}>
-                          <Text style={styles.topStationId}>
-                            {i18n.t("admin.customerProfile.charts.topStations.station", { id: station.stationId })}
-                          </Text>
-                          <View style={styles.topStationStats}>
-                            <View style={styles.topStationStat}>
-                              <Text style={styles.topStationStatLabel}>
-                                {i18n.t("admin.customerProfile.charts.topStations.fullConsumption")}
-                              </Text>
-                              <Text style={styles.topStationStatValue}>
-                                {station.count100} {i18n.t("admin.customerProfile.charts.topStations.times")}
-                              </Text>
-                            </View>
-                            <View style={styles.topStationStat}>
-                              <Text style={styles.topStationStatLabel}>
-                                {i18n.t("admin.customerProfile.charts.topStations.avgConsumption")}
-                              </Text>
-                              <Text style={styles.topStationStatValue}>
-                                {station.avgConsumption.toFixed(1)}%
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                        
-                        <View style={styles.topStationProgress}>
-                          <View style={styles.progressBarBg}>
-                            <View 
-                              style={[
-                                styles.progressBarFill,
-                                { width: `${station.avgConsumption}%` }
-                              ]} 
-                            />
-                          </View>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                </>
-              )}
-              
+              <MapStationAnalysis rows={trendData} maps={maps} latest={latestService?.stations || []} type={selectedDevice} year={selectedYear} period={selectedPeriod} />
             </View>
             )}
 
