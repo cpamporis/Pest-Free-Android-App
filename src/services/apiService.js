@@ -1,3 +1,4 @@
+const { uploadedFileUrl } = require("../utils/privateUploadUrl");
 import { createMaterialsCatalogClient } from "./materialsCatalogClient";
 import { Platform } from "react-native";
 // apiService.js - Pestify Android production client
@@ -558,6 +559,7 @@ async function uploadCustomerMap(formData) {
 }
 
 const apiService = {
+  getUploadedFileUrl: filename => uploadedFileUrl(filename, API_BASE_URL),
   commercialCapabilities: () => request("GET","/chargeable-materials/capabilities"),
   commercialCatalog: () => request("GET","/chargeable-materials/catalog"),
   commercialCreateCategory: body => request("POST","/chargeable-materials/categories",body),

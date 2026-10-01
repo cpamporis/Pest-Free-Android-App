@@ -27,4 +27,19 @@ function isUploadReference(uri) {
   return typeof uri === "string" && /\/uploads\//i.test(uri);
 }
 
-module.exports = { privateUploadUrl, isUploadReference };
+// Accept stored filenames as well as legacy upload URLs; keep the same
+// origin and image-name validation used by ProtectedImage.
+function uploadedFileUrl(filename, apiBaseUrl) {
+  if (typeof filename !== "string" || !filename.trim()) return null;
+  const value = filename.trim();
+  if (/^https?:\/\//i.test(value)) return privateUploadUrl(value, apiBaseUrl);
+  const name = value.replace(/^\/?uploads\//i, "");
+  if (!SAFE_NAME.test(name)) return null;
+  try {
+    return privateUploadUrl(`${new URL(apiBaseUrl).origin}/uploads/${name}`, apiBaseUrl);
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { privateUploadUrl, isUploadReference, uploadedFileUrl };
