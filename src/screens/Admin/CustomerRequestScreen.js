@@ -1,3 +1,5 @@
+import {MaterialSelector, money} from "../../components/ChargeableMaterials";
+const {requestAppointmentMaterials} = require("../../utils/requestAppointmentMaterials");
 import TechnicianRequestsPanel from "../../components/TechnicianRequestsPanel";
 // CustomerRequestScreen.js - UPDATED MODAL STYLING
 import React, { useState, useEffect } from "react";
@@ -44,6 +46,11 @@ export default function CustomerRequestScreen({ onClose }) {
   useState("24");
   const [technicians, setTechnicians] = useState([]);
   const [processing, setProcessing] = useState(false);
+  const [commercialEnabled, setCommercialEnabled] = useState(false);
+  const [selectedMaterials, setSelectedMaterials] = useState([]);
+  const [materialSnapshot, setMaterialSnapshot] = useState([]);
+  const [materialTotal, setMaterialTotal] = useState(0);
+  const [sourceCommercialRevision, setSourceCommercialRevision] = useState(0);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [appointmentDate, setAppointmentDate] = useState(new Date());
@@ -56,8 +63,6 @@ export default function CustomerRequestScreen({ onClose }) {
   const [insecticideDetails, setInsecticideDetails] = useState('');
   const [disinfectionDetails, setDisinfectionDetails] = useState('');
   const [otherPestName, setOtherPestName] = useState(selectedRequest?.other_pest_name || '');
-  const IMAGE_BASE =
-  "https://field-inspections-backend-production.up.railway.app/uploads/";
   const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [verifyPassword, setVerifyPassword] = useState("");
@@ -294,7 +299,7 @@ function buildVatPricePayload(netValue, vatValue) {
   const openImageViewer = (images, index) => {
     if (!images || !Array.isArray(images) || images.length === 0) return;
 
-    setViewerImages(images.map(img => ({ uri: IMAGE_BASE + img })));
+    setViewerImages(images.map(img => ({ uri: apiService.getUploadedFileUrl(img) })));
     setViewerIndex(index);
     setIsImageViewerVisible(true);
   };
@@ -352,7 +357,8 @@ function buildVatPricePayload(netValue, vatValue) {
     setShowDetailsModal(true);
   };
 
-  const handleAccept = (request) => {
+  const handleAccept = async (request) => {
+    if (processing) return;
     setSelectedRequest(request);
 
     if (request.type === "password_recovery") {
@@ -378,7 +384,26 @@ function buildVatPricePayload(netValue, vatValue) {
     setDisinfectionDetails(request.description || '');
     setAppointmentPrice("");
     setAppointmentVatPercent("24");
-    setShowAppointmentModal(true);
+    setSelectedMaterials([]); setMaterialSnapshot([]); setMaterialTotal(0);
+    setAppointmentCategory("first_time"); setComplianceValidUntil("");
+    setProcessing(true);
+    try {
+      const loaded = await requestAppointmentMaterials(apiService, request);
+      setCommercialEnabled(loaded.enabled);
+      setSelectedMaterials(loaded.materials); setMaterialSnapshot(loaded.snapshotLines);
+      setSourceCommercialRevision(loaded.revision);
+      if (loaded.appointment) {
+        const a = loaded.appointment;
+        setAppointmentPrice(String(a.service_net_price ?? ""));
+        setAppointmentVatPercent(String(a.service_vat_percent ?? 24));
+        setAppointmentCategory(a.appointment_category || "first_time");
+        setComplianceValidUntil(a.compliance_valid_until?.slice(0,10) || "");
+        setAppointmentData(prev=>({...prev, technicianId:prev.technicianId || a.technician_id || ""}));
+      }
+      setShowAppointmentModal(true);
+    } catch (error) {
+      Alert.alert(i18n.t("common.error"), error.message);
+    } finally { setProcessing(false); }
   };
 
   const handleDecline = async (request) => {
@@ -665,6 +690,7 @@ const appointmentPricePayload = buildVatPricePayload(
         serviceType: finalServiceType,
         status: "scheduled",
         ...appointmentPricePayload,
+        ...(commercialEnabled ? {materials:selectedMaterials} : {}),
         compliance_valid_until: complianceValidUntil || null,
         appointmentCategory,
       };
@@ -884,9 +910,11 @@ const appointmentPricePayload = buildVatPricePayload(
       // ✅ Create the payload with ALL fields including technicianId
       const payload = {
         action: "approve",
+        ...(commercialEnabled ? {sourceCommercialRevision} : {}),
         requestedDate: appointmentData.date,
         requestedTime: appointmentData.time,
         ...appointmentPricePayload,
+        ...(commercialEnabled ? {materials:selectedMaterials} : {}),
         complianceValidUntil: complianceValidUntil || null,
         technicianId: appointmentData.technicianId, // Include technicianId
         appointmentCategory: appointmentCategory,
@@ -1285,7 +1313,7 @@ const appointmentPricePayload = buildVatPricePayload(
                                 activeOpacity={0.8}
                               >
                                 <ProtectedImage
-                                  source={{ uri: IMAGE_BASE + img }}
+                                  source={{ uri: apiService.getUploadedFileUrl(img) }}
                                   style={{
                                     width: 70,
                                     height: 70,
@@ -1433,7 +1461,7 @@ const appointmentPricePayload = buildVatPricePayload(
                               activeOpacity={0.8}
                             >
                               <ProtectedImage
-                                source={{ uri: IMAGE_BASE + img }}
+                                source={{ uri: apiService.getUploadedFileUrl(img) }}
                                 style={{
                                   width: 70,
                                   height: 70,
@@ -1663,6 +1691,14 @@ const appointmentPricePayload = buildVatPricePayload(
                       ).servicePrice.toFixed(2)}
                   </Text>
                 </View>
+
+                {commercialEnabled && <>
+                  <MaterialSelector key={selectedRequest?.id} value={selectedMaterials}
+                    onChange={setSelectedMaterials} onTotal={setMaterialTotal} snapshotLines={materialSnapshot}/>
+                  <Text style={{marginBottom:16,fontSize:15,fontWeight:'700',color:'#2c3e50'}}>
+                    {i18n.getLocale() === 'en' ? 'Service + materials incl. VAT' : 'Υπηρεσία + υλικά με ΦΠΑ'}: {money(Math.round(buildVatPricePayload(appointmentPrice, appointmentVatPercent).servicePrice * 100) + materialTotal)}
+                  </Text>
+                </>}
 
                 {/* APPOINTMENT CATEGORY */}
                 <View style={styles.formGroup}>
