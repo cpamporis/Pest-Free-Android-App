@@ -74,8 +74,6 @@ export default function CustomerBalancePanel({ customerId, onPaymentRecorded }) 
         <CustomerBalanceBadge cents={account.balanceCents} />
         <Text style={styles.link}>{i18n.t(pending ? "business.retryPending" : "business.recordPayment")}</Text>
       </Pressable> : <Text style={styles.help}>{i18n.t("business.noBalance")}</Text>}
-      {Number(account.legacyPaid?.count) > 0 && <Text style={styles.help}>{i18n.t("business.legacyPaid")}: {account.legacyPaid.count} · €{formatCents(account.legacyPaid.grossCents)}</Text>}
-      <Text style={styles.help}>{i18n.t("business.trackingHelp")}</Text>
     </> : error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color="#147d69" />}
     <Modal transparent visible={open} onRequestClose={() => { if (!busy) setOpen(false); }}>
       <View style={styles.shade}><View style={styles.card}>

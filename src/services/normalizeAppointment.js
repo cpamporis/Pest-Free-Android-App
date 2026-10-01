@@ -14,10 +14,16 @@ export function normalizeAppointment(a) {
 
   return {
     id: a.id,
+    insecticideDetails: a.insecticideDetails ?? a.insecticide_details ?? '',
+    disinfectionDetails: a.disinfectionDetails ?? a.disinfection_details ?? '',
+    complianceValidUntil: a.complianceValidUntil ?? a.compliance_valid_until ?? '',
+
     totalPriceCents: a.totalPriceCents ?? null,
     commercialRevision: a.commercialRevision ?? null,
     customerType: a.customerType ?? a.customer_type ?? null,
     recurrenceDays: a.recurrenceDays ?? a.recurrence_days ?? null,
+    recurrenceTotalVisits: a.recurrenceTotalVisits ?? a.recurrence_total_visits ?? null,
+    recurrenceVisitIndex: a.recurrenceVisitIndex ?? a.recurrence_visit_index ?? null,
 
     // 🔥 CRITICAL FIX
     technicianId:
@@ -52,10 +58,10 @@ export function normalizeAppointment(a) {
     status: a.status || "scheduled",
 
     specialServiceSubtype:
-      a.special_service_subtype ?? null,
+      a.specialServiceSubtype ?? a.special_service_subtype ?? null,
 
     otherPestName:
-      a.other_pest_name ?? null,
+      a.otherPestName ?? a.other_pest_name ?? null,
 
     servicePrice:
       a.service_price ??

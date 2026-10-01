@@ -31,7 +31,6 @@ export default function Statistics({ onClose }) {
   
   // REVENUE STATES
   const [revenueStats, setRevenueStats] = useState(null);
-  const [revenueTracking, setRevenueTracking] = useState(null);
   const [revenueByService, setRevenueByService] = useState([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState([]);
   const [topCustomers, setTopCustomers] = useState([]);
@@ -269,7 +268,6 @@ const completedAppointmentsDisplay =
         : []
     );
     setRevenueStats(dashboard.revenueStats || null);
-    setRevenueTracking(dashboard.revenueBasis === "legacy_assumed_paid_plus_receipts" ? dashboard.trackingStartedAt : null);
     setRevenueByService(
       Array.isArray(dashboard.revenueByService)
         ? dashboard.revenueByService
@@ -911,10 +909,6 @@ const completedAppointmentsDisplay =
           />
         }
       >
-        {revenueTracking && <View style={{ padding: 16, backgroundColor: "#e6f3ef" }}>
-          <Text style={{ fontWeight: "700", color: "#185c4c" }}>{i18n.t("business.cashBasis")}</Text>
-          <Text style={{ marginTop: 5, color: "#365b50", lineHeight: 20 }}>{i18n.t("business.cashTrackingHelp")} {new Date(revenueTracking).toLocaleDateString()}</Text>
-        </View>}
         {/* PROFESSIONAL HEADER */}
         <View style={styles.header}>
           <View style={styles.headerTop}>

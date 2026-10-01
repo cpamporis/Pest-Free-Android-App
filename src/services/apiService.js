@@ -1,3 +1,4 @@
+const { uploadedFileUrl } = require("../utils/privateUploadUrl");
 import { createMaterialsCatalogClient } from "./materialsCatalogClient";
 import { Platform } from "react-native";
 // apiService.js - Pestify Android Security Lab client
@@ -558,6 +559,7 @@ async function uploadCustomerMap(formData) {
 }
 
 const apiService = {
+  getUploadedFileUrl: filename => uploadedFileUrl(filename, API_BASE_URL),
   commercialCapabilities: () => request("GET","/chargeable-materials/capabilities"),
   commercialCatalog: () => request("GET","/chargeable-materials/catalog"),
   commercialCreateCategory: body => request("POST","/chargeable-materials/categories",body),
@@ -1006,6 +1008,7 @@ const apiService = {
       ""
     ),
 
+    customerType: c.customerType ?? c.customer_type ?? null,
     customerName:
       c.customerName ??
       c.name ??
@@ -1264,8 +1267,8 @@ const apiService = {
       specialServiceSubtype: payload.specialServiceSubtype || null,
       otherPestName: payload.otherPestName || null,
       appointmentCategory: payload.appointmentCategory || null,
-      customerType: payload.customerType,
       recurrenceDays: payload.appointmentCategory === "contract_service" ? payload.recurrenceDays : null,
+      totalVisits: payload.appointmentCategory === "contract_service" ? payload.totalVisits : null,
       insecticideDetails: payload.insecticideDetails || null,
       disinfection_details: payload.disinfection_details || null,
 
@@ -1418,7 +1421,7 @@ const apiService = {
       return { success: false, error: "Appointment ID is required" };
     }
 
-    if (payload.customerType !== undefined || payload.recurrenceDays !== undefined) {
+    if (payload.recurrenceDays !== undefined || payload.totalVisits !== undefined) {
       const business = await request("GET", "/business/capabilities");
       if (!business?.enabled || business.version !== 1) return { success: false, status: 503, error: "Business features are not enabled on this server" };
     }
