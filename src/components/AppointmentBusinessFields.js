@@ -42,12 +42,17 @@ function Dropdown({ label, value, options, onChange, disabled }) {
 
 export default function AppointmentBusinessFields({
   category, recurrenceDays, onRecurrenceChange, totalVisits, onTotalVisitsChange,
+  customerType, onCustomerTypeChange, customerTypeDisabled = false,
   containerStyle, disabled = false
 }) {
-  if (category !== "contract_service") return null;
   const countRequired = [7, 14, 30].includes(Number(recurrenceDays));
   return (
     <View style={[styles.card, containerStyle]}>
+      <Dropdown label={i18n.t("business.customerType")} value={customerType || null}
+        options={["private", "business"].map(value => ({value, label:i18n.t(`business.${value}`)}))}
+        onChange={onCustomerTypeChange}
+        disabled={disabled || customerTypeDisabled || !onCustomerTypeChange} />
+      {category === "contract_service" && <>
       <Dropdown
         label={i18n.t("business.frequency")}
         value={recurrenceDays || null}
@@ -70,6 +75,7 @@ export default function AppointmentBusinessFields({
         />
       )}
       <Text style={styles.help}>{i18n.t("business.recurrenceHelp")}</Text>
+      </>}
     </View>
   );
 }

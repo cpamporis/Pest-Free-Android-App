@@ -114,7 +114,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   const [servicePrice, setServicePrice] = useState("");
   const [serviceVatPercent, setServiceVatPercent] = useState("24");
   const [appointmentCategory, setAppointmentCategory] = useState("first_time");
-  const [customerType, setCustomerType] = useState("");
+  const [customerType, setCustomerType] = useState("private");
   const [recurrenceDays, setRecurrenceDays] = useState(null);
   const [totalVisits, setTotalVisits] = useState(null);
   const [editCustomerType, setEditCustomerType] = useState("");
@@ -158,7 +158,7 @@ export default function AdminTechSchedule({ onClose, initialCustomerId, onAppoin
   const [selectedCustomerForAdd, setSelectedCustomerForAdd] = useState(null);
   useEffect(() => {
     const selected = customers.find(c => c.customerId === selectedCustomerForAdd);
-    setCustomerType(selected?.customerType || "");
+    setCustomerType(selected?.customerType || "private");
   }, [selectedCustomerForAdd, customers]);
   const [customerSearch, setCustomerSearch] = useState("");
   const [appointmentDurationEstimates, setAppointmentDurationEstimates] =
@@ -585,6 +585,7 @@ function buildVatPricePayload(netValue, vatValue) {
         appointmentTime: time.trim(),
         serviceType,
         appointmentCategory,
+        customerType: customerType || "private",
         ...(appointmentCategory === "contract_service" ? {recurrenceDays, totalVisits} : {}),
         ...pricePayload,
         ...(commercialEnabled ? {materials:selectedMaterials} : {}),
@@ -846,7 +847,7 @@ function buildVatPricePayload(netValue, vatValue) {
     setEditingAppointment(appointment);
     const currentCustomer = customers.find(c =>
       String(c.customerId) === String(appointment.customerId ?? appointment.customer_id));
-    setEditCustomerType(currentCustomer?.customerType || appointment.customerType || appointment.customer_type || "");
+    setEditCustomerType(appointment.customerType || appointment.customer_type || (appointment.status === "completed" ? "" : currentCustomer?.customerType || "private"));
     setEditRecurrenceDays((appointment.recurrenceDays ?? appointment.recurrence_days) == null ? null : Number(appointment.recurrenceDays ?? appointment.recurrence_days));
     setEditTotalVisits((appointment.recurrenceTotalVisits ?? appointment.recurrence_total_visits) == null ? null : Number(appointment.recurrenceTotalVisits ?? appointment.recurrence_total_visits));
     
@@ -1126,6 +1127,9 @@ function buildVatPricePayload(netValue, vatValue) {
       const payload = {
         ...editPricePayload,
         ...recurrencePatch(editingAppointment, editAppointmentCategory, editRecurrenceDays, editTotalVisits),
+        ...(editingAppointment.status !== "completed" && editCustomerType &&
+          editCustomerType !== (editingAppointment.customerType ?? editingAppointment.customer_type)
+          ? {customerType:editCustomerType} : {}),
         serviceType: editServiceType,
         specialServiceSubtype: editSpecialServiceSubtype,
         otherPestName: '',
@@ -1783,6 +1787,7 @@ function buildVatPricePayload(netValue, vatValue) {
 
         <MaterialSelector containerStyle={{marginHorizontal:24}} value={selectedMaterials} onChange={setSelectedMaterials} onTotal={setMaterialTotal}/>
         <AppointmentBusinessFields category={appointmentCategory} recurrenceDays={recurrenceDays}
+          customerType={customerType} onCustomerTypeChange={setCustomerType}
           containerStyle={[styles.serviceSelector, styles.businessFieldsCard]}
           onRecurrenceChange={setRecurrenceDays} totalVisits={totalVisits} onTotalVisitsChange={setTotalVisits} />
 
@@ -2412,6 +2417,8 @@ function buildVatPricePayload(netValue, vatValue) {
                 </View>}
                 {/* APPOINTMENT CATEGORY */}
                 <AppointmentBusinessFields category={editAppointmentCategory} recurrenceDays={editRecurrenceDays}
+                  customerType={editCustomerType} onCustomerTypeChange={setEditCustomerType}
+                  customerTypeDisabled={editingAppointment?.status === "completed"}
                   containerStyle={styles.formGroup}
                   onRecurrenceChange={setEditRecurrenceDays} totalVisits={editTotalVisits}
                   onTotalVisitsChange={setEditTotalVisits}
