@@ -21,13 +21,19 @@ The probe captures at most eight seconds of PCM. Navigation away, backgrounding,
 
 AudioRecord supplies 16 kHz mono PCM to a JNI bridge running whisper.cpp locally. No speech-recognition provider or network fallback is used. Audio buffers exist in memory and are cleared after processing; no audio files or transcript logs are created. The result is displayed transiently and cleared when the probe screen is closed. Only the existing inspection workflow communicates with the Lab backend.
 
-Approved native dependency: whisper.cpp v1.9.4 at commit 927cfce34f31707e17f2bff35c349632fb9e2c3a, MIT. Model: multilingual base Q5_1, 59,707,625 bytes, MIT. Exact URLs, revisions and SHA-256 digests are in native/whisper-probe/lock.json. No JavaScript packages or lockfile changes.
+Approved native dependency: whisper.cpp v1.9.4 at commit 927cfce34f31707e17f2bff35c349632fb9e2c3a, MIT. Model: multilingual tiny Q5_1, 32,152,673 bytes, MIT. Exact URLs, revisions and SHA-256 digests are in native/whisper-probe/lock.json. No JavaScript packages or lockfile changes.
 
 The Expo config plugin downloads these fixed artifacts on the build machine, verifies their hashes, and bundles the model and licenses as APK assets. A download/hash error fails the build. The phone does not download the engine/model. At runtime only the model is copied into private no-backup storage, with SHA-256 verification. The PCM and transcript are not stored there.
 
-Only APP_VARIANT=security-lab with PESTIFY_ANDROID_VOICE_LAB=1 enables this plugin. Runtime version is pestify-android-voice-lab-2. Production, iOS, backend and backup configuration are unchanged. Native build additions require a new APK; later JS-only refinements can use a compatible development client or existing update workflow.
+Only APP_VARIANT=security-lab with PESTIFY_ANDROID_VOICE_LAB=1 enables this plugin. Runtime version is pestify-android-voice-lab-3. Production, iOS, backend and backup configuration are unchanged. Native build additions require a new APK; later JS-only refinements can use a compatible development client or existing update workflow.
 
-## Validation and remaining gates
+## Tiny comparison (2026-10-02)
+
+The user confirmed the base model works on the Samsung Galaxy A71. Reported baseline: 5.9 s audio, 0.2 s model loading, 7.3 s recognition. This revision replaces the bundled model with multilingual tiny Q5_1 and displays the native model name in the card. Compare the same phrases and numbers, using Τέλος ομιλίας in both runs. Tiny accuracy and device latency remain to be measured. Capture timing and decoding settings stay the same for a comparable measurement; automatic end-of-speech detection is a later step.
+
+The previous build-time and runtime SHA-256 checks apply to the tiny model too. The existing native library and package dependencies are unchanged. This change requires a fresh APK because the model is an Android asset.
+
+## Validation of the original base implementation
 
 - 161 Node tests pass, including artifact corruption rejection and existing station/map/session tests.
 - Expo Android prebuild succeeds and includes the local library, generated model constants and pinned model asset.

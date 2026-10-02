@@ -21,7 +21,7 @@ module.exports = ({ config }) => {
   return {
     ...config,
     name: SECURITY_LAB_NAME,
-    ...(voice ? { runtimeVersion: "pestify-android-voice-lab-2", plugins: [...(config.plugins || []), "./plugins/withPestifyAndroidVoice"] } : {}),
+    ...(voice ? { runtimeVersion: "pestify-android-voice-lab-3", plugins: [...(config.plugins || []), "./plugins/withPestifyAndroidVoice"] } : {}),
     scheme: SECURITY_LAB_SCHEME,
     android: {
       ...config.android,

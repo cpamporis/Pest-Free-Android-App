@@ -3,9 +3,9 @@
   "engineCommit": "927cfce34f31707e17f2bff35c349632fb9e2c3a",
   "engineUrl": "https://codeload.github.com/ggml-org/whisper.cpp/tar.gz/927cfce34f31707e17f2bff35c349632fb9e2c3a",
   "engineSha256": "41b664fee09e79176ac277b5237debec34f8d74af3c7d71f333f1ec67989ecde",
-  "model": "ggml-base-q5_1.bin",
+  "model": "ggml-tiny-q5_1.bin",
   "modelRevision": "5359861c739e955e79d9a303bcbc70fb988958b1",
-  "modelUrl": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base-q5_1.bin",
-  "modelBytes": 59707625,
-  "modelSha256": "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898"
+  "modelUrl": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny-q5_1.bin",
+  "modelBytes": 32152673,
+  "modelSha256": "818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7"
 }

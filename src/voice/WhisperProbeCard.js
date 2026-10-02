@@ -60,6 +60,7 @@ export default function WhisperProbeCard({ visible, disabled, onBusy }) {
   }
   return <View style={styles.card}>
     <Text style={styles.heading}>Δοκιμή ελληνικών — Whisper</Text>
+    {native?.model && <Text style={styles.text}>Μοντέλο: {native.model}</Text>}
     <Text style={styles.text}>Πρώτα ελέγχουμε ακρίβεια και ταχύτητα σε αυτό το κινητό. Πείτε π.χ. «Σταθμός δύο, κατανάλωση είκοσι πέντε».</Text>
     <Text style={styles.text}>Δεν καταχωρίζει σταθμούς και δεν ενεργοποιεί ακόμη το «Αλέρτ». Κρατήστε αυτή την οθόνη ανοιχτή. Ο ήχος χρησιμοποιείται μόνο στη μνήμη, χωρίς αρχείο ή αποστολή.</Text>
     <Text accessibilityLiveRegion="polite" style={styles.status}>{native?.available ? status : 'Χρειάζεται το νέο Android Lab build με Whisper (Android 13+).'}</Text>
