@@ -126,3 +126,15 @@ test('STOPPED event before startup rejection retains the error and reports only 
  reject(Object.assign(Error(),{code:'SERVICE_START_SECURITYEXCEPTION'}));await start;
  assert.equal(errors.length,1);assert.match(errors[0],/SERVICE_START_SECURITYEXCEPTION/);
 });
+test('failed TTS completion never commits or rearms',async()=>{
+ const f=setup();await f.controller.start();const pending=f.event();f.answer(false);await pending;
+ assert.equal(f.commits,0);assert.equal(f.continued,0);assert.equal(f.active,false);
+});
+test('muted TTS stop while waiting for readback invalidates success arriving late',async()=>{
+ const f=setup();await f.controller.start();const pending=f.event();await f.controller.handleEvent({code:'STOPPED',sessionId:f.id,reason:'TTS_MEDIA_MUTED'});f.answer(true);await pending;
+ assert.equal(f.commits,0);assert.equal(f.continued,0);assert.match(f.states.at(-1)[1],/TTS_MEDIA_MUTED/);
+});
+test('diagnostic transcript and TTS status never enter command path',async()=>{
+ const f=setup();await f.controller.start();for(const code of ['TRANSCRIPT','SPEECH_STAGE'])await f.controller.handleEvent({code,sessionId:f.id,text:'Σταθμός 5 κατανάλωση 25'});
+ assert.equal(f.commits,0);assert.equal(f.continued,0);
+});

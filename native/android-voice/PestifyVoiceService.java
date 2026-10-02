@@ -29,7 +29,7 @@ public final class PestifyVoiceService extends Service {
   private Promise replyPromise;
   private Runnable afterSpeech;
   private int recognitionGeneration;
-  private boolean stopping, heardSpeech;
+  private boolean stopping, heardSpeech, speechStarted;
   private long lastActivity;
   private Runnable idleTimer, replyTimer, speechTimer;
 
@@ -54,8 +54,8 @@ public final class PestifyVoiceService extends Service {
       wakeLock.setReferenceCounted(false); wakeLock.acquire(MAX_SESSION+10000);
       main.postDelayed(()->shutdown("SESSION_LIMIT"),MAX_SESSION);
       audio=(AudioManager)getSystemService(AUDIO_SERVICE);
-      focus=new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
-        .setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+      focus=new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+        .setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
         .setOnAudioFocusChangeListener(change->{ if (change<0) shutdown("AUDIO_INTERRUPTED"); },main).build();
       if (audio.requestAudioFocus(focus)!=AudioManager.AUDIOFOCUS_REQUEST_GRANTED) { shutdown("AUDIO_FOCUS_UNAVAILABLE"); return START_NOT_STICKY; }
       emit("START_STAGE","Τοπική εκφώνηση",null);
@@ -88,15 +88,16 @@ public final class PestifyVoiceService extends Service {
       }
       if (selected==null) { shutdown("LOCAL_TTS_VOICE_MISSING"); return; }
       if (speaker.setVoice(selected)!=TextToSpeech.SUCCESS) { shutdown("LOCAL_TTS_SELECT_FAILED"); return; }
-      speaker.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
+      if (speaker.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())!=TextToSpeech.SUCCESS) {shutdown("TTS_AUDIO_SETUP_FAILED");return;}
       speaker.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-        @Override public void onStart(String id) { }
+        @Override public void onStart(String id) { main.post(()->{if(!stopping && Objects.equals(id,utterance)){speechStarted=true;emit("SPEECH_STAGE","Αναπαραγωγή φωνής",null);}}); }
         @Override public void onDone(String id) { main.post(()->speechDone(id)); }
         @Override public void onError(String id) { main.post(()->{if(id.equals(utterance)) shutdown("SPEECH_FAILED");}); }
         @Override public void onStop(String id,boolean interrupted) { main.post(()->{if(id.equals(utterance) && !stopping) shutdown("SPEECH_INTERRUPTED");}); }
       });
+      emit("SPEECH_STAGE","Μηχανή: "+speaker.getDefaultEngine()+" · φωνή: "+selected.getName()+" · πολυμέσα: "+audio.getStreamVolume(AudioManager.STREAM_MUSIC),null);
       lastActivity=SystemClock.elapsedRealtime();
-      listen(true);
+      speak("Η φωνητική λειτουργία ενεργοποιήθηκε. Πείτε αλέρτ.",()->rearm(true,300));
       // The ready callback is the proof that listening really started; a request alone is not success.
     } catch (Exception e) { shutdown("TTS_SETUP_"+e.getClass().getSimpleName().toUpperCase(Locale.ROOT)); }
   }
@@ -111,7 +112,7 @@ public final class PestifyVoiceService extends Service {
     disposeRecognizer();phase=wake?"wake":"listening";heardSpeech=false;
     final int generation=recognitionGeneration;
     if(engine==null)engine=new WhisperFieldEngine(this,main);
-    if(module.startPromise!=null)emit("START_STAGE","Μοντέλο Tiny και μικρόφωνο",null);
+    if(module.startPromise!=null)emit("START_STAGE","Μοντέλο Base και μικρόφωνο",null);
     boolean started=engine.start(cfg.silenceMs,cfg.captureMs,new WhisperFieldEngine.Listener(){
       private boolean valid(){return !stopping&&generation==recognitionGeneration;}
       public void ready(){if(!valid())return;if(module.startPromise!=null)module.started();emit(wake?"WAITING_WAKE":"LISTENING",null,null);}
@@ -122,10 +123,11 @@ public final class PestifyVoiceService extends Service {
         if(!valid())return;
         disposeRecognizer();
         if(text==null||text.trim().isEmpty()||text.length()>500){rearm(wake,150);return;}
+        if(getPackageName().equals("com.cpamporis.pestfree.dev"))emit("TRANSCRIPT",text,null);
         String normalized=VoiceConfig.normalize(text);
-        if(cfg.stop.contains(normalized)){shutdown("VOICE_CANCELLED");return;}
+        if(VoiceConfig.matches(cfg.stop,normalized)){shutdown("VOICE_CANCELLED");return;}
         if(wake){
-          if(cfg.wake.contains(normalized)){lastActivity=SystemClock.elapsedRealtime();speak(cfg.ready,()->rearm(false,300));}
+          if(VoiceConfig.matches(cfg.wake,normalized)){lastActivity=SystemClock.elapsedRealtime();speak(cfg.ready,()->rearm(false,300));}
           else rearm(true,150);
           return;
         }
@@ -153,13 +155,21 @@ public final class PestifyVoiceService extends Service {
   }
   private void speak(String text,Runnable completion) {
     if (stopping || speaker==null) return;
-    disposeRecognizer(); phase="speaking"; afterSpeech=completion; utterance=UUID.randomUUID().toString();
+    if(audio.getStreamVolume(AudioManager.STREAM_MUSIC)==0 || audio.isStreamMute(AudioManager.STREAM_MUSIC)){shutdown("TTS_MEDIA_MUTED");return;}
+    disposeRecognizer(); speechStarted=false; phase="speaking"; afterSpeech=completion; utterance=UUID.randomUUID().toString();
     clear(speechTimer); speechTimer=()->shutdown("SPEECH_TIMEOUT"); main.postDelayed(speechTimer,30000);
-    try { if (speaker.speak(text,TextToSpeech.QUEUE_FLUSH,new Bundle(),utterance)==TextToSpeech.ERROR) shutdown("SPEECH_FAILED"); }
+    Bundle speechParams=new Bundle();
+    speechParams.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM,AudioManager.STREAM_MUSIC);
+    speechParams.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME,1.0f);
+    emit("SPEECH_STAGE","Αίτημα εκφώνησης",null);
+    try { if (speaker.speak(text,TextToSpeech.QUEUE_FLUSH,speechParams,utterance)==TextToSpeech.ERROR) shutdown("SPEECH_FAILED"); }
     catch (Exception e) { shutdown("SPEECH_FAILED"); }
   }
   private void speechDone(String id) {
     if (stopping || !id.equals(utterance)) return;
+    if(!speechStarted){shutdown("TTS_DONE_WITHOUT_START");return;}
+    if(audio.getStreamVolume(AudioManager.STREAM_MUSIC)==0 || audio.isStreamMute(AudioManager.STREAM_MUSIC)){shutdown("TTS_MEDIA_MUTED");return;}
+    emit("SPEECH_STAGE","Η μηχανή ολοκλήρωσε την εκφώνηση",null);
     clear(speechTimer); utterance=null;
     Runnable done=afterSpeech; afterSpeech=null; if (done!=null) done.run();
   }

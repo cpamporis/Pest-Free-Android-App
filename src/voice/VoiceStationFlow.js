@@ -38,6 +38,9 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
   const [dropdown, setDropdown] = useState(null);
   const [phase, setPhase] = useState('idle');
   const [diagnosticBusy, setDiagnosticBusy] = useState(false);
+  const [lastHeard,setLastHeard]=useState('');
+  const [speechStage,setSpeechStage]=useState('');
+  const [speechEngine,setSpeechEngine]=useState('');
   const [startupError, setStartupError] = useState('');
   const [status, setStatus] = useState('Επιλέξτε δόλωμα και δοσολογία για αυτή την εργασία.');
   const alive = useRef(true);
@@ -60,7 +63,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
       const {targetContext,...stationTarget}=target;
       const value = { ...stationTarget,...routeData,expiresAt:Date.now()+60000,data };
       if (!validateCandidate(c,value).ok) return {ok:false,message:'Πείτε σταθμό και κατανάλωση μηδέν, είκοσι πέντε, πενήντα, εβδομήντα πέντε ή εκατό.'};
-      const detail = data.access === 'No' ? 'πρόσβαση όχι' : data.condition === 'Missing' ? 'κατάσταση λείπει' : data.condition === 'Damaged' ? 'κατάσταση κατεστραμμένο' : `κατανάλωση ${data.consumption}`;
+      const detail = data.access === 'No' ? 'πρόσβαση όχι' : data.condition === 'Missing' ? 'κατάσταση λείπει' : data.condition === 'Damaged' ? 'κατάσταση κατεστραμμένο' : `κατανάλωση ${String(data.consumption).replace("%"," τοις εκατό")}`;
       return {ok:true,candidate:value,readback:`${contextKey(source)!==contextKey(c)?`Κάτοψη ${c.map.name || (source.maps||[]).findIndex(m=>String(m.mapId ?? m.map_id)===routeData.targetMapId)+1}. `:""}Σταθμός ${value.stationId}, ${detail}.`};
     },
     validate: value => (AppState.currentState === 'active' || fieldActive.current) && contextKey(current.current.context) === mountedKey.current && validateVoiceCandidate(current.current.context,value),
@@ -74,7 +77,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
   };
   const fieldController = useRef(null);
   if (!fieldController.current && fieldNative?.enabled) fieldController.current=createFieldVoiceSession({
-    native:fieldNative,...callbacks,onStartFailure:message=>{if(alive.current){setStartupError(message);Alert.alert('Η ακρόαση διακόπηκε',message);}},onActive:value=>{fieldActive.current=value;}
+    native:fieldNative,...callbacks,onDiagnostic:(code,text)=>{if(alive.current){if(code==='TRANSCRIPT')setLastHeard(text);else if(text.startsWith('Μηχανή:'))setSpeechEngine(text);else setSpeechStage(text);}},onStartFailure:message=>{if(alive.current){setStartupError(message);Alert.alert('Η ακρόαση διακόπηκε',message);}},onActive:value=>{fieldActive.current=value;}
   });
   function pause(message) {
     permissionAttempt.current++;
@@ -110,7 +113,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
   async function start() {
     if (diagnosticBusy) return;
     if (!current.current.defaults?.baitType || !current.current.defaults?.dosageG || settingsOpen) return;
-    setStartupError('');
+    setStartupError('');setLastHeard('');setSpeechStage('');setSpeechEngine('');
     pause('Έλεγχος αδειών…'); setPhase('permissions');
     const token = permissionAttempt.current;
     permissionPrompt.current = true;
@@ -159,7 +162,10 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {visible && <LocalRecognitionDiagnostic enabled={!running} onBusy={setDiagnosticBusy} />}
         <View style={styles.card}>
-          <Text style={styles.helper}>Έκδοση φωνής: {fieldNative?.diagnosticVersion || 'base-field-1'}</Text>
+          <Text style={styles.helper}>Έκδοση φωνής: {fieldNative?.diagnosticVersion || 'base-field-2'}</Text>
+          <Text selectable style={styles.helper}>{speechEngine}</Text>
+          <Text selectable style={styles.helper}>Εκφώνηση: {speechStage || 'Δεν ξεκίνησε ακόμη'}</Text>
+          {!!lastHeard && <Text selectable style={styles.helper}>Τελευταία αναγνώριση (μόνο στη μνήμη): {lastHeard}</Text>}
           <Text style={styles.sectionTitle}>Κατόψεις</Text>
           {(context.maps || [context.map]).filter(Boolean).map((map,index)=>{
             const selected=String(map.mapId ?? map.map_id)===String(context.map?.mapId ?? context.map?.map_id);

@@ -4,7 +4,7 @@ const units = { μηδεν:0, ενα:1, εναν:1, ενασ:1, μια:1, δυο
   δεκα:10, εντεκα:11, δωδεκα:12, δεκατρια:13, δεκατεσσερα:14, δεκαπεντε:15, δεκαεξι:16, δεκαεπτα:17, δεκαοκτω:18, δεκαεννεα:19 };
 const tens = { εικοσι:20, τριαντα:30, σαραντα:40, πενηντα:50, εξηντα:60, εβδομηντα:70, ογδοντα:80, ενενηντα:90 };
 const hundreds = { εκατο:100, εκατον:100, διακοσια:200, τριακοσια:300, τετρακοσια:400, πεντακοσια:500, εξακοσια:600, επτακοσια:700, οκτακοσια:800, εννιακοσια:900 };
-function number(text) {
+function strictNumber(text) {
   if (/^\d{1,3}$/.test(text)) return Number(text);
   const words = text.split(/\s+/);
   if (words.some(w => /\d/.test(w))) return null;
@@ -28,8 +28,27 @@ function number(text) {
   }
   return null;
 }
+// Build an exact spelling lookup from the existing accepted Greek number grammar.
+const spellings=new Map();
+function remember(words) {
+ const value=strictNumber(words),key=words.replace(/\s+/g,'');
+ if(value===null)return;
+ if(spellings.has(key)&&spellings.get(key)!==value)spellings.set(key,null);else if(!spellings.has(key))spellings.set(key,value);
+}
+const tails=[...Object.keys(units),...Object.keys(tens)];
+for(const ten of Object.keys(tens))for(const [unit,value] of Object.entries(units))if(value>0&&value<10)tails.push(ten+' '+unit);
+for(const tail of tails)remember(tail);
+for(const hundred of Object.keys(hundreds)){remember(hundred);for(const tail of tails)remember(hundred+' '+tail);}
+function number(text) {
+ const value=normalize(text);
+ if(value.length>180)return null;
+ const direct=strictNumber(value);if(direct!==null)return direct;
+ if(!/^[\p{L}\s]+$/u.test(value))return null;
+ const compact=value.replace(/\s+/g,'').replace(/^(?:ηκοσυ|ηκωσι)/u,'εικοσι').replace(/^αινα$/u,'ενα');
+ return spellings.has(compact)?spellings.get(compact):null;
+}
 function parseGreekStationCommand(text) {
-  const s = normalize(text);
+  const s = require('./normalizeVoiceWords').normalizeVoiceWords(text);
   if (!s) return { ok:false, code:"EMPTY_TRANSCRIPT" };
   if (s.length > 180) return { ok:false, code:"INVALID_COMMAND" };
   // Allow punctuation at command boundaries, never strip it from numbers:

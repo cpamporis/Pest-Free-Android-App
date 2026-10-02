@@ -2,7 +2,7 @@
 const defaultConfiguration=require('./fieldVoiceConfig');
 // Native owns wake detection, timeouts, audio and rearming, including while locked.
 // JS only resolves a complete command to the existing active-work data path.
-function createFieldVoiceSession({native,prepare,validate,commit,onState,onActive,onWakePreview=()=>{},onStartFailure=()=>{},
+function createFieldVoiceSession({native,prepare,validate,commit,onState,onActive,onWakePreview=()=>{},onStartFailure=()=>{},onDiagnostic=()=>{},
   configuration=defaultConfiguration,newId=()=>`${Date.now()}-${Math.random()}`}) {
   const stopMessages={
     LOCAL_TTS_REQUIRED:'Εγκαταστήστε ελληνική φωνή εκτός σύνδεσης στις ρυθμίσεις μετατροπής κειμένου σε ομιλία.',
@@ -16,10 +16,15 @@ function createFieldVoiceSession({native,prepare,validate,commit,onState,onActiv
     const code=/^[A-Z0-9_]{1,100}$/.test(String(reason||''))?reason:'UNKNOWN_START_ERROR';
     const known={
       ...stopMessages,
+      TTS_MEDIA_MUTED:'Η ένταση πολυμέσων είναι κλειστή. Αυξήστε την και ξεκινήστε ξανά.',
+      TTS_AUDIO_SETUP_FAILED:'Δεν ρυθμίστηκε η έξοδος της φωνής.',
+      TTS_DONE_WITHOUT_START:'Η μηχανή δεν επιβεβαίωσε την έναρξη εκφώνησης. Δεν έγινε καταχώριση.',
+      SPEECH_FAILED:'Απέτυχε η εκφώνηση. Δεν έγινε καταχώριση.',
+      SPEECH_TIMEOUT:'Η εκφώνηση δεν ολοκληρώθηκε. Δεν έγινε καταχώριση.',
       LOCAL_TTS_INIT_FAILED:'Δεν ξεκίνησε η μηχανή εκφώνησης της συσκευής.',
       LOCAL_TTS_VOICE_MISSING:'Δεν βρέθηκε εγκατεστημένη ελληνική φωνή εκτός σύνδεσης στην επιλεγμένη μηχανή εκφώνησης.',
       LOCAL_TTS_SELECT_FAILED:'Δεν ενεργοποιήθηκε η ελληνική φωνή εκφώνησης.',
-      LOCAL_ENGINE_UNAVAILABLE:'Δεν φορτώθηκε η τοπική μηχανή Tiny. Ελέγξτε ότι εγκαταστάθηκε το νέο APK.',
+      LOCAL_ENGINE_UNAVAILABLE:'Δεν φορτώθηκε η τοπική μηχανή Base. Ελέγξτε ότι εγκαταστάθηκε το νέο APK.',
       ENGINE_BUSY:'Η προηγούμενη αναγνώριση κλείνει ακόμη. Περιμένετε λίγο και επαναλάβετε.',
       FOREGROUND_REQUIRED:'Η εκκίνηση απαιτεί την εφαρμογή ανοιχτή στην οθόνη.',
       LISTENER_REQUIRED:'Δεν συνδέθηκε ο δέκτης συμβάντων της εφαρμογής.',
@@ -61,6 +66,7 @@ function createFieldVoiceSession({native,prepare,validate,commit,onState,onActiv
   }
   async function handleEvent(event) {
     if(!session || event.sessionId!==session)return;
+    if(event.code==='TRANSCRIPT' || event.code==='SPEECH_STAGE'){onDiagnostic(event.code,String(event.text||'').slice(0,500));return;}
     if(event.code==='START_STAGE') {if(starting)onState('starting',`Εκκίνηση: ${String(event.text||'').slice(0,80)}`);return;}
     if(event.code==='WAKE_PREVIEW') {onWakePreview({stage:String(event.stage||''),text:String(event.text||'').slice(0,160)});return;}
     if(event.code==='STOPPED') {

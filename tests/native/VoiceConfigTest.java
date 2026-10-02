@@ -12,6 +12,10 @@ public final class VoiceConfigTest {
   }
   public static void main(String[] args) {
     VoiceConfig c=VoiceConfig.defaults();
+    check(VoiceConfig.matches(c.stop,"ά κυ ρο"));
+    check(VoiceConfig.matches(c.wake,"α λερτ"));
+    check(!VoiceConfig.matches(c.stop,"δεν είναι άκυρο"));
+    check(!VoiceConfig.matches(c.stop,"άκυρα"));
     for(String p:Arrays.asList("ΑΛΕΡΤ!","αλέρτ", " Alert. ")) check(c.wake.contains(VoiceConfig.normalize(p)));
     for(String p:Arrays.asList("είπα αλέρτ πριν","Αλέρτ σταθμός 2","Πες τη φάει αλέρτ","")) check(!c.wake.contains(VoiceConfig.normalize(p)));
     check(c.stop.contains(VoiceConfig.normalize("ΑΚΥΡΟ!")));

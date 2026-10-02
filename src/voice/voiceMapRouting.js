@@ -10,7 +10,7 @@ function resolveVoiceRoute(c,text) {
   const maps=c.maps || [c.map];
   if(!maps.some(m=>id(m)===id(c.map)))return {ok:false,code:'CONTEXT_CHANGED'};
   if(maps.some(m=>!id(m)) || new Set(maps.map(id)).size!==maps.length)return {ok:false,code:'AMBIGUOUS_MAP'};
-  const normalized=String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/ς/g,'σ').trim();
+  const normalized=require('./normalizeVoiceWords').normalizeVoiceWords(text);
   const command=/^κατοψη\s+(.+?)\s*[.!;]?$/u.exec(normalized);
   if(command){
     const mapNumber=parseNumber(command[1].trim());

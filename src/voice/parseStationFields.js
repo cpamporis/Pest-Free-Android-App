@@ -3,7 +3,7 @@ const { parseGreekStationCommand } = require('./parseGreekStationCommand');
 const clean = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/ς/g,'σ').trim();
 const edge = value => value.trim().replace(/[,;:.!··—–]+$/u,'').trim();
 function parseStationFields(text) {
-  const s = clean(String(text || ''));
+  const s = require('./normalizeVoiceWords').normalizeVoiceWords(text);
   if (!s || s.length > 240) return {ok:false,code:'INVALID_COMMAND'};
   const fields = [...s.matchAll(/καταναλωση|κατασταση|προσβαση/gu)];
   const stationText = edge(s.slice(0,fields[0]?.index ?? s.length));

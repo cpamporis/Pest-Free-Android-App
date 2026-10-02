@@ -17,6 +17,11 @@ final class VoiceConfig {
       .replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT)
       .replaceAll("[^\\p{L}\\p{N}\\s]", " ").trim().replaceAll("\\s+", " ");
   }
+  static boolean matches(Set<String> phrases,String text) {
+    String compact=normalize(text).replace(" ","");
+    for(String phrase:phrases)if(normalize(phrase).replace(" ","").equals(compact))return true;
+    return false;
+  }
   static VoiceConfig defaults() {
     Map<String,Object> m=new HashMap<>(); m.put("wakePhrases",Arrays.asList("Αλέρτ","Alert"));
     m.put("stopPhrases",Arrays.asList("Άκυρο")); m.put("readyMessage","Έτοιμος");
