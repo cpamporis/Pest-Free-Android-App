@@ -75,7 +75,7 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   @ReactMethod public void startField(String sessionId,Promise p) {
     main.post(()->{
       Context c=getReactApplicationContext();
-      String blocked=WhisperFieldEngine.busy()||PestifyWhisperProbe.isBusy()?"ENGINE_BUSY":
+      String blocked=PestifyLocalRecognitionProbe.isBusy()||WhisperFieldEngine.busy()||PestifyWhisperProbe.isBusy()?"ENGINE_BUSY":
         !enabled(c)?"VOICE_DISABLED":!isForeground()?"FOREGROUND_REQUIRED":listeners<1?"LISTENER_REQUIRED":
         Build.VERSION.SDK_INT<33?"ANDROID_VERSION_REQUIRED":sessionId==null||sessionId.isEmpty()||sessionId.length()>160?"INVALID_SESSION":
         startPromise!=null||PestifyVoiceService.current!=null?"SESSION_BUSY":null;

@@ -1,3 +1,4 @@
+import LocalRecognitionDiagnostic from './LocalRecognitionDiagnostic';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Modal, PermissionsAndroid, NativeEventEmitter, NativeModules, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -36,6 +37,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
   const fieldActive = useRef(false);
   const [dropdown, setDropdown] = useState(null);
   const [phase, setPhase] = useState('idle');
+  const [diagnosticBusy, setDiagnosticBusy] = useState(false);
   const [startupError, setStartupError] = useState('');
   const [status, setStatus] = useState('Επιλέξτε δόλωμα και δοσολογία για αυτή την εργασία.');
   const alive = useRef(true);
@@ -106,6 +108,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
     setSettingsOpen(!defaults?.baitType || !defaults?.dosageG); setDropdown(null);
   }, [defaults?.baitType, defaults?.dosageG]);
   async function start() {
+    if (diagnosticBusy) return;
     if (!current.current.defaults?.baitType || !current.current.defaults?.dosageG || settingsOpen) return;
     setStartupError('');
     pause('Έλεγχος αδειών…'); setPhase('permissions');
@@ -154,6 +157,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
       <View style={styles.header}><TouchableOpacity accessibilityRole="button" accessibilityLabel="Επιστροφή στην κάτοψη" style={styles.back} onPress={onClose}><MaterialIcons name="arrow-back" size={24} color="#1f9c8b" /></TouchableOpacity><Text style={styles.title}>Ηχογράφηση</Text><View style={styles.headerIcon}><MaterialIcons name="mic" size={24} color="#1f9c8b" /></View></View>
       {!!startupError && <View style={{padding:16,backgroundColor:'#fff0f0'}}><Text selectable style={{color:'#a32121'}}>{startupError}</Text></View>}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {visible && <LocalRecognitionDiagnostic enabled={!running} onBusy={setDiagnosticBusy} />}
         <View style={styles.card}>
           <Text style={styles.helper}>Έκδοση φωνής: {fieldNative?.diagnosticVersion || 'tiny-field-1'}</Text>
           <Text style={styles.sectionTitle}>Κατόψεις</Text>
@@ -182,7 +186,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
           <Text style={styles.helper}>Πείτε «{fieldConfiguration.wakePhrases[0]}», περιμένετε «{fieldConfiguration.readyMessage}» και δώστε τον σταθμό και την κατανάλωση. Μετά από κάθε εντολή περιμένετε την επανάληψη πριν μιλήσετε ξανά. Η ακρόαση συνεχίζεται στην κάτοψη και με κλειδωμένη οθόνη, με μόνιμη ειδοποίηση Android.</Text>
           <Text style={styles.helper}>Ο ήχος και το αναγνωρισμένο κείμενο χρησιμοποιούνται προσωρινά στη συσκευή, χωρίς αποθήκευση ή αποστολή. Καταχωρίζονται μόνο τα στοιχεία του ελέγχου.</Text>
           <Text style={styles.helper}>Η αναγνώριση γίνεται με το ενσωματωμένο Tiny. Απαιτούνται Android 13 ή νεότερο και εγκατεστημένη ελληνική φωνή εκτός σύνδεσης για την εκφώνηση. Για διακοπή πείτε «Άκυρο» όταν ακούει ή πατήστε «Διακοπή» στην εφαρμογή ή στην ειδοποίηση. Οι καταχωρισμένες εγγραφές διατηρούνται. Η τελική αποθήκευση γίνεται με την ολοκλήρωση της εργασίας.</Text>
-          {running ? action('Διακοπή',()=>pause('Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.'),false,true) : action('Έναρξη ακρόασης',start,!compatible || settingsOpen || !defaults?.baitType || !defaults?.dosageG || !context.active)}
+          {running ? action('Διακοπή',()=>pause('Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.'),false,true) : action('Έναρξη ακρόασης',start,diagnosticBusy || !compatible || settingsOpen || !defaults?.baitType || !defaults?.dosageG || !context.active)}
         </View>
         <TouchableOpacity accessibilityRole="button" style={styles.textButton} onPress={onClose}><Text style={styles.link}>Επιστροφή στην κάτοψη</Text></TouchableOpacity>
       </ScrollView>

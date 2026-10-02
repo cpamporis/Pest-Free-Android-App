@@ -9,6 +9,7 @@ import java.util.List;
 
 public final class PestifyVoicePackage implements ReactPackage {
   @Override public List<NativeModule> createNativeModules(ReactApplicationContext context) {
+    if(context.getPackageName().equals("com.cpamporis.pestfree.dev")) return java.util.Arrays.asList(new PestifyFieldSession(context), new PestifyWhisperProbe(context), new PestifyLocalRecognitionProbe(context));
     return java.util.Arrays.asList(new PestifyFieldSession(context), new PestifyWhisperProbe(context));
   }
   @Override public List<ViewManager> createViewManagers(ReactApplicationContext context) {

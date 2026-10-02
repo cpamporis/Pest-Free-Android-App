@@ -13,7 +13,7 @@ module.exports = function withPestifyAndroidVoice(config) {
     }
     manifest.queries ||= [{}];
     const queries = manifest.queries[0]; queries.intent ||= [];
-    for (const name of ['android.intent.action.TTS_SERVICE']) {
+    for (const name of ['android.intent.action.TTS_SERVICE','android.speech.RecognitionService']) {
       if (!queries.intent.some(i => i.action?.some(a => a.$['android:name'] === name))) queries.intent.push({action:[{$:{'android:name':name}}]});
     }
     const app = manifest.application[0];
