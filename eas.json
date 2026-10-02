@@ -25,6 +25,17 @@
     "production": {
       "autoIncrement": true,
       "channel": "production"
+    },
+    "security-lab-voice": {
+      "extends": "security-lab",
+      "env": {
+        "APP_VARIANT": "security-lab",
+        "PESTIFY_ANDROID_VOICE_LAB": "1"
+      }
+    },
+    "security-lab-field": {
+      "extends": "security-lab-voice",
+      "developmentClient": false
     }
   },
   "submit": {
