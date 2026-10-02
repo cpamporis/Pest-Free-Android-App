@@ -38,10 +38,11 @@ final class WhisperFieldEngine {
     // Bound to the JNI input limit (12 s), preserving 300 ms before the detected onset.
     long boundedCapture=Math.min(captureMs,11000);
     float[] samples=new float[(int)(boundedCapture*rate/1000)+preSize+1600];float[] pcm=null;
-    AudioRecord recorder=null;String transcript=null,error=null;
+    AudioRecord recorder=null;String transcript=null,error=null,stage="MODEL";
     try {
       File model=WhisperAssets.model(context,()->capture.cancelled);
       if(capture.cancelled)return;
+      stage="MICROPHONE";
       int min=AudioRecord.getMinBufferSize(rate,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
       if(min<=0)throw new IllegalStateException();
       recorder=new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION,rate,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT,Math.max(min,6400));
@@ -69,11 +70,12 @@ final class WhisperFieldEngine {
       if(capture.cancelled)return;
       if(!endpoint.usable()||endpoint.limited()){transcript="";return;}
       pcm=Arrays.copyOf(samples,count);Arrays.fill(samples,0);post(capture,listener::decoding);
+      stage="DECODER";
       String[] result=PestifyWhisperProbe.nativeTranscribe(model.getAbsolutePath(),pcm,Math.min(4,Runtime.getRuntime().availableProcessors()));
       if(capture.cancelled)return;
       double noSpeech=Double.parseDouble(result[3]);
       transcript=Double.isFinite(noSpeech)&&noSpeech<=0.6?result[0].trim():"";
-    } catch(Exception failure) {error="LOCAL_ENGINE_FAILED";}
+    } catch(Exception failure) {error="LOCAL_"+stage+"_"+failure.getClass().getSimpleName().toUpperCase(java.util.Locale.ROOT);}
     finally {
       if(recorder!=null){try{recorder.stop();}catch(Exception ignored){}recorder.release();}
       capture.recorder=null;Arrays.fill(chunk,(short)0);Arrays.fill(pre,0);Arrays.fill(samples,0);if(pcm!=null)Arrays.fill(pcm,0);

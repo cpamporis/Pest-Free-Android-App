@@ -97,3 +97,32 @@ test('Tiny decoding status cannot commit or reactivate a stopped session',async(
  await f.controller.handleEvent({code:'COMMAND',sessionId:id,commandId:'late',text:'Σταθμός 2 κατανάλωση 25'});
  assert.equal(f.states.length,count);assert.equal(f.commits,0);assert.equal(f.active,false);
 });
+
+test('idle cleanup and first start do not enqueue a global stop that can cancel startup',async()=>{
+ let stops=0;const native={stopField(){stops++;},async configureField(){return true;},async startField(){return true;}};
+ const flow=createFieldVoiceSession({native,onState(){},onActive(){}});
+ flow.stop();assert.equal(stops,0);assert.equal(await flow.start(),true);assert.equal(stops,0);
+ flow.stop();assert.equal(stops,1);
+});
+test('cancellation is scoped to the old session even when its native delivery is delayed',async()=>{
+ const pending=[];let current=null,n=0;
+ const native={stopField(){throw Error('global cancellation');},stopSession(id){pending.push(()=>{if(current===id)current=null;});},async startField(id){current=id;return true;}};
+ const flow=createFieldVoiceSession({native,newId:()=>String(++n),onState(){},onActive(){}});
+ await flow.start();await flow.start();assert.equal(current,'2');pending.forEach(f=>f());assert.equal(current,'2');
+ flow.stop();pending.at(-1)();assert.equal(current,null);
+});
+test('startup rejection shows its exact fixed code once',async()=>{
+ const errors=[],states=[];
+ const native={stopField(){},async startField(){throw Object.assign(Error('private platform details'),{code:'LOCAL_TTS_VOICE_MISSING'});}};
+ const flow=createFieldVoiceSession({native,onState:(...s)=>states.push(s),onActive(){},onStartFailure:e=>errors.push(e)});
+ assert.equal(await flow.start(),false);assert.equal(errors.length,1);assert.match(errors[0],/LOCAL_TTS_VOICE_MISSING/);assert.doesNotMatch(errors[0],/private platform details/);
+ assert.equal(states.at(-1)[0],'idle');
+});
+test('STOPPED event before startup rejection retains the error and reports only once',async()=>{
+ let reject,id;const errors=[];
+ const native={stopField(){},startField(key){id=key;return new Promise((_,r)=>{reject=r;});}};
+ const flow=createFieldVoiceSession({native,onState(){},onActive(){},onStartFailure:e=>errors.push(e)});
+ const start=flow.start();await flow.handleEvent({code:'STOPPED',sessionId:id,reason:'SERVICE_START_SECURITYEXCEPTION'});
+ reject(Object.assign(Error(),{code:'SERVICE_START_SECURITYEXCEPTION'}));await start;
+ assert.equal(errors.length,1);assert.match(errors[0],/SERVICE_START_SECURITYEXCEPTION/);
+});

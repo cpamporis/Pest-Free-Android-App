@@ -32,7 +32,7 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   }
   @Override public Map<String,Object> getConstants() {
     Map<String,Object> m=new HashMap<>(); boolean allowed=enabled(getReactApplicationContext());
-    m.put("enabled",allowed); m.put("voiceEnabled",allowed); m.put("wakeVersion",6); m.put("configurationVersion",2); return m;
+    m.put("enabled",allowed); m.put("voiceEnabled",allowed); m.put("wakeVersion",6); m.put("configurationVersion",2); m.put("diagnosticVersion","tiny-field-2"); return m;
   }
   boolean isForeground() { return foreground && getCurrentActivity()!=null && !disposed; }
   @Override public void onHostResume() { foreground=true; }
@@ -75,13 +75,18 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   @ReactMethod public void startField(String sessionId,Promise p) {
     main.post(()->{
       Context c=getReactApplicationContext();
-      if (WhisperFieldEngine.busy() || PestifyWhisperProbe.isBusy() || !enabled(c) || !isForeground() || listeners<1 || Build.VERSION.SDK_INT<33 || sessionId==null || sessionId.isEmpty() || sessionId.length()>160 || startPromise!=null || PestifyVoiceService.current!=null) { p.reject("FOREGROUND_REQUIRED","Cannot start voice session"); return; }
+      String blocked=WhisperFieldEngine.busy()||PestifyWhisperProbe.isBusy()?"ENGINE_BUSY":
+        !enabled(c)?"VOICE_DISABLED":!isForeground()?"FOREGROUND_REQUIRED":listeners<1?"LISTENER_REQUIRED":
+        Build.VERSION.SDK_INT<33?"ANDROID_VERSION_REQUIRED":sessionId==null||sessionId.isEmpty()||sessionId.length()>160?"INVALID_SESSION":
+        startPromise!=null||PestifyVoiceService.current!=null?"SESSION_BUSY":null;
+      if(blocked!=null){p.reject(blocked,"Cannot start voice session");return;}
       if (c.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED || c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) { p.reject("PERMISSION_REQUIRED","Microphone and notifications required"); return; }
       startPromise=p; pendingSession=sessionId; final int ticket=++generation;
       checkGreek(c,configuration,(ok,reason)->{
         if (generation!=ticket || startPromise!=p) return;
         if (!ok || !isForeground()) { failStart("LOCAL_LANGUAGES_REQUIRED",reason); return; }
         try {
+          event("START_STAGE",pendingSession,null,"Υπηρεσία μικροφώνου",null);
           c.startForegroundService(new Intent(c,PestifyVoiceService.class));
           main.postDelayed(()->{ if (startPromise==p) stop("START_TIMEOUT"); },20000);
         } catch (Exception e) { failStart("SERVICE_START_FAILED","Could not start microphone service"); }
@@ -90,9 +95,14 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   }
   void failStart(String code,String message) { Promise p=startPromise; startPromise=null; pendingSession=null; if (p!=null) p.reject(code,message); }
   void started() { Promise p=startPromise; startPromise=null; pendingSession=null; if (p!=null) p.resolve(true); }
+  @ReactMethod public void stopSession(String id) { main.post(()->{
+    if(id==null)return;
+    PestifyVoiceService service=PestifyVoiceService.current;
+    if(Objects.equals(id,pendingSession)||(service!=null&&service.module==this&&service.matchesSession(id)))stop("USER_STOPPED");
+  }); }
   @ReactMethod public void stopField() { main.post(()->stop("USER_STOPPED")); }
   void stop(String reason) {
-    generation++; failStart("CANCELLED","Voice start cancelled");
+    generation++; failStart("USER_STOPPED".equals(reason)?"CANCELLED":reason,"Voice start cancelled");
     PestifyVoiceService service=PestifyVoiceService.current;
     if (service!=null && service.module==this) service.shutdown(reason);
   }

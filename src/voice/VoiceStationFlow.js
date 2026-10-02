@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AppState, Modal, PermissionsAndroid, NativeEventEmitter, NativeModules, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, AppState, Modal, PermissionsAndroid, NativeEventEmitter, NativeModules, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import apiService from '../services/apiService';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -36,6 +36,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
   const fieldActive = useRef(false);
   const [dropdown, setDropdown] = useState(null);
   const [phase, setPhase] = useState('idle');
+  const [startupError, setStartupError] = useState('');
   const [status, setStatus] = useState('Επιλέξτε δόλωμα και δοσολογία για αυτή την εργασία.');
   const alive = useRef(true);
   const permissionAttempt = useRef(0);
@@ -71,7 +72,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
   };
   const fieldController = useRef(null);
   if (!fieldController.current && fieldNative?.enabled) fieldController.current=createFieldVoiceSession({
-    native:fieldNative,...callbacks,onActive:value=>{fieldActive.current=value;}
+    native:fieldNative,...callbacks,onStartFailure:message=>{if(alive.current){setStartupError(message);Alert.alert('Η ακρόαση διακόπηκε',message);}},onActive:value=>{fieldActive.current=value;}
   });
   function pause(message) {
     permissionAttempt.current++;
@@ -106,6 +107,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
   }, [defaults?.baitType, defaults?.dosageG]);
   async function start() {
     if (!current.current.defaults?.baitType || !current.current.defaults?.dosageG || settingsOpen) return;
+    setStartupError('');
     pause('Έλεγχος αδειών…'); setPhase('permissions');
     const token = permissionAttempt.current;
     permissionPrompt.current = true;
@@ -127,7 +129,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
       }
       const started=await fieldController.current.start();
       if(started && alive.current && token===permissionAttempt.current)current.current.onClose();
-    } catch { if (alive.current && token === permissionAttempt.current) pause('Δεν ολοκληρώθηκε ο έλεγχος αδειών.'); }
+    } catch(error) { if (alive.current && token === permissionAttempt.current) { const code=/^[A-Z0-9_]{1,100}$/.test(String(error?.code||''))?error.code:'PREFLIGHT_FAILED'; const message=`Δεν ολοκληρώθηκε ο έλεγχος εκκίνησης.\nΚωδικός: ${code}`; pause(message);setStartupError(message);Alert.alert('Η ακρόαση διακόπηκε',message); } }
     finally { permissionPrompt.current = false; }
   }
   const compatible = Boolean(fieldNative?.enabled && fieldNative?.wakeVersion >= 6);
@@ -150,8 +152,10 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
   return <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
     <SafeAreaProvider><SafeAreaView style={styles.screen}>
       <View style={styles.header}><TouchableOpacity accessibilityRole="button" accessibilityLabel="Επιστροφή στην κάτοψη" style={styles.back} onPress={onClose}><MaterialIcons name="arrow-back" size={24} color="#1f9c8b" /></TouchableOpacity><Text style={styles.title}>Ηχογράφηση</Text><View style={styles.headerIcon}><MaterialIcons name="mic" size={24} color="#1f9c8b" /></View></View>
+      {!!startupError && <View style={{padding:16,backgroundColor:'#fff0f0'}}><Text selectable style={{color:'#a32121'}}>{startupError}</Text></View>}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
+          <Text style={styles.helper}>Έκδοση φωνής: {fieldNative?.diagnosticVersion || 'tiny-field-1'}</Text>
           <Text style={styles.sectionTitle}>Κατόψεις</Text>
           {(context.maps || [context.map]).filter(Boolean).map((map,index)=>{
             const selected=String(map.mapId ?? map.map_id)===String(context.map?.mapId ?? context.map?.map_id);

@@ -2,7 +2,7 @@
 const defaultConfiguration=require('./fieldVoiceConfig');
 // Native owns wake detection, timeouts, audio and rearming, including while locked.
 // JS only resolves a complete command to the existing active-work data path.
-function createFieldVoiceSession({native,prepare,validate,commit,onState,onActive,onWakePreview=()=>{},
+function createFieldVoiceSession({native,prepare,validate,commit,onState,onActive,onWakePreview=()=>{},onStartFailure=()=>{},
   configuration=defaultConfiguration,newId=()=>`${Date.now()}-${Math.random()}`}) {
   const stopMessages={
     LOCAL_TTS_REQUIRED:'Εγκαταστήστε ελληνική φωνή εκτός σύνδεσης στις ρυθμίσεις μετατροπής κειμένου σε ομιλία.',
@@ -11,32 +11,65 @@ function createFieldVoiceSession({native,prepare,validate,commit,onState,onActiv
     LOCAL_ENGINE_FAILED:'Η τοπική αναγνώριση σταμάτησε. Ξεκινήστε την ξανά. Οι καταχωρίσεις διατηρήθηκαν.',
     USER_STOPPED:'Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.',
   };
-  let session=null,epoch=0,busy=null;
+  let session=null,epoch=0,busy=null,starting=false;
+  function failureMessage(reason) {
+    const code=/^[A-Z0-9_]{1,100}$/.test(String(reason||''))?reason:'UNKNOWN_START_ERROR';
+    const known={
+      ...stopMessages,
+      LOCAL_TTS_INIT_FAILED:'Δεν ξεκίνησε η μηχανή εκφώνησης της συσκευής.',
+      LOCAL_TTS_VOICE_MISSING:'Δεν βρέθηκε εγκατεστημένη ελληνική φωνή εκτός σύνδεσης στην επιλεγμένη μηχανή εκφώνησης.',
+      LOCAL_TTS_SELECT_FAILED:'Δεν ενεργοποιήθηκε η ελληνική φωνή εκφώνησης.',
+      LOCAL_ENGINE_UNAVAILABLE:'Δεν φορτώθηκε η τοπική μηχανή Tiny. Ελέγξτε ότι εγκαταστάθηκε το νέο APK.',
+      ENGINE_BUSY:'Η προηγούμενη αναγνώριση κλείνει ακόμη. Περιμένετε λίγο και επαναλάβετε.',
+      FOREGROUND_REQUIRED:'Η εκκίνηση απαιτεί την εφαρμογή ανοιχτή στην οθόνη.',
+      LISTENER_REQUIRED:'Δεν συνδέθηκε ο δέκτης συμβάντων της εφαρμογής.',
+      INVALID_CONFIGURATION:'Δεν έγιναν δεκτές οι ρυθμίσεις φωνής.',
+      CONFIGURATION_IDLE_REQUIRED:'Η προηγούμενη συνεδρία δεν έχει κλείσει ακόμη.',
+      PERMISSION_REQUIRED:'Χρειάζονται άδεια μικροφώνου και ειδοποιήσεων.',
+      START_TIMEOUT:'Η εκκίνηση δεν ολοκληρώθηκε εντός του χρονικού ορίου.',
+    };
+    return `${known[code]||'Η φωνητική λειτουργία διακόπηκε.'}\nΚωδικός: ${code}`;
+  }
+  function failStart(reason) {
+    const message=failureMessage(reason);stop(message);onStartFailure(message);
+  }
   const consumed=new Set();
   function stop(message='Η λειτουργία πεδίου σταμάτησε.') {
-    onWakePreview(null);epoch++;session=null;busy=null;consumed.clear();native.stopField();onActive(false);onState('idle',message);
+    const previous=session;
+    onWakePreview(null);epoch++;session=null;busy=null;starting=false;consumed.clear();
+    // An idle controller owns nothing to cancel. Delayed cancellation must only target its own session.
+    if(previous){if(typeof native.stopSession==='function')native.stopSession(previous);else native.stopField();}
+    onActive(false);onState('idle',message);
   }
   async function start() {
-    stop('');const ticket=epoch;session=newId();onActive(true);onState('starting','Εκκίνηση λειτουργίας πεδίου…');
+    stop('');const ticket=epoch;session=newId();starting=true;onActive(true);onState('starting','Εκκίνηση λειτουργίας πεδίου…');
     try {
       // Keep old binaries usable; v4 adds validated, idle-only native configuration.
       if(typeof native.configureField==='function') {
         const configured=await native.configureField(configuration);
         if(ticket!==epoch)return;
-        if(!configured){stop('Δεν εφαρμόστηκαν οι ρυθμίσεις φωνής.');return;}
+        if(!configured){failStart('INVALID_CONFIGURATION');return false;}
       }
       const started=await native.startField(session);
       if(ticket!==epoch)return;
-      if(!started){stop('Δεν ξεκίνησε η λειτουργία πεδίου.');return false;}
-      return true;
+      if(!started){failStart('START_RETURNED_FALSE');return false;}
+      starting=false;return true;
     } catch(error) {
-      if(ticket===epoch)stop(error.code==='INVALID_CONFIGURATION' || error.code==='CONFIGURATION_IDLE_REQUIRED' ? 'Δεν εφαρμόστηκαν οι ρυθμίσεις φωνής. Ελέγξτε τη διαμόρφωση.' : error.code==='LOCAL_LANGUAGES_REQUIRED' ? 'Χρειάζεται διαθέσιμη τοπική αναγνώριση ελληνικών.' : error.code==='LOCAL_TTS_REQUIRED' ? 'Εγκαταστήστε ελληνική φωνή εκτός σύνδεσης στις ρυθμίσεις μετατροπής κειμένου σε ομιλία.' : 'Δεν ξεκίνησε η λειτουργία πεδίου. Ελέγξτε άδειες και ήχο.');
+      if(ticket===epoch)failStart(error?.code);
+      return false;
     }
   }
   async function handleEvent(event) {
     if(!session || event.sessionId!==session)return;
+    if(event.code==='START_STAGE') {if(starting)onState('starting',`Εκκίνηση: ${String(event.text||'').slice(0,80)}`);return;}
     if(event.code==='WAKE_PREVIEW') {onWakePreview({stage:String(event.stage||''),text:String(event.text||'').slice(0,160)});return;}
-    if(event.code==='STOPPED') {stop(event.reason==='VOICE_CANCELLED' ? 'Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.' : stopMessages[event.reason] || `Η ακρόαση σταμάτησε (${event.reason || 'διακοπή ήχου'}). Ξεκινήστε την ξανά.`);return;}
+    if(event.code==='STOPPED') {
+      if(starting){failStart(event.reason);return;}
+      if(!['VOICE_CANCELLED','USER_STOPPED'].includes(event.reason)){
+        const message=failureMessage(event.reason);stop(message);onStartFailure(message);return;
+      }
+      stop('Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.');return;
+    }
     if(event.code==='WAITING_WAKE') {onState('wake',`Αναμονή για «${configuration.wakePhrases[0]}». Το μικρόφωνο παραμένει ενεργό.`);return;}
     if(event.code==='DECODING') {onState('decoding','Αναγνώριση στη συσκευή… Περιμένετε πριν μιλήσετε ξανά.');return;}
     if(event.code==='LISTENING') {onState('listening',`${configuration.readyMessage} — πείτε τον επόμενο σταθμό ή κάτοψη.`);return;}

@@ -43,7 +43,7 @@ public final class PestifyVoiceService extends Service {
       stopSelf(); return START_NOT_STICKY;
     }
     module=PestifyFieldSession.owner.get();
-    if (!PestifyFieldSession.enabled(this) || module==null || module.pendingSession==null || !module.isForeground()) { stopSelf(); return START_NOT_STICKY; }
+    if (!PestifyFieldSession.enabled(this) || module==null || module.pendingSession==null || !module.isForeground()) { if(module!=null)module.failStart("START_CONTEXT_CHANGED","Startup context changed");stopSelf(); return START_NOT_STICKY; }
     current=this; session=module.pendingSession; cfg=module.configuration;
     try {
       NotificationManager manager=getSystemService(NotificationManager.class);
@@ -58,8 +58,9 @@ public final class PestifyVoiceService extends Service {
         .setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
         .setOnAudioFocusChangeListener(change->{ if (change<0) shutdown("AUDIO_INTERRUPTED"); },main).build();
       if (audio.requestAudioFocus(focus)!=AudioManager.AUDIOFOCUS_REQUEST_GRANTED) { shutdown("AUDIO_FOCUS_UNAVAILABLE"); return START_NOT_STICKY; }
+      emit("START_STAGE","Τοπική εκφώνηση",null);
       speaker=new TextToSpeech(this,status->main.post(()->initializeSpeech(status)));
-    } catch (Exception e) { shutdown("SERVICE_START_FAILED"); }
+    } catch (Exception e) { shutdown("SERVICE_START_"+e.getClass().getSimpleName().toUpperCase(Locale.ROOT)); }
     return START_NOT_STICKY;
   }
   private Notification notification() {
@@ -77,7 +78,7 @@ public final class PestifyVoiceService extends Service {
   }
   private void initializeSpeech(int status) {
     if (stopping) return;
-    if (status!=TextToSpeech.SUCCESS || speaker==null) { shutdown("LOCAL_TTS_REQUIRED"); return; }
+    if (status!=TextToSpeech.SUCCESS || speaker==null) { shutdown("LOCAL_TTS_INIT_FAILED"); return; }
     Voice selected=null;
     try {
       Set<Voice> voices=speaker.getVoices();
@@ -85,7 +86,8 @@ public final class PestifyVoiceService extends Service {
         if ("el".equals(v.getLocale().getLanguage()) && !v.isNetworkConnectionRequired() &&
             (v.getFeatures()==null || !v.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED))) { selected=v; break; }
       }
-      if (selected==null || speaker.setVoice(selected)!=TextToSpeech.SUCCESS) { shutdown("LOCAL_TTS_REQUIRED"); return; }
+      if (selected==null) { shutdown("LOCAL_TTS_VOICE_MISSING"); return; }
+      if (speaker.setVoice(selected)!=TextToSpeech.SUCCESS) { shutdown("LOCAL_TTS_SELECT_FAILED"); return; }
       speaker.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANT).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
       speaker.setOnUtteranceProgressListener(new UtteranceProgressListener() {
         @Override public void onStart(String id) { }
@@ -96,7 +98,7 @@ public final class PestifyVoiceService extends Service {
       lastActivity=SystemClock.elapsedRealtime();
       listen(true);
       // The ready callback is the proof that listening really started; a request alone is not success.
-    } catch (Exception e) { shutdown("LOCAL_TTS_REQUIRED"); }
+    } catch (Exception e) { shutdown("TTS_SETUP_"+e.getClass().getSimpleName().toUpperCase(Locale.ROOT)); }
   }
   private void emit(String code,String text,String reason) { if (module!=null) module.event(code,session,command,text,reason); }
   private void clear(Runnable task) { if (task!=null) main.removeCallbacks(task); }
@@ -109,6 +111,7 @@ public final class PestifyVoiceService extends Service {
     disposeRecognizer();phase=wake?"wake":"listening";heardSpeech=false;
     final int generation=recognitionGeneration;
     if(engine==null)engine=new WhisperFieldEngine(this,main);
+    if(module.startPromise!=null)emit("START_STAGE","Μοντέλο Tiny και μικρόφωνο",null);
     boolean started=engine.start(cfg.silenceMs,cfg.captureMs,new WhisperFieldEngine.Listener(){
       private boolean valid(){return !stopping&&generation==recognitionGeneration;}
       public void ready(){if(!valid())return;if(module.startPromise!=null)module.started();emit(wake?"WAITING_WAKE":"LISTENING",null,null);}
@@ -178,6 +181,7 @@ public final class PestifyVoiceService extends Service {
     if (stopping || !"processing".equals(phase)) return;
     clear(replyTimer); command=null; rearm(true,300);
   }
+  boolean matchesSession(String id){return Objects.equals(session,id);}
   void shutdown(String reason) {
     if (stopping) return; stopping=true;
     main.removeCallbacksAndMessages(null); disposeRecognizer();

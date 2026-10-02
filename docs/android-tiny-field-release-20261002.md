@@ -36,7 +36,7 @@ git pull --ff-only origin feature/android-lab-voice-20261002
 npx eas-cli build --platform android --profile security-lab-field
 ```
 
-Lab package remains com.cpamporis.pestfree.dev, Lab environment and channel, updates disabled, runtime pestify-android-voice-lab-4. This APK includes JS and runs without Metro. The old diagnostic card has been removed from the field screen.
+Lab package remains com.cpamporis.pestfree.dev, Lab environment and channel, updates disabled, runtime pestify-android-voice-lab-5. This APK includes JS and runs without Metro. The old diagnostic card has been removed from the field screen.
 
 After accepting the device tests, build the same reviewed source with:
 
@@ -44,7 +44,7 @@ After accepting the device tests, build the same reviewed source with:
 npx eas-cli build --platform android --profile production
 ```
 
-The production profile now sets PESTIFY_ANDROID_VOICE=1, retains the production package, API environment and update channel, and uses runtime pestify-android-voice-1 to avoid incompatible old OTA updates. Do not leave APP_VARIANT=security-lab or PESTIFY_ANDROID_VOICE_LAB=1 set in the shell when building production. No source edit is required to choose this profile. Building does not publish to Google Play; the normal release/submission process still applies. This is an Android-only profile.
+The production profile now sets PESTIFY_ANDROID_VOICE=1, retains the production package, API environment and update channel, and uses runtime pestify-android-voice-2 to avoid incompatible old OTA updates. Do not leave APP_VARIANT=security-lab or PESTIFY_ANDROID_VOICE_LAB=1 set in the shell when building production. No source edit is required to choose this profile. Building does not publish to Google Play; the normal release/submission process still applies. This is an Android-only profile.
 
 ## Evidence and remaining device checks
 
@@ -59,3 +59,11 @@ Verification for this revision:
 The Android SDK/NDK and a connected device were unavailable in this workspace. Full EAS compilation and real-device background/audio tests remain required. Verify at least: several stations in succession; all permitted consumption values; both terminal conditions and no access; unique and duplicate station numbers across maps; unknown station; Alert after one minute; locked screen; notification stop during decoding; call interruption; leaving and completing the appointment. Check numeric accuracy, battery/heat and latency during a longer session.
 
 Backend, backup jobs/configuration and the iOS repository were not modified.
+
+## Startup correction and diagnosis
+
+The A71 user reports an immediate return to idle at startup. The exact device-side failure is not yet captured. This revision removes unconditional native stop calls while the JS controller is idle. Cancellations are now sent with their owning session ID, so a delayed stop for an earlier session cannot cancel the next one.
+
+Startup rejection and STOPPED events now surface one visible alert with a fixed diagnostic code, retained at the top of the voice screen. Event-before-promise rejection races are covered by regression tests. Native guards distinguish busy engine, missing listener, foreground state and invalid session; model/microphone/decoder exceptions expose only their stage and exception class, never raw exception messages, transcripts or audio. TTS initialization, absent local Greek voice and voice selection have separate codes. The UI displays tiny-field-2 to identify the installed native build.
+
+89 targeted Node tests pass, including idle-start cancellation, delayed old-session cancellation and startup event/promise error ordering. Controlled engine lifecycle tests and Java/JS syntax checks pass. These checks do not prove the cause of the user's observed failure; the corrected APK still needs to be exercised on the A71. A new APK is required for session-scoped native cancellation and diagnostics.
