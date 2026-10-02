@@ -87,3 +87,13 @@ test('native cancellation during pending readback cannot commit the unfinished c
  await f.controller.handleEvent({sessionId:f.id,code:'STOPPED',reason:'VOICE_CANCELLED'});f.answer(false);await pending;
  assert.equal(f.commits,0);assert.equal(f.continued,0);
 });
+
+test('Tiny decoding status cannot commit or reactivate a stopped session',async()=>{
+ const f=setup();await f.controller.start();const id=f.id;
+ await f.controller.handleEvent({code:'DECODING',sessionId:id});
+ assert.equal(f.states.at(-1)[0],'decoding');assert.equal(f.commits,0);
+ f.controller.stop();const count=f.states.length;
+ await f.controller.handleEvent({code:'DECODING',sessionId:id});
+ await f.controller.handleEvent({code:'COMMAND',sessionId:id,commandId:'late',text:'Σταθμός 2 κατανάλωση 25'});
+ assert.equal(f.states.length,count);assert.equal(f.commits,0);assert.equal(f.active,false);
+});

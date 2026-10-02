@@ -8,6 +8,7 @@ function createFieldVoiceSession({native,prepare,validate,commit,onState,onActiv
     LOCAL_TTS_REQUIRED:'Εγκαταστήστε ελληνική φωνή εκτός σύνδεσης στις ρυθμίσεις μετατροπής κειμένου σε ομιλία.',
     AUDIO_INTERRUPTED:'Η ακρόαση σταμάτησε επειδή διακόπηκε ο ήχος. Ξεκινήστε την ξανά.',
     SESSION_LIMIT:'Η ακρόαση σταμάτησε μετά από τέσσερις ώρες. Οι καταχωρίσεις διατηρήθηκαν.',
+    LOCAL_ENGINE_FAILED:'Η τοπική αναγνώριση σταμάτησε. Ξεκινήστε την ξανά. Οι καταχωρίσεις διατηρήθηκαν.',
     USER_STOPPED:'Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.',
   };
   let session=null,epoch=0,busy=null;
@@ -37,6 +38,7 @@ function createFieldVoiceSession({native,prepare,validate,commit,onState,onActiv
     if(event.code==='WAKE_PREVIEW') {onWakePreview({stage:String(event.stage||''),text:String(event.text||'').slice(0,160)});return;}
     if(event.code==='STOPPED') {stop(event.reason==='VOICE_CANCELLED' ? 'Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.' : stopMessages[event.reason] || `Η ακρόαση σταμάτησε (${event.reason || 'διακοπή ήχου'}). Ξεκινήστε την ξανά.`);return;}
     if(event.code==='WAITING_WAKE') {onState('wake',`Αναμονή για «${configuration.wakePhrases[0]}». Το μικρόφωνο παραμένει ενεργό.`);return;}
+    if(event.code==='DECODING') {onState('decoding','Αναγνώριση στη συσκευή… Περιμένετε πριν μιλήσετε ξανά.');return;}
     if(event.code==='LISTENING') {onState('listening',`${configuration.readyMessage} — πείτε τον επόμενο σταθμό ή κάτοψη.`);return;}
     if(event.code!=='COMMAND'||!event.commandId||busy||consumed.has(event.commandId))return;
     consumed.add(event.commandId);

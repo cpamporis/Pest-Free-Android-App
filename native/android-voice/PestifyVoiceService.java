@@ -5,7 +5,6 @@ import android.content.*;
 import android.content.pm.ServiceInfo;
 import android.media.*;
 import android.os.*;
-import android.speech.*;
 import android.speech.tts.*;
 import com.facebook.react.bridge.Promise;
 import java.util.*;
@@ -22,17 +21,17 @@ public final class PestifyVoiceService extends Service {
   private VoiceConfig cfg;
   private String session,command,utterance;
   private String phase="starting";
-  private SpeechRecognizer recognizer;
+  private WhisperFieldEngine engine;
   private TextToSpeech speaker;
   private AudioManager audio;
   private AudioFocusRequest focus;
   private PowerManager.WakeLock wakeLock;
   private Promise replyPromise;
   private Runnable afterSpeech;
-  private int recognitionGeneration, consecutiveErrors;
+  private int recognitionGeneration;
   private boolean stopping, heardSpeech;
   private long lastActivity;
-  private Runnable captureTimer, finalTimer, idleTimer, replyTimer, speechTimer;
+  private Runnable idleTimer, replyTimer, speechTimer;
 
   @Override public IBinder onBind(Intent intent) { return null; }
   @Override public int onStartCommand(Intent intent,int flags,int startId) {
@@ -102,75 +101,44 @@ public final class PestifyVoiceService extends Service {
   private void emit(String code,String text,String reason) { if (module!=null) module.event(code,session,command,text,reason); }
   private void clear(Runnable task) { if (task!=null) main.removeCallbacks(task); }
   private void disposeRecognizer() {
-    recognitionGeneration++; clear(captureTimer); clear(finalTimer); clear(idleTimer);
-    SpeechRecognizer old=recognizer; recognizer=null;
-    if (old!=null) { try { old.cancel(); old.destroy(); } catch (Exception ignored) { } }
+    recognitionGeneration++; clear(idleTimer);
+    if(engine!=null)engine.cancel();
   }
   private void listen(boolean wake) {
-    if (stopping) return;
-    disposeRecognizer(); phase=wake?"wake":"listening"; heardSpeech=false;
-    int generation=recognitionGeneration;
-    try {
-      recognizer=SpeechRecognizer.createOnDeviceSpeechRecognizer(this);
-      recognizer.setRecognitionListener(new RecognitionListener() {
-        private boolean valid() { return !stopping && generation==recognitionGeneration && recognizer!=null; }
-        @Override public void onReadyForSpeech(Bundle params) {
-          if (!valid()) return;
-          if (module.startPromise!=null) module.started();
-          emit(wake?"WAITING_WAKE":"LISTENING",null,null);
+    if(stopping)return;
+    disposeRecognizer();phase=wake?"wake":"listening";heardSpeech=false;
+    final int generation=recognitionGeneration;
+    if(engine==null)engine=new WhisperFieldEngine(this,main);
+    boolean started=engine.start(cfg.silenceMs,cfg.captureMs,new WhisperFieldEngine.Listener(){
+      private boolean valid(){return !stopping&&generation==recognitionGeneration;}
+      public void ready(){if(!valid())return;if(module.startPromise!=null)module.started();emit(wake?"WAITING_WAKE":"LISTENING",null,null);}
+      public void speech(){if(valid())heardSpeech=true;}
+      public void decoding(){if(valid())emit("DECODING",null,null);}
+      public void failure(String code){if(valid())shutdown(code);}
+      public void result(String text){
+        if(!valid())return;
+        disposeRecognizer();
+        if(text==null||text.trim().isEmpty()||text.length()>500){rearm(wake,150);return;}
+        String normalized=VoiceConfig.normalize(text);
+        if(cfg.stop.contains(normalized)){shutdown("VOICE_CANCELLED");return;}
+        if(wake){
+          if(cfg.wake.contains(normalized)){lastActivity=SystemClock.elapsedRealtime();speak(cfg.ready,()->rearm(false,300));}
+          else rearm(true,150);
+          return;
         }
-        @Override public void onBeginningOfSpeech() { if (valid()) heardSpeech=true; }
-        @Override public void onRmsChanged(float value) { }
-        @Override public void onBufferReceived(byte[] buffer) { /* Never retain audio. */ }
-        @Override public void onEndOfSpeech() {
-          if (!valid()) return;
-          clear(captureTimer); clear(finalTimer);
-          finalTimer=()->{if(valid()) rearm(wake,500);}; main.postDelayed(finalTimer,5000);
-        }
-        @Override public void onError(int error) {
-          if (!valid()) return;
-          if (error==SpeechRecognizer.ERROR_NO_MATCH || error==SpeechRecognizer.ERROR_SPEECH_TIMEOUT) { consecutiveErrors=0; rearm(wake,500); return; }
-          if (error==SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error==SpeechRecognizer.ERROR_TOO_MANY_REQUESTS || error==SpeechRecognizer.ERROR_SERVER_DISCONNECTED) {
-            consecutiveErrors++;
-            if (consecutiveErrors<=3) { rearm(wake,Math.min(8000,1000L<<consecutiveErrors)); return; }
-          }
-          shutdown("RECOGNITION_ERROR_"+error);
-        }
-        @Override public void onResults(Bundle result) {
-          if (!valid()) return;
-          ArrayList<String> results=result.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-          String text=results==null||results.isEmpty()?"":results.get(0);
-          consecutiveErrors=0; disposeRecognizer();
-          if (text==null || text.trim().isEmpty() || text.length()>500) { rearm(wake,500); return; }
-          String normalized=VoiceConfig.normalize(text);
-          if (cfg.stop.contains(normalized)) { shutdown("VOICE_CANCELLED"); return; }
-          if (wake) {
-            if (cfg.wake.contains(normalized)) { lastActivity=SystemClock.elapsedRealtime(); speak(cfg.ready,()->rearm(false,300)); }
-            else rearm(true,500);
-            return;
-          }
-          lastActivity=SystemClock.elapsedRealtime(); command=UUID.randomUUID().toString(); phase="processing";
-          emit("COMMAND",text,null);
-          replyTimer=()->shutdown("APP_RESPONSE_TIMEOUT"); main.postDelayed(replyTimer,10000);
-        }
-        @Override public void onPartialResults(Bundle partial) { if (valid()) heardSpeech=true; /* Never execute a partial hypothesis. */ }
-        @Override public void onEvent(int type,Bundle params) { }
-      });
-      recognizer.startListening(PestifyFieldSession.recognitionIntent(cfg));
-      captureTimer=()->{
-        if (generation!=recognitionGeneration || stopping || recognizer==null) return;
-        try { recognizer.stopListening(); }
-        catch (Exception e) { shutdown("RECOGNITION_STOP_FAILED"); return; }
-        finalTimer=()->{if(generation==recognitionGeneration) rearm(wake,500);}; main.postDelayed(finalTimer,5000);
-      };
-      main.postDelayed(captureTimer,wake?30000:cfg.captureMs);
-      if (!wake) {
-        idleTimer=()->{
-          if (generation==recognitionGeneration && !stopping && !heardSpeech && SystemClock.elapsedRealtime()-lastActivity>=cfg.idleMs) rearm(true,300);
-        };
-        main.postDelayed(idleTimer,Math.max(1,cfg.idleMs-(SystemClock.elapsedRealtime()-lastActivity)));
+        lastActivity=SystemClock.elapsedRealtime();command=UUID.randomUUID().toString();phase="processing";
+        emit("COMMAND",text,null);
+        replyTimer=()->shutdown("APP_RESPONSE_TIMEOUT");main.postDelayed(replyTimer,10000);
       }
-    } catch (Exception e) { shutdown("LOCAL_RECOGNITION_UNAVAILABLE"); }
+    });
+    if(!started){
+      main.postDelayed(()->{if(!stopping&&generation==recognitionGeneration)listen(wake);},100);
+      return;
+    }
+    if(!wake){
+      idleTimer=()->{if(generation==recognitionGeneration&&!stopping&&!heardSpeech&&SystemClock.elapsedRealtime()-lastActivity>=cfg.idleMs)rearm(true,150);};
+      main.postDelayed(idleTimer,Math.max(1,cfg.idleMs-(SystemClock.elapsedRealtime()-lastActivity)));
+    }
   }
   private void rearm(boolean wake,long delay) {
     if (stopping) return;
@@ -213,10 +181,11 @@ public final class PestifyVoiceService extends Service {
   void shutdown(String reason) {
     if (stopping) return; stopping=true;
     main.removeCallbacksAndMessages(null); disposeRecognizer();
+    if(engine!=null){engine.close();engine=null;}
     utterance=null; afterSpeech=null;
-    if (speaker!=null) { speaker.stop(); speaker.shutdown(); speaker=null; }
-    if (audio!=null && focus!=null) audio.abandonAudioFocusRequest(focus);
-    if (wakeLock!=null && wakeLock.isHeld()) wakeLock.release();
+    if (speaker!=null) { try {speaker.stop();speaker.shutdown();}catch(Exception ignored){} speaker=null; }
+    if (audio!=null && focus!=null) try {audio.abandonAudioFocusRequest(focus);}catch(Exception ignored){}
+    if (wakeLock!=null && wakeLock.isHeld()) try {wakeLock.release();}catch(Exception ignored){}
     if (replyPromise!=null) { replyPromise.resolve(false); replyPromise=null; }
     if (module!=null) { module.failStart(reason,"Voice session stopped: "+reason); emit("STOPPED",null,reason); }
     if (current==this) current=null;

@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.*;
 import android.content.pm.PackageManager;
 import android.os.*;
-import android.speech.*;
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import java.lang.ref.WeakReference;
@@ -27,13 +26,13 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   @Override public String getName() { return "PestifyFieldSession"; }
   static boolean enabled(Context c) {
     try {
-      return c.getPackageName().equals("com.cpamporis.pestfree.dev") &&
-        c.getPackageManager().getApplicationInfo(c.getPackageName(),PackageManager.GET_META_DATA).metaData.getBoolean("PestifyAndroidVoiceLab",false);
+      return (c.getPackageName().equals("com.cpamporis.pestfree.dev") || c.getPackageName().equals("com.cpamporis.pestfree")) &&
+        c.getPackageManager().getApplicationInfo(c.getPackageName(),PackageManager.GET_META_DATA).metaData.getBoolean("PestifyAndroidVoiceEnabled",false);
     } catch (Exception e) { return false; }
   }
   @Override public Map<String,Object> getConstants() {
     Map<String,Object> m=new HashMap<>(); boolean allowed=enabled(getReactApplicationContext());
-    m.put("enabled",allowed); m.put("voiceEnabled",allowed); m.put("wakeVersion",5); m.put("configurationVersion",2); return m;
+    m.put("enabled",allowed); m.put("voiceEnabled",allowed); m.put("wakeVersion",6); m.put("configurationVersion",2); return m;
   }
   boolean isForeground() { return foreground && getCurrentActivity()!=null && !disposed; }
   @Override public void onHostResume() { foreground=true; }
@@ -54,46 +53,10 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
       catch (Exception e) { p.reject("INVALID_CONFIGURATION","Invalid voice settings"); }
     });
   }
-  static Intent recognitionIntent(VoiceConfig cfg) {
-    Intent intent=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-    intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"el-GR");
-    intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-    intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,true);
-    intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1);
-    // Additional hint only. Privacy is enforced by createOnDeviceSpeechRecognizer, never this flag alone.
-    intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE,true);
-    intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,cfg.silenceMs);
-    return intent;
-  }
   interface SupportResult { void complete(boolean installed,String reason); }
   static void checkGreek(Context c,VoiceConfig cfg,SupportResult callback) {
-    if (Build.VERSION.SDK_INT<33) { callback.complete(false,"Απαιτείται Android 13 ή νεότερο για τον έλεγχο τοπικών ελληνικών."); return; }
-    if (!SpeechRecognizer.isOnDeviceRecognitionAvailable(c)) { callback.complete(false,"Η συσκευή δεν διαθέτει υπηρεσία τοπικής αναγνώρισης ομιλίας."); return; }
-    final Handler h=new Handler(Looper.getMainLooper());
-    final SpeechRecognizer recognizer;
-    try { recognizer=SpeechRecognizer.createOnDeviceSpeechRecognizer(c); }
-    catch (Exception e) { callback.complete(false,"Δεν ξεκίνησε η τοπική υπηρεσία ομιλίας."); return; }
-    final boolean[] done={false};
-    final Runnable[] timeout={null};
-    SupportResult finish=(ok,reason)->{
-      if (done[0]) return; done[0]=true; h.removeCallbacks(timeout[0]); try { recognizer.destroy(); } catch (Exception ignored) { } callback.complete(ok,reason);
-    };
-    timeout[0]=()->finish.complete(false,"Η υπηρεσία δεν απάντησε στον έλεγχο τοπικών ελληνικών. Δοκιμάστε ξανά.");
-    h.postDelayed(timeout[0],10000);
-    try {
-      recognizer.checkRecognitionSupport(recognitionIntent(cfg),c.getMainExecutor(),new RecognitionSupportCallback() {
-        @Override public void onSupportResult(RecognitionSupport support) {
-          boolean installed=hasGreek(support.getInstalledOnDeviceLanguages());
-          String reason=installed?"":hasGreek(support.getPendingOnDeviceLanguages())?"Τα ελληνικά κατεβαίνουν στη συσκευή. Περιμένετε και δοκιμάστε ξανά.":hasGreek(support.getSupportedOnDeviceLanguages())?"Εγκαταστήστε τα ελληνικά εκτός σύνδεσης από τις ρυθμίσεις αναγνώρισης ομιλίας της συσκευής.":"Η υπηρεσία της συσκευής δεν προσφέρει ελληνικά εκτός σύνδεσης. Δεν θα χρησιμοποιηθεί αναγνώριση μέσω Internet.";
-          finish.complete(installed,reason);
-        }
-        @Override public void onError(int error) { finish.complete(false,"Δεν μπορεί να επιβεβαιωθεί η τοπική αναγνώριση ελληνικών ("+error+")."); }
-      });
-    } catch (Exception e) { finish.complete(false,"Δεν υποστηρίζεται ο έλεγχος τοπικής αναγνώρισης."); }
-  }
-  static boolean hasGreek(List<String> languages) {
-    for (String language:languages) if ("el".equals(Locale.forLanguageTag(language.replace('_','-')).getLanguage())) return true;
-    return false;
+    boolean available=Build.VERSION.SDK_INT>=33&&PestifyWhisperProbe.available();
+    callback.complete(available,available?"":"Απαιτείται Android 13+ και build με το τοπικό μοντέλο Tiny.");
   }
   @ReactMethod public void capabilities(Promise p) {
     main.post(()->{
@@ -112,7 +75,7 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   @ReactMethod public void startField(String sessionId,Promise p) {
     main.post(()->{
       Context c=getReactApplicationContext();
-      if (PestifyWhisperProbe.isBusy() || !enabled(c) || !isForeground() || listeners<1 || Build.VERSION.SDK_INT<33 || sessionId==null || sessionId.isEmpty() || sessionId.length()>160 || startPromise!=null || PestifyVoiceService.current!=null) { p.reject("FOREGROUND_REQUIRED","Cannot start voice session"); return; }
+      if (WhisperFieldEngine.busy() || PestifyWhisperProbe.isBusy() || !enabled(c) || !isForeground() || listeners<1 || Build.VERSION.SDK_INT<33 || sessionId==null || sessionId.isEmpty() || sessionId.length()>160 || startPromise!=null || PestifyVoiceService.current!=null) { p.reject("FOREGROUND_REQUIRED","Cannot start voice session"); return; }
       if (c.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED || c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) { p.reject("PERMISSION_REQUIRED","Microphone and notifications required"); return; }
       startPromise=p; pendingSession=sessionId; final int ticket=++generation;
       checkGreek(c,configuration,(ok,reason)->{

@@ -24,7 +24,10 @@
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "PESTIFY_ANDROID_VOICE": "1"
+      }
     },
     "security-lab-voice": {
       "extends": "security-lab",

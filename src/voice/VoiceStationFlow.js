@@ -1,4 +1,3 @@
-import WhisperProbeCard from './WhisperProbeCard';
 import React, { useEffect, useRef, useState } from 'react';
 import { AppState, Modal, PermissionsAndroid, NativeEventEmitter, NativeModules, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -28,7 +27,6 @@ const errors = {
 export default function VoiceStationFlow({ context, loggedStations, technician, onCommit, onClose, defaults, onDefaultsChange, visible, onSessionState }) {
   const current = useRef({ context, loggedStations, onCommit, defaults, technician, onClose, onSessionState });
   current.current = { context, loggedStations, onCommit, defaults, technician, onClose, onSessionState };
-  const [probeBusy, setProbeBusy] = useState(false);
   const [baitTypes, setBaitTypes] = useState([]);
   const [catalogStatus, setCatalogStatus] = useState('Φόρτωση δολωμάτων…');
   const [catalogReload, setCatalogReload] = useState(0);
@@ -132,7 +130,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
     } catch { if (alive.current && token === permissionAttempt.current) pause('Δεν ολοκληρώθηκε ο έλεγχος αδειών.'); }
     finally { permissionPrompt.current = false; }
   }
-  const compatible = Boolean(fieldNative?.enabled && fieldNative?.wakeVersion >= 5);
+  const compatible = Boolean(fieldNative?.enabled && fieldNative?.wakeVersion >= 6);
   const running = phase !== 'idle';
   function action(label, onPress, disabled=false, danger=false) {
     return <TouchableOpacity accessibilityRole="button" accessibilityState={{disabled}} disabled={disabled} onPress={onPress} style={[styles.button,danger && styles.danger,disabled && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></TouchableOpacity>;
@@ -161,7 +159,6 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
           })}
           <Text style={styles.helper}>Πείτε «Κάτοψη δύο» για αλλαγή κάτοψης.</Text>
         </View>
-        <WhisperProbeCard visible={visible} disabled={running} onBusy={setProbeBusy} />
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Προεπιλογές εργασίας</Text>
           {settingsOpen ? <>
@@ -178,10 +175,10 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
         <View style={styles.card}>
           <View style={styles.statusHeading}><View style={[styles.dot,running && styles.dotActive]} /><Text style={styles.sectionTitle}>{phase==='permissions'?'Έλεγχος διαθεσιμότητας':phase==='starting'?'Εκκίνηση ακρόασης':running?'Ακρόαση ενεργή':'Έτοιμο για έναρξη'}</Text></View>
           <Text accessibilityLiveRegion="polite" style={styles.helper}>{compatible?status:'Απαιτείται η νέα έκδοση της εφαρμογής για φωνητική διακοπή.'}</Text>
-          <Text style={styles.helper}>Πείτε «{fieldConfiguration.wakePhrases[0]}», περιμένετε «{fieldConfiguration.readyMessage}» και δώστε τον σταθμό και την κατανάλωση. Η δοκιμαστική ακρόαση συνεχίζεται στην κάτοψη και με κλειδωμένη οθόνη, με μόνιμη ειδοποίηση Android.</Text>
+          <Text style={styles.helper}>Πείτε «{fieldConfiguration.wakePhrases[0]}», περιμένετε «{fieldConfiguration.readyMessage}» και δώστε τον σταθμό και την κατανάλωση. Μετά από κάθε εντολή περιμένετε την επανάληψη πριν μιλήσετε ξανά. Η ακρόαση συνεχίζεται στην κάτοψη και με κλειδωμένη οθόνη, με μόνιμη ειδοποίηση Android.</Text>
           <Text style={styles.helper}>Ο ήχος και το αναγνωρισμένο κείμενο χρησιμοποιούνται προσωρινά στη συσκευή, χωρίς αποθήκευση ή αποστολή. Καταχωρίζονται μόνο τα στοιχεία του ελέγχου.</Text>
-          <Text style={styles.helper}>Απαιτούνται Android 13 ή νεότερο και εγκατεστημένα ελληνικά για τοπική αναγνώριση και εκφώνηση. Για διακοπή πείτε «Άκυρο» όταν ακούει ή πατήστε «Διακοπή» στην εφαρμογή ή στην ειδοποίηση. Οι καταχωρισμένες εγγραφές διατηρούνται. Η τελική αποθήκευση γίνεται με την ολοκλήρωση της εργασίας.</Text>
-          {running ? action('Διακοπή',()=>pause('Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.'),false,true) : action('Έναρξη ακρόασης',start,probeBusy || !compatible || settingsOpen || !defaults?.baitType || !defaults?.dosageG || !context.active)}
+          <Text style={styles.helper}>Η αναγνώριση γίνεται με το ενσωματωμένο Tiny. Απαιτούνται Android 13 ή νεότερο και εγκατεστημένη ελληνική φωνή εκτός σύνδεσης για την εκφώνηση. Για διακοπή πείτε «Άκυρο» όταν ακούει ή πατήστε «Διακοπή» στην εφαρμογή ή στην ειδοποίηση. Οι καταχωρισμένες εγγραφές διατηρούνται. Η τελική αποθήκευση γίνεται με την ολοκλήρωση της εργασίας.</Text>
+          {running ? action('Διακοπή',()=>pause('Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.'),false,true) : action('Έναρξη ακρόασης',start,!compatible || settingsOpen || !defaults?.baitType || !defaults?.dosageG || !context.active)}
         </View>
         <TouchableOpacity accessibilityRole="button" style={styles.textButton} onPress={onClose}><Text style={styles.link}>Επιστροφή στην κάτοψη</Text></TouchableOpacity>
       </ScrollView>

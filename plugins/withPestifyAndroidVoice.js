@@ -3,7 +3,7 @@ const path = require('path');
 const { withAndroidManifest, withMainApplication, withDangerousMod, withSettingsGradle, withAppBuildGradle } = require('expo/config-plugins');
 const PACKAGE = 'com.cpamporis.pestfree.voice';
 module.exports = function withPestifyAndroidVoice(config) {
-  if (config.android?.package !== 'com.cpamporis.pestfree.dev') throw new Error('Android voice is Security Lab only');
+  if (!['com.cpamporis.pestfree.dev','com.cpamporis.pestfree'].includes(config.android?.package)) throw new Error('Unexpected Android package for Pestify voice');
   config = withAndroidManifest(config, mod => {
     const manifest = mod.modResults.manifest;
     manifest['uses-permission'] ||= [];
@@ -13,13 +13,13 @@ module.exports = function withPestifyAndroidVoice(config) {
     }
     manifest.queries ||= [{}];
     const queries = manifest.queries[0]; queries.intent ||= [];
-    for (const name of ['android.speech.RecognitionService','android.intent.action.TTS_SERVICE']) {
+    for (const name of ['android.intent.action.TTS_SERVICE']) {
       if (!queries.intent.some(i => i.action?.some(a => a.$['android:name'] === name))) queries.intent.push({action:[{$:{'android:name':name}}]});
     }
     const app = manifest.application[0];
     app['meta-data'] ||= [];
-    app['meta-data'] = app['meta-data'].filter(m => m.$['android:name'] !== 'PestifyAndroidVoiceLab');
-    app['meta-data'].push({$: {'android:name':'PestifyAndroidVoiceLab','android:value':'true'}});
+    app['meta-data'] = app['meta-data'].filter(m => !['PestifyAndroidVoiceLab','PestifyAndroidVoiceEnabled'].includes(m.$['android:name']));
+    app['meta-data'].push({$: {'android:name':'PestifyAndroidVoiceEnabled','android:value':'true'}});
     app.service ||= [];
     app.service = app.service.filter(s => s.$['android:name'] !== `${PACKAGE}.PestifyVoiceService`);
     app.service.push({$: {'android:name':`${PACKAGE}.PestifyVoiceService`,'android:exported':'false','android:foregroundServiceType':'microphone','android:stopWithTask':'true'}});

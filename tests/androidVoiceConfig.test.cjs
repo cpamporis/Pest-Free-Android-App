@@ -2,25 +2,27 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const configure=require('../app.config');
 const base=require('../app.json').expo;
-const {spawnSync}=require('node:child_process');
-const path=require('node:path');
+const eas=require('../eas.json');
 function configWith(env) {
-  const result=spawnSync(process.execPath,['-e','console.log(JSON.stringify(require("./app.config")({config:require("./app.json").expo})))'],{
-    cwd:path.resolve(__dirname,'..'),encoding:'utf8',env:{...process.env,APP_VARIANT:'',PESTIFY_ANDROID_VOICE_LAB:'0',EAS_BUILD_PLATFORM:'',...env}
-  });
-  return result;
+ const keys=['APP_VARIANT','PESTIFY_ANDROID_VOICE','PESTIFY_ANDROID_VOICE_LAB','EAS_BUILD_PLATFORM'];
+ const previous=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
+ try {for(const k of keys)process.env[k]=env[k]||'';return configure({config:base});}
+ finally {for(const k of keys){if(previous[k]===undefined)delete process.env[k];else process.env[k]=previous[k];}}
 }
-test('ordinary production configuration does not load voice native code',()=>{
- const result=configWith({}); assert.equal(result.status,0); assert.deepEqual(JSON.parse(result.stdout),base);
-});
-test('voice build remains an isolated Lab package with updates disabled',()=>{
- const result=configWith({APP_VARIANT:'security-lab',PESTIFY_ANDROID_VOICE_LAB:'1',EAS_BUILD_PLATFORM:'android'});
- assert.equal(result.status,0);const config=JSON.parse(result.stdout);
+test('ordinary configuration without a voice build flag is unchanged',()=>assert.deepEqual(configWith({}),base));
+test('voice Lab has its own package and runtime, with updates disabled',()=>{
+ const config=configWith({APP_VARIANT:'security-lab',PESTIFY_ANDROID_VOICE_LAB:'1',EAS_BUILD_PLATFORM:'android'});
  assert.equal(config.android.package,'com.cpamporis.pestfree.dev');
- assert.equal(config.updates.enabled,false);assert.equal(config.runtimeVersion,'pestify-android-voice-lab-3');
- assert.ok(config.plugins.includes('./plugins/withPestifyAndroidVoice'));
- assert.deepEqual(config.ios,base.ios);
+ assert.equal(config.updates.enabled,false);assert.equal(config.runtimeVersion,'pestify-android-voice-lab-4');
+ assert.ok(config.plugins.includes('./plugins/withPestifyAndroidVoice'));assert.deepEqual(config.ios,base.ios);
 });
-for(const env of [{PESTIFY_ANDROID_VOICE_LAB:'1'}, {APP_VARIANT:'security-lab',PESTIFY_ANDROID_VOICE_LAB:'1',EAS_BUILD_PLATFORM:'ios'}]) {
- test('rejects a voice build outside Android Security Lab: '+JSON.stringify(env),()=>assert.notEqual(configWith(env).status,0));
+test('production profile builds the same voice feature with production identity and update settings',()=>{
+ const config=configWith({...eas.build.production.env,EAS_BUILD_PLATFORM:'android'});
+ assert.equal(config.android.package,base.android.package);assert.equal(config.name,base.name);
+ assert.equal(config.runtimeVersion,'pestify-android-voice-1');assert.deepEqual(config.updates,base.updates);
+ assert.deepEqual(config.extra,base.extra);assert.ok(config.plugins.includes('./plugins/withPestifyAndroidVoice'));
+ assert.equal(eas.build.production.channel,'production');
+});
+for(const env of [{PESTIFY_ANDROID_VOICE_LAB:'1'}, {APP_VARIANT:'security-lab',PESTIFY_ANDROID_VOICE_LAB:'1',EAS_BUILD_PLATFORM:'ios'}, {PESTIFY_ANDROID_VOICE:'1',EAS_BUILD_PLATFORM:'ios'}, {APP_VARIANT:'unknown',PESTIFY_ANDROID_VOICE:'1'}]) {
+ test('rejects mismatched voice profile: '+JSON.stringify(env),()=>assert.throws(()=>configWith(env)));
 }

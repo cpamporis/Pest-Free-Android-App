@@ -35,3 +35,9 @@ test('normal station-only command leaves consumption blank, not zero',()=>{
  assert.equal(data.consumption,null);
  assert.equal(validateCandidate(c,{...target,data,expiresAt:2000},1000).ok,false);
 });
+
+test('Tiny misheard number words are rejected rather than guessed',()=>{
+ for(const text of ['Σταθμός βιω καταναλωση η κοση πέντε','Σταθμός δύο κατανάλωση η κόση πέντε']) {
+  assert.equal(parseStationFields(text).ok,false);
+ }
+});

@@ -18,10 +18,12 @@ public final class PestifyWhisperProbe extends ReactContextBaseJavaModule implem
   private static final Object OWNER_LOCK=new Object();
   private static Job engineOwner;
   private static final boolean LOADED;
+  static boolean available(){return LOADED;}
+  private static boolean probeEnabled(Context c){return c.getPackageName().equals("com.cpamporis.pestfree.dev")&&PestifyFieldSession.enabled(c);}
   static {boolean loaded;try{System.loadLibrary("pestify_whisper");loaded=true;}catch(UnsatisfiedLinkError error){loaded=false;}LOADED=loaded;}
-  private static native void nativePrepare();
-  private static native void nativeCancel();
-  private static native String[] nativeTranscribe(String path,float[] pcm,int threads);
+  static native void nativePrepare();
+  static native void nativeCancel();
+  static native String[] nativeTranscribe(String path,float[] pcm,int threads);
   private final Handler main=new Handler(Looper.getMainLooper());
   private final ExecutorService worker=Executors.newSingleThreadExecutor();
   private volatile Job job;
@@ -39,7 +41,7 @@ public final class PestifyWhisperProbe extends ReactContextBaseJavaModule implem
   public PestifyWhisperProbe(ReactApplicationContext c){super(c);c.addLifecycleEventListener(this);}
   @Override public String getName(){return "PestifyWhisperProbe";}
   @Override public Map<String,Object> getConstants(){
-    Map<String,Object> m=new HashMap<>();m.put("available",Build.VERSION.SDK_INT>=33&&LOADED&&PestifyFieldSession.enabled(getReactApplicationContext()));
+    Map<String,Object> m=new HashMap<>();m.put("available",Build.VERSION.SDK_INT>=33&&LOADED&&probeEnabled(getReactApplicationContext()));
     m.put("probeVersion",1);m.put("model","Whisper tiny multilingual Q5_1");return m;
   }
   @ReactMethod public void addListener(String event){}
@@ -50,9 +52,9 @@ public final class PestifyWhisperProbe extends ReactContextBaseJavaModule implem
   @Override public void invalidate(){disposed=true;cancelCurrent("CANCELLED");worker.shutdown();getReactApplicationContext().removeLifecycleEventListener(this);super.invalidate();}
   @ReactMethod public void startProbe(String id,Promise p){main.post(()->{
     Context c=getReactApplicationContext();
-    if(Build.VERSION.SDK_INT<33||!LOADED||!PestifyFieldSession.enabled(c)||disposed||!foreground||getCurrentActivity()==null){p.reject("UNAVAILABLE","Local probe unavailable");return;}
+    if(Build.VERSION.SDK_INT<33||!LOADED||!probeEnabled(c)||disposed||!foreground||getCurrentActivity()==null){p.reject("UNAVAILABLE","Local probe unavailable");return;}
     PestifyFieldSession field=PestifyFieldSession.owner.get();
-    if(PestifyVoiceService.current!=null || (field!=null&&field.startPromise!=null)){p.reject("BUSY","Stop field listening first");return;}
+    if(WhisperFieldEngine.busy() || PestifyVoiceService.current!=null || (field!=null&&field.startPromise!=null)){p.reject("BUSY","Stop field listening first");return;}
     if(c.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){p.reject("PERMISSION_REQUIRED","Microphone required");return;}
     if(id==null||id.isEmpty()||id.length()>100){p.reject("INVALID_ID","Invalid probe id");return;}
     Job next=new Job(id,p);
@@ -83,26 +85,7 @@ public final class PestifyWhisperProbe extends ReactContextBaseJavaModule implem
     WritableMap m=Arguments.createMap();m.putString("id",j.id);m.putString("phase",phase);
     getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("PestifyWhisperEvent",m);
   });}
-  private File model(Job j)throws Exception{
-    File dir=new File(getReactApplicationContext().getNoBackupFilesDir(),"pestify-whisper");
-    if(!dir.isDirectory()&&!dir.mkdirs())throw new IOException("MODEL_DIRECTORY");
-    File file=new File(dir,WhisperModel.NAME);
-    if(file.isFile()&&file.length()==WhisperModel.BYTES&&digest(file,j).equals(WhisperModel.SHA256))return file;
-    File temp=new File(dir,WhisperModel.NAME+".part");
-    try(InputStream input=getReactApplicationContext().getAssets().open("pestify-whisper/"+WhisperModel.NAME);OutputStream output=new FileOutputStream(temp)){
-      byte[] buffer=new byte[65536];int n;long count=0;
-      while((n=input.read(buffer))!=-1){check(j);count+=n;if(count>WhisperModel.BYTES)throw new IOException("MODEL_SIZE");output.write(buffer,0,n);}
-    }catch(Exception e){temp.delete();throw e;}
-    if(temp.length()!=WhisperModel.BYTES||!digest(temp,j).equals(WhisperModel.SHA256)){temp.delete();throw new IOException("MODEL_CHECKSUM");}
-    check(j);
-    if(file.exists()&&!file.delete())throw new IOException("MODEL_REPLACE");
-    if(!temp.renameTo(file))throw new IOException("MODEL_INSTALL");return file;
-  }
-  private String digest(File file,Job j)throws Exception{
-    MessageDigest digest=MessageDigest.getInstance("SHA-256");
-    try(InputStream input=new FileInputStream(file)){byte[] buffer=new byte[65536];int n;while((n=input.read(buffer))!=-1){check(j);digest.update(buffer,0,n);}}
-    StringBuilder hex=new StringBuilder();for(byte b:digest.digest())hex.append(String.format(Locale.ROOT,"%02x",b&255));return hex.toString();
-  }
+  private File model(Job j)throws Exception{return WhisperAssets.model(getReactApplicationContext(),()->j.cancelled||disposed);}
   private void run(Job j){
     float[] samples=new float[RATE*MAX_SECONDS];short[] chunk=new short[1600];float[] audio=null;
     AudioRecord recorder=null;

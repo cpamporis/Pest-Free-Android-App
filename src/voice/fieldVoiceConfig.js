@@ -6,6 +6,6 @@ module.exports = Object.freeze({
   stopPhrases: Object.freeze(['Άκυρο']), // 1–8 complete phrases; stops even in wake waiting
   readyMessage: 'Έτοιμος', // 1–160 characters
   idleSeconds: 60, // 15–300
-  silenceSeconds: 1.4, // 0.7–3
-  captureSeconds: 20, // 5–45
+  silenceSeconds: 0.9, // 0.7–3
+  captureSeconds: 10, // 5–45
 });

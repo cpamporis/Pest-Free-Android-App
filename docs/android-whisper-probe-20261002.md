@@ -1,3 +1,5 @@
+> Superseded by [Android Tiny field voice](android-tiny-field-release-20261002.md). The diagnostic card is no longer shown in the field screen; the following records the earlier probe only.
+
 # Android Lab: local Greek Whisper probe
 
 Branch: feature/android-lab-voice-20261002. Package: com.cpamporis.pestfree.dev.
