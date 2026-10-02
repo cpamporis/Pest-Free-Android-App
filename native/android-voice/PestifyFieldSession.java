@@ -32,7 +32,7 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   }
   @Override public Map<String,Object> getConstants() {
     Map<String,Object> m=new HashMap<>(); boolean allowed=enabled(getReactApplicationContext());
-    m.put("enabled",allowed); m.put("voiceEnabled",allowed); m.put("wakeVersion",6); m.put("configurationVersion",2); m.put("diagnosticVersion","tiny-field-2"); return m;
+    m.put("enabled",allowed); m.put("voiceEnabled",allowed); m.put("wakeVersion",6); m.put("configurationVersion",2); m.put("diagnosticVersion","base-field-1"); return m;
   }
   boolean isForeground() { return foreground && getCurrentActivity()!=null && !disposed; }
   @Override public void onHostResume() { foreground=true; }

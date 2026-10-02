@@ -159,7 +159,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {visible && <LocalRecognitionDiagnostic enabled={!running} onBusy={setDiagnosticBusy} />}
         <View style={styles.card}>
-          <Text style={styles.helper}>Έκδοση φωνής: {fieldNative?.diagnosticVersion || 'tiny-field-1'}</Text>
+          <Text style={styles.helper}>Έκδοση φωνής: {fieldNative?.diagnosticVersion || 'base-field-1'}</Text>
           <Text style={styles.sectionTitle}>Κατόψεις</Text>
           {(context.maps || [context.map]).filter(Boolean).map((map,index)=>{
             const selected=String(map.mapId ?? map.map_id)===String(context.map?.mapId ?? context.map?.map_id);

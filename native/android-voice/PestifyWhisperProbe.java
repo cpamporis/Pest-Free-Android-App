@@ -42,7 +42,7 @@ public final class PestifyWhisperProbe extends ReactContextBaseJavaModule implem
   @Override public String getName(){return "PestifyWhisperProbe";}
   @Override public Map<String,Object> getConstants(){
     Map<String,Object> m=new HashMap<>();m.put("available",Build.VERSION.SDK_INT>=33&&LOADED&&probeEnabled(getReactApplicationContext()));
-    m.put("probeVersion",1);m.put("model","Whisper tiny multilingual Q5_1");return m;
+    m.put("probeVersion",1);m.put("model","Whisper base multilingual Q5_1");return m;
   }
   @ReactMethod public void addListener(String event){}
   @ReactMethod public void removeListeners(double count){}
