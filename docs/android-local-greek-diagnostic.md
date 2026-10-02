@@ -15,3 +15,9 @@ Uses only createOnDeviceSpeechRecognizer; no generic factory or network fallback
 Lifecycle: foreground-only test; destroy/cancel on exit/background; generation guards reject stale callbacks; 20-second timeout; exclusive with field and Whisper sessions. New native APK required. Main, iOS, backend and backups are unchanged.
 
 Validation: Java/JS syntax checks and focused Node regression tests. No Android SDK/NDK or connected A71 available in this workspace: APK compilation and device execution remain unverified until EAS/device testing.
+
+## local-greek-2: modal foreground correction
+
+Lab runtime is now pestify-android-voice-lab-7. The first diagnostic incorrectly required Activity.hasWindowFocus while launched inside a React Native Modal. A modal can own focus while its host activity remains resumed. Use the React context RESUMED lifecycle plus a live activity instead; background cancellation remains enforced.
+
+The UI now renders the actual native diagnostic version, restores its mounted flag on effect setup, rejects duplicate starts synchronously, and cancels only an active test on an actual background transition. Completed error results are not overwritten by later AppState notifications. Regression tests exercise the real async component handlers with hook/platform doubles for background cancellation, late results, duplicate starts and cleanup/setup. 49 focused Node tests pass, plus native Java and JSX syntax checks. This is not an Android build or real-device verification. The field engine label tiny-field-2 remains unchanged because it describes a different module.

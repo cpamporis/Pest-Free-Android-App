@@ -7,13 +7,16 @@ export default function LocalRecognitionDiagnostic({ enabled, onBusy }) {
   const mounted = useRef(true);
   const permissionPrompt = useRef(false);
   const attempt = useRef(0);
+  const inFlight = useRef(false);
   useEffect(() => {
-    const listener=AppState.addEventListener('change', state=>{if(state!=='active' && !permissionPrompt.current){attempt.current++;probe?.cancel();setBusy(false);onBusy(false);setResult('Η δοκιμή σταμάτησε.');}});
-    return ()=>{mounted.current=false;attempt.current++;probe?.cancel();onBusy(false);listener.remove();};
+    mounted.current=true;
+    const listener=AppState.addEventListener('change', state=>{if(state==='background' && inFlight.current && !permissionPrompt.current){attempt.current++;inFlight.current=false;probe?.cancel();setBusy(false);onBusy(false);setResult('Κωδικός: BACKGROUND — η εφαρμογή πέρασε στο παρασκήνιο. Επιστρέψτε και επαναλάβετε τη δοκιμή.');}});
+    return ()=>{mounted.current=false;attempt.current++;inFlight.current=false;probe?.cancel();onBusy(false);listener.remove();};
   }, []);
   if (!probe) return null;
   async function run(method) {
-    if(busy || !enabled)return;
+    if(inFlight.current || !enabled)return;
+    inFlight.current=true;
     const token=++attempt.current;
     setBusy(true);onBusy(true);setResult(method==='listen'?'Πείτε: Σταθμός δύο, κατανάλωση είκοσι πέντε. Αναμονή αποτελέσματος…':'Έλεγχος…');
     try {
@@ -30,10 +33,10 @@ export default function LocalRecognitionDiagnostic({ enabled, onBusy }) {
       else if(method==='listen')setResult(`Τοπική αναγνώριση: ${value.text || '(χωρίς κείμενο)'}`);
       else setResult('Ζητήθηκε λήψη ελληνικού μοντέλου. Αυτό δεν επιβεβαιώνει διαθεσιμότητα ή ολοκλήρωση. Περιμένετε και πατήστε ξανά Έλεγχος γλωσσών.');
     } catch(e) {if(mounted.current && token===attempt.current)setResult(`Κωδικός: ${/^[A-Z0-9_]+$/.test(e.code||'')?e.code:'LOCAL_FAILED'}\nΔεν χρησιμοποιήθηκε αναγνώριση μέσω Internet. Οι κωδικοί SUPPORT δείχνουν αποτυχία ελέγχου, όχι οριστικά απουσία ελληνικών. Μπορείτε να δοκιμάσετε την τοπική αναγνώριση.`);}
-    finally {permissionPrompt.current=false;if(mounted.current && token===attempt.current){setBusy(false);onBusy(false);}}
+    finally {permissionPrompt.current=false;if(mounted.current && token===attempt.current){inFlight.current=false;setBusy(false);onBusy(false);}}
   }
   return <View style={{backgroundColor:'white',padding:18,borderRadius:18,gap:12}}>
-    <Text style={{fontSize:20,fontWeight:'700',color:'#283746'}}>Έλεγχος τοπικών ελληνικών · local-greek-1</Text>
+    <Text style={{fontSize:20,fontWeight:'700',color:'#283746'}}>Έλεγχος τοπικών ελληνικών · {probe.version || 'άγνωστη έκδοση'}</Text>
     <Text selectable>{result}</Text>
     <Text>Ο ήχος δεν αποθηκεύεται από το Pestify και χρησιμοποιείται μόνο ο τοπικός αναγνωριστής. Το κείμενο παραμένει προσωρινά σε αυτή την οθόνη.</Text>
     {[['check','Έλεγχος γλωσσών'],['listen','Δοκιμή τοπικής αναγνώρισης'],['download','Αίτημα λήψης ελληνικών']].map(([method,label])=><TouchableOpacity key={method} accessibilityRole="button" disabled={busy||!enabled} onPress={()=>run(method)} style={{padding:14,borderRadius:10,backgroundColor:busy||!enabled?'#aaa':'#1f9c8b'}}><Text style={{color:'white',fontWeight:'600'}}>{label}</Text></TouchableOpacity>)}

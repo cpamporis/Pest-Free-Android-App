@@ -13,7 +13,7 @@ test('ordinary configuration without a voice build flag is unchanged',()=>assert
 test('voice Lab has its own package and runtime, with updates disabled',()=>{
  const config=configWith({APP_VARIANT:'security-lab',PESTIFY_ANDROID_VOICE_LAB:'1',EAS_BUILD_PLATFORM:'android'});
  assert.equal(config.android.package,'com.cpamporis.pestfree.dev');
- assert.equal(config.updates.enabled,false);assert.equal(config.runtimeVersion,'pestify-android-voice-lab-6');
+ assert.equal(config.updates.enabled,false);assert.equal(config.runtimeVersion,'pestify-android-voice-lab-7');
  assert.ok(config.plugins.includes('./plugins/withPestifyAndroidVoice'));assert.deepEqual(config.ios,base.ios);
 });
 test('production profile builds the same voice feature with production identity and update settings',()=>{

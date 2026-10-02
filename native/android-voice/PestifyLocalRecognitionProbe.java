@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.os.*;
 import android.speech.*;
 import com.facebook.react.bridge.*;
+import com.facebook.react.common.LifecycleState;
 import java.util.*;
 
 /** Lab-only system recognizer diagnostic. No audio files, logging, network fallback or TTS. */
@@ -19,7 +20,7 @@ public final class PestifyLocalRecognitionProbe extends ReactContextBaseJavaModu
   static boolean isBusy() { return busy; }
   PestifyLocalRecognitionProbe(ReactApplicationContext c) { super(c); c.addLifecycleEventListener(this); }
   @Override public String getName() { return "PestifyLocalRecognitionProbe"; }
-  @Override public Map<String,Object> getConstants() { return Collections.singletonMap("version", "local-greek-1"); }
+  @Override public Map<String,Object> getConstants() { return Collections.singletonMap("version", "local-greek-2"); }
   private Intent intent() {
     Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
     i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "el-GR");
@@ -40,7 +41,9 @@ public final class PestifyLocalRecognitionProbe extends ReactContextBaseJavaModu
     if(pending!=null || PestifyVoiceService.current!=null || WhisperFieldEngine.busy() || PestifyWhisperProbe.isBusy()) {p.reject("BUSY","BUSY");return false;}
     PestifyFieldSession field=PestifyFieldSession.owner.get();
     if(field!=null && field.startPromise!=null) {p.reject("BUSY","BUSY");return false;}
-    if(getCurrentActivity()==null || !getCurrentActivity().hasWindowFocus()) {p.reject("FOREGROUND_REQUIRED","FOREGROUND_REQUIRED");return false;}
+    // React Native Modal owns a dialog window; Activity window focus is not app foreground state.
+    if(getCurrentActivity()==null || getCurrentActivity().isFinishing() || getCurrentActivity().isDestroyed() ||
+        getReactApplicationContext().getLifecycleState()!=LifecycleState.RESUMED) {p.reject("FOREGROUND_REQUIRED","FOREGROUND_REQUIRED");return false;}
     if(Build.VERSION.SDK_INT<33) {p.reject("ANDROID_13_REQUIRED","ANDROID_13_REQUIRED");return false;}
     pending=p; busy=true;
     try {
