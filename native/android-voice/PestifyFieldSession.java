@@ -112,7 +112,7 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   @ReactMethod public void startField(String sessionId,Promise p) {
     main.post(()->{
       Context c=getReactApplicationContext();
-      if (!enabled(c) || !isForeground() || listeners<1 || Build.VERSION.SDK_INT<33 || sessionId==null || sessionId.isEmpty() || sessionId.length()>160 || startPromise!=null || PestifyVoiceService.current!=null) { p.reject("FOREGROUND_REQUIRED","Cannot start voice session"); return; }
+      if (PestifyWhisperProbe.isBusy() || !enabled(c) || !isForeground() || listeners<1 || Build.VERSION.SDK_INT<33 || sessionId==null || sessionId.isEmpty() || sessionId.length()>160 || startPromise!=null || PestifyVoiceService.current!=null) { p.reject("FOREGROUND_REQUIRED","Cannot start voice session"); return; }
       if (c.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED || c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) { p.reject("PERMISSION_REQUIRED","Microphone and notifications required"); return; }
       startPromise=p; pendingSession=sessionId; final int ticket=++generation;
       checkGreek(c,configuration,(ok,reason)->{

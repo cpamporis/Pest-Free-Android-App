@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { withAndroidManifest, withMainApplication, withDangerousMod } = require('expo/config-plugins');
+const { withAndroidManifest, withMainApplication, withDangerousMod, withSettingsGradle, withAppBuildGradle } = require('expo/config-plugins');
 const PACKAGE = 'com.cpamporis.pestfree.voice';
 module.exports = function withPestifyAndroidVoice(config) {
   if (config.android?.package !== 'com.cpamporis.pestfree.dev') throw new Error('Android voice is Security Lab only');
@@ -38,11 +38,20 @@ module.exports = function withPestifyAndroidVoice(config) {
     }
     mod.modResults.contents = source; return mod;
   });
+  config = withSettingsGradle(config, mod => {
+    if (!mod.modResults.contents.includes("include ':pestify-whisper'")) mod.modResults.contents += "\ninclude ':pestify-whisper'\nproject(':pestify-whisper').projectDir = new File(rootProject.projectDir, 'pestify-whisper')\n";
+    return mod;
+  });
+  config = withAppBuildGradle(config, mod => {
+    if (!mod.modResults.contents.includes("implementation project(':pestify-whisper')")) mod.modResults.contents += "\ndependencies { implementation project(':pestify-whisper') }\n";
+    return mod;
+  });
   return withDangerousMod(config, ['android', async mod => {
     const source = path.join(mod.modRequest.projectRoot,'native','android-voice');
     const dest = path.join(mod.modRequest.platformProjectRoot,'app','src','main','java',...PACKAGE.split('.'));
     await fs.promises.mkdir(dest,{recursive:true});
     for (const file of await fs.promises.readdir(source)) if (file.endsWith('.java')) await fs.promises.copyFile(path.join(source,file),path.join(dest,file));
+    await require('../scripts/prepareWhisperAndroid.cjs').prepare(mod.modRequest.projectRoot, mod.modRequest.platformProjectRoot);
     return mod;
   }]);
 };

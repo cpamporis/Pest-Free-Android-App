@@ -17,7 +17,7 @@ test('voice build remains an isolated Lab package with updates disabled',()=>{
  const result=configWith({APP_VARIANT:'security-lab',PESTIFY_ANDROID_VOICE_LAB:'1',EAS_BUILD_PLATFORM:'android'});
  assert.equal(result.status,0);const config=JSON.parse(result.stdout);
  assert.equal(config.android.package,'com.cpamporis.pestfree.dev');
- assert.equal(config.updates.enabled,false);assert.equal(config.runtimeVersion,'pestify-android-voice-lab-1');
+ assert.equal(config.updates.enabled,false);assert.equal(config.runtimeVersion,'pestify-android-voice-lab-2');
  assert.ok(config.plugins.includes('./plugins/withPestifyAndroidVoice'));
  assert.deepEqual(config.ios,base.ios);
 });
