@@ -21,9 +21,10 @@ function parseStationFields(text) {
       if (!parsed.ok) return {ok:false,code:'INVALID_CONSUMPTION'};
       result.consumption = `${parsed.consumption}%`;
     } else if (field === 'κατασταση') {
-      const conditions = {λειτουργικο:'Functional',λειτουργικοσ:'Functional',λειτουργικη:'Functional',λειπει:'Missing',κατεστραμμενο:'Damaged',κατεστραμμενοσ:'Damaged',κατεστραμμενη:'Damaged'};
-      if (!Object.hasOwn(conditions,value)) return {ok:false,code:'INVALID_CONDITION'};
-      result.condition = conditions[value];
+      const conditions = {λειτουργικο:'Functional',λειτουργικοσ:'Functional',λειτουργικη:'Functional',λειπει:'Missing',λιπι:'Missing',κατεστραμμενο:'Damaged',κατεστραμενο:'Damaged',κατεστραμενοσ:'Damaged',κατεστραμενη:'Damaged',κατεστραμμενοσ:'Damaged',κατεστραμμενη:'Damaged'};
+      const conditionWord=value.replace(/\s+/g,'');
+      if (!Object.hasOwn(conditions,conditionWord)) return {ok:false,code:'INVALID_CONDITION'};
+      result.condition = conditions[conditionWord];
     } else {
       if (!['ναι','οχι'].includes(value)) return {ok:false,code:'INVALID_ACCESS'};
       result.access = value === 'ναι' ? 'Yes' : 'No';

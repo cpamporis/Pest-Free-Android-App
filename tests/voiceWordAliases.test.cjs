@@ -33,3 +33,10 @@ test('reported A71 comma-separated condition and joined station transcript',()=>
 test('separator tolerance never turns decimal, signed or ambiguous station into another integer',()=>{
  for(const text of ['Σταθμός, 2,5, κατάσταση, λείπει','Σταθμός, -6, κατάσταση, λείπει','Σταθμός X κατάσταση λείπει','Σταθμός χ κατάσταση λείπει','Σταθμός, έξι, κατανάλωση, 2,5','Σταθμός, έξι, κατανάλωση, -25'])assert.equal(parseStationFields(text).ok,false,text);
 });
+test('reported missing/damaged spellings preserve station six and terminal form behavior',()=>{
+ const cases=[['σταθμος εξι κατασταση λιπι','Missing'],['σταθμους εξι κατασταση κατεστραμενο','Damaged'],['σταθμος, εξι, κατασταση, κατεστραμενο','Damaged']];
+ for(const [text,condition] of cases){const r=parseStationFields(text);assert.equal(r.ok,true,text);assert.equal(r.stationNumber,6);assert.equal(r.condition,condition);assert.equal(r.terminal,true);assert.equal(r.consumption,null);}
+ assert.equal(parseStationFields('σταθμός 6 κατάσταση δεν λείπει').ok,false);
+ assert.equal(parseStationFields('σταθμός 6 κατάσταση όχι κατεστραμενο').ok,false);
+ assert.equal(parseStationFields('σταθμός 6 κατάσταση κατε στρα με νο').condition,'Damaged');
+});

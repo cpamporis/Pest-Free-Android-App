@@ -71,3 +71,9 @@ test('stop during map readback prevents switching',async()=>{
  const flow=createFieldVoiceSession({native:{stopField(){},async startField(key){id=key;return true;},reply(){return new Promise(resolve=>{reply=resolve;});},continueAfterCommit(){throw Error('must not rearm');}},onActive(){},onState(){},prepare:text=>({ok:true,candidate:prepare(ctx,text),readback:'Υπόγειο'}),validate:v=>validateVoiceCandidate(ctx,v),commit:v=>{ctx=candidateContext(ctx,v);}});
  await flow.start();const pending=flow.handleEvent({code:'COMMAND',sessionId:id,commandId:'map',text:'Κάτοψη δύο'});flow.stop();reply(true);await pending;assert.equal(ctx.map.mapId,'a');
 });
+test('observed katopsi vio maps only a complete map command to index two',()=>{
+ const route=resolveVoiceRoute(context(),'κατωψη βιω');assert.equal(route.ok,true);assert.equal(route.mapNumber,2);assert.equal(route.targetContext.map.mapId,'b');
+ assert.equal(validateVoiceCandidate(context(),prepare(context(),'κατωψη βιω')),true);
+ for(const phrase of ['σταθμός βιω κατανάλωση 25','κατωψη βιω τρία','σταθμός 1 κατανάλωση βιω'])assert.equal(resolveVoiceRoute(context(),phrase).ok,false,phrase);
+ assert.equal(resolveVoiceRoute(context([a]),'κατωψη βιω').code,'MAP_NOT_FOUND');
+});

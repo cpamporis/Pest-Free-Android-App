@@ -13,7 +13,9 @@ function resolveVoiceRoute(c,text) {
   const normalized=require('./normalizeVoiceWords').normalizeVoiceWords(text);
   const command=/^κατοψη(?:\s*[,;:··]\s*|\s+)(.+?)\s*[.!;]?$/u.exec(normalized);
   if(command){
-    const mapNumber=parseNumber(command[1].trim());
+    // Observed A71 transcription of 'δύο', restricted to a complete map-number field.
+    const mapWord=command[1].trim();
+    const mapNumber=mapWord==='βιω'?2:parseNumber(mapWord);
     const map=Number.isInteger(mapNumber)&&mapNumber>0?maps[mapNumber-1]:null;
     if(!map)return {ok:false,code:'MAP_NOT_FOUND'};
     return {ok:true,kind:'map',mapNumber,targetContext:mapContext(c,map)};
