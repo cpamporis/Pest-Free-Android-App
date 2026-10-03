@@ -138,3 +138,10 @@ test('diagnostic transcript and TTS status never enter command path',async()=>{
  const f=setup();await f.controller.start();for(const code of ['TRANSCRIPT','SPEECH_STAGE'])await f.controller.handleEvent({code,sessionId:f.id,text:'Σταθμός 5 κατανάλωση 25'});
  assert.equal(f.commits,0);assert.equal(f.continued,0);
 });
+test('new sessions send observed wake and stop variants to existing configurable native bridge',async()=>{
+ let configured;
+ const native={stopField(){},configureField:async c=>{configured=c;return true;},startField:async()=>true};
+ const controller=createFieldVoiceSession({native,prepare:()=>({ok:false}),validate:()=>true,commit(){},onState(){},onActive(){}});
+ assert.equal(await controller.start(),true);
+ assert.ok(configured.wakePhrases.includes('Αλήρτ'));assert.ok(configured.stopPhrases.includes('Ακύρω'));
+});

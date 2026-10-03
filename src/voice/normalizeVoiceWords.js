@@ -1,5 +1,5 @@
 'use strict';
-// Explicit spellings only. Never edit-distance, nearest-station selection or digit joining.
+// Explicit aliases plus bounded phonetic matching of command keywords only.
 const normalize = text => String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/ς/g,'σ').trim();
 const aliases={σταθμοσ:['σταθμοσ','σταμοσ','σταβμοσ','σταδμοσ','σταφμοσ','σταφμοζ','σταθμουσ'],κατοψη:['κατοψη','κατωψη','κατοπσι'],καταναλωση:['καταναλωση','κατλωση','καλωσι'],κατασταση:['κατασταση'],προσβαση:['προσβαση']};
 function normalizeVoiceWords(text) {
@@ -13,6 +13,8 @@ function normalizeVoiceWords(text) {
    s=s.replace(new RegExp('(^|[^\\p{L}\\p{N}])'+pattern+'(?=$|[^\\p{L}\\p{N}])','gu'),(_,prefix)=>prefix+canonical);
   }
  }
+ const choices=Object.keys(aliases).map(word=>({word,value:word}));
+ s=s.replace(/\p{L}+/gu,word=>require('./phoneticVoiceWords').matchVoiceWord(word,choices)||word);
  return s;
 }
 module.exports={normalizeVoiceWords};

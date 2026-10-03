@@ -40,3 +40,7 @@ test('reported missing/damaged spellings preserve station six and terminal form 
  assert.equal(parseStationFields('σταθμός 6 κατάσταση όχι κατεστραμενο').ok,false);
  assert.equal(parseStationFields('σταθμός 6 κατάσταση κατε στρα με νο').condition,'Damaged');
 });
+test('exact damaged utterance with exclamation is accepted',()=>{
+ const r=parseStationFields('Σταθμός έξι κατάσταση κατεστραμένο!');
+ assert.equal(r.ok,true);assert.equal(r.stationNumber,6);assert.equal(r.condition,'Damaged');assert.equal(r.terminal,true);
+});

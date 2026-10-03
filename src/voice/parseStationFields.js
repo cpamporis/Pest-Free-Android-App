@@ -23,8 +23,9 @@ function parseStationFields(text) {
     } else if (field === 'κατασταση') {
       const conditions = {λειτουργικο:'Functional',λειτουργικοσ:'Functional',λειτουργικη:'Functional',λειπει:'Missing',λιπι:'Missing',κατεστραμμενο:'Damaged',κατεστραμενο:'Damaged',κατεστραμενοσ:'Damaged',κατεστραμενη:'Damaged',κατεστραμμενοσ:'Damaged',κατεστραμμενη:'Damaged'};
       const conditionWord=value.replace(/\s+/g,'');
-      if (!Object.hasOwn(conditions,conditionWord)) return {ok:false,code:'INVALID_CONDITION'};
-      result.condition = conditions[conditionWord];
+      const matched=Object.hasOwn(conditions,conditionWord)?conditions[conditionWord]:require('./phoneticVoiceWords').matchVoiceWord(conditionWord,Object.entries(conditions).map(([word,value])=>({word,value})));
+      if (!matched) return {ok:false,code:'INVALID_CONDITION'};
+      result.condition = matched;
     } else {
       if (!['ναι','οχι'].includes(value)) return {ok:false,code:'INVALID_ACCESS'};
       result.access = value === 'ναι' ? 'Yes' : 'No';
