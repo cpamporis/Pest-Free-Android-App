@@ -83,7 +83,7 @@ function createFieldVoiceSession({native,prepare,validate,commit,onState,onActiv
     consumed.add(event.commandId);
     const ticket=epoch;busy=event.commandId;onState('processing','Επεξεργασία στη συσκευή…');
     const phrase=String(event.text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[.!;]+$/,'').trim();
-    if(['τερματισμος','σταματημα','ακυρο'].includes(phrase)){stop();return;}
+    if(['τερματισμος','σταματημα','ακυρο'].includes(phrase) || require('./phoneticVoiceWords').matchVoiceWord(phrase,[{word:'ακυρο',value:'stop'}])==='stop'){stop();return;}
     if(['παυση','ακυρωση'].includes(phrase)){busy=null;native.waitForWake();return;}
     try {
       const result=prepare(event.text);

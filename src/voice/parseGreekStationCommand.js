@@ -45,7 +45,18 @@ function number(text) {
  const direct=strictNumber(value);if(direct!==null)return direct;
  if(!/^[\p{L}\s]+$/u.test(value))return null;
  const compact=value.replace(/\s+/g,'').replace(/^(?:ηκοσυ|ηκωσι)/u,'εικοσι').replace(/^αινα$/u,'ενα').replace(/^εξ$/u,'εξι');
- return spellings.has(compact)?spellings.get(compact):null;
+ if(spellings.has(compact))return spellings.get(compact);
+ // Only one distinct numeric value may meet 80%; never choose the nearest number.
+ const {letterSimilarity}=require('./phoneticVoiceWords');
+ const vocabulary={...units,...tens,...hundreds};
+ const corrected=[];
+ for(const word of value.split(/\s+/)){
+  if(Object.hasOwn(vocabulary,word)){corrected.push(word);continue;}
+  const candidates=Object.entries(vocabulary).filter(([spelling])=>letterSimilarity(word,spelling)>=0.8-1e-10);
+  if(new Set(candidates.map(([,number])=>number)).size!==1)return null;
+  corrected.push(candidates[0][0]);
+ }
+ return strictNumber(corrected.join(' '));
 }
 function parseGreekStationCommand(text) {
   const s = require('./normalizeVoiceWords').normalizeVoiceWords(text);

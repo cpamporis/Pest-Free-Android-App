@@ -22,13 +22,15 @@ function parseStationFields(text) {
       result.consumption = `${parsed.consumption}%`;
     } else if (field === 'κατασταση') {
       const conditions = {λειτουργικο:'Functional',λειτουργικοσ:'Functional',λειτουργικη:'Functional',λειπει:'Missing',λιπι:'Missing',κατεστραμμενο:'Damaged',κατεστραμενο:'Damaged',κατεστραμενοσ:'Damaged',κατεστραμενη:'Damaged',κατεστραμμενοσ:'Damaged',κατεστραμμενη:'Damaged'};
-      const conditionWord=value.replace(/\s+/g,'');
+      if(/(^|\s)(?:δεν|οχι|μη|μην)(?=\s|$)/u.test(value))return {ok:false,code:'INVALID_CONDITION'};
+      const conditionWord=value.replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/^[\s«»"“”]+|[\s«»"“”!.,;··]+$/gu,'').replace(/\s+/g,'');
       const matched=Object.hasOwn(conditions,conditionWord)?conditions[conditionWord]:require('./phoneticVoiceWords').matchVoiceWord(conditionWord,Object.entries(conditions).map(([word,value])=>({word,value})));
       if (!matched) return {ok:false,code:'INVALID_CONDITION'};
       result.condition = matched;
     } else {
-      if (!['ναι','οχι'].includes(value)) return {ok:false,code:'INVALID_ACCESS'};
-      result.access = value === 'ναι' ? 'Yes' : 'No';
+      const access=require('./phoneticVoiceWords').matchVoiceWord(value,[{word:'ναι',value:'Yes'},{word:'προσβασιμο',value:'Yes'},{word:'οχι',value:'No'}]);
+      if (!access) return {ok:false,code:'INVALID_ACCESS'};
+      result.access = access;
     }
   }
   // Same priority as the existing form: no access means no condition observation.

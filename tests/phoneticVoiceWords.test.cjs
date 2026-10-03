@@ -23,5 +23,5 @@ test('actual commands use matcher but retain numbers and negation',()=>{
  assert.equal(parseStationFields('σταθμός έξι κατάσταση καμενο').ok,false);
  assert.equal(parseStationFields('σταθμός έξι κατάσταση κατεστρανο').condition,'Damaged');
  assert.equal(normalizeVoiceWords('κατοβζι 2'),'κατοψη 2');
- for(const text of ['σταθμός πεντα κατανάλωση 50','σταθμός 6 κατάσταση δεν λείπει','σταθμός 6 κατάσταση όχι κατεστραμμένο','σταθμός 6 κατάσταση μάλλον λείπει','σταθμός X κατανάλωση 25','σταθμός 6 πρόσβαση ίσως'])assert.equal(parseStationFields(text).ok,false,text);
+ for(const text of ['σταθμός 6 κατάσταση δεν λείπει','σταθμός 6 κατάσταση όχι κατεστραμμένο','σταθμός 6 κατάσταση μάλλον λείπει','σταθμός X κατανάλωση 25','σταθμός 6 πρόσβαση ίσως'])assert.equal(parseStationFields(text).ok,false,text);
 });

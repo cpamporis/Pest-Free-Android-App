@@ -17,6 +17,18 @@ function syllables(key) {
  return parts;
 }
 function confusionKey(s) {return s.replace(/[πβ][σζ]/g,'ΠΣ').replace(/[θφβδ]/g,'Θ');}
+// Ordered edit similarity; denominator includes extra letters as well as missing ones.
+function letterSimilarity(input,target) {
+ const a=phoneticKey(input),b=phoneticKey(target);
+ if(!a || !b || a.length>60 || b.length>60 || !/^[\p{L}]+$/u.test(a+b))return 0;
+ let row=Array.from({length:b.length+1},(_,i)=>i);
+ for(let i=1;i<=a.length;i++){
+  const next=[i];
+  for(let j=1;j<=b.length;j++)next[j]=Math.min(next[j-1]+1,row[j]+1,row[j-1]+(a[i-1]===b[j-1]?0:1));
+  row=next;
+ }
+ return 1-row[b.length]/Math.max(a.length,b.length);
+}
 function scoreWord(input, target) {
  const a=phoneticKey(input),b=phoneticKey(target);
  if (!a || a.length>60 || !/^[\p{L}]+$/u.test(a)) return null;
@@ -42,10 +54,17 @@ function scoreWord(input, target) {
  return best;
 }
 function matchVoiceWord(input, choices) {
- const hits=choices.map(({word,value})=>({value,score:scoreWord(input,word)})).filter(x=>x.score!==null);
+ const words=String(input||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().split(/\s+/);
+ if(words.length>1 && words.some(w=>['δεν','οχι','μη','μην'].includes(w)))return null;
+ const hits=choices.map(({word,value})=>{
+  const existing=scoreWord(input,word),similarity=letterSimilarity(input,word);
+  // Exact normalized spelling wins; older syllable rules remain supported.
+  const score=existing===0?0:similarity>=0.8-1e-10?1-similarity:existing!==null?1+existing:null;
+  return {value,score};
+ }).filter(x=>x.score!==null);
  if(!hits.length)return null;
  const best=Math.min(...hits.map(x=>x.score));
- const values=[...new Set(hits.filter(x=>x.score===best).map(x=>x.value))];
+ const values=[...new Set(hits.filter(x=>Math.abs(x.score-best)<1e-10).map(x=>x.value))];
  return values.length===1?values[0]:null;
 }
-module.exports={phoneticKey,syllables,scoreWord,matchVoiceWord};
+module.exports={phoneticKey,syllables,scoreWord,letterSimilarity,matchVoiceWord};
