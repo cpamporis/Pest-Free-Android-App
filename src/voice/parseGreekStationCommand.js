@@ -44,7 +44,7 @@ function number(text) {
  if(value.length>180)return null;
  const direct=strictNumber(value);if(direct!==null)return direct;
  if(!/^[\p{L}\s]+$/u.test(value))return null;
- const compact=value.replace(/\s+/g,'').replace(/^(?:ηκοσυ|ηκωσι)/u,'εικοσι').replace(/^αινα$/u,'ενα');
+ const compact=value.replace(/\s+/g,'').replace(/^(?:ηκοσυ|ηκωσι)/u,'εικοσι').replace(/^αινα$/u,'ενα').replace(/^εξ$/u,'εξι');
  return spellings.has(compact)?spellings.get(compact):null;
 }
 function parseGreekStationCommand(text) {
@@ -53,7 +53,7 @@ function parseGreekStationCommand(text) {
   if (s.length > 180) return { ok:false, code:"INVALID_COMMAND" };
   // Allow punctuation at command boundaries, never strip it from numbers:
   // "10. Κατανάλωση: 25%." is valid, "10.5" / "-25" remain invalid.
-  const match = /^(?:δολωματικοσ\s+)?σταθμοσ(?:\s*:\s*|\s+)(.+?)(?:\s*[,;:.··—–-]\s*|\s+)καταναλωση(?:\s*:\s*|\s+)(.+?)\s*[.!;]?$/u.exec(s);
+  const match = /^(?:δολωματικοσ\s+)?σταθμοσ(?:\s*[,;:··]\s*|\s+)(.+?)(?:\s*[,;:.··—–-]\s*|\s+)καταναλωση(?:\s*[,;:··]\s*|\s+)(.+?)\s*[.!;]?$/u.exec(s);
   if (!match) return { ok:false, code:"INVALID_COMMAND" };
   const station = number(match[1].trim());
   const consumption = number(match[2].replace(/\s*(?:%|τοισ εκατο)$/, "").trim());

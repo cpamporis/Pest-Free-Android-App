@@ -15,7 +15,7 @@ function parseStationFields(text) {
     const field = fields[i][0];
     if (seen.has(field)) return {ok:false,code:'INVALID_COMMAND'};
     seen.add(field);
-    const value = edge(s.slice(fields[i].index+field.length,fields[i+1]?.index ?? s.length).replace(/^\s*:\s*/u,''));
+    const value = edge(s.slice(fields[i].index+field.length,fields[i+1]?.index ?? s.length).replace(/^[\s,;:··]+/u,''));
     if (field === 'καταναλωση') {
       const parsed = parseGreekStationCommand(`Σταθμός 1 κατανάλωση ${value}`);
       if (!parsed.ok) return {ok:false,code:'INVALID_CONSUMPTION'};

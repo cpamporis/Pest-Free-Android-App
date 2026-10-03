@@ -1,10 +1,12 @@
 'use strict';
 // Explicit spellings only. Never edit-distance, nearest-station selection or digit joining.
 const normalize = text => String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/ς/g,'σ').trim();
-const aliases={σταθμοσ:['σταθμοσ','σταμοσ','σταβμοσ','σταδμοσ'],κατοψη:['κατοψη','κατωψη','κατοπσι'],καταναλωση:['καταναλωση'],κατασταση:['κατασταση'],προσβαση:['προσβαση']};
+const aliases={σταθμοσ:['σταθμοσ','σταμοσ','σταβμοσ','σταδμοσ','σταφμοσ','σταφμοζ'],κατοψη:['κατοψη','κατωψη','κατοπσι'],καταναλωση:['καταναλωση','κατλωση','καλωσι'],κατασταση:['κατασταση'],προσβαση:['προσβαση']};
 function normalizeVoiceWords(text) {
  let s=normalize(text);
  if(s.length>500)return s;
+ // Exact observed joined token, not a general fuzzy station/number guess.
+ s=s.replace(/(^|[^\p{L}\p{N}])σταφμοζεξι(?=$|[^\p{L}\p{N}])/gu,'$1σταθμοσ εξι');
  for(const [canonical,variants] of Object.entries(aliases)) {
   for(const word of variants) {
    const pattern=Array.from(word).join('\\s*');

@@ -11,7 +11,7 @@ function resolveVoiceRoute(c,text) {
   if(!maps.some(m=>id(m)===id(c.map)))return {ok:false,code:'CONTEXT_CHANGED'};
   if(maps.some(m=>!id(m)) || new Set(maps.map(id)).size!==maps.length)return {ok:false,code:'AMBIGUOUS_MAP'};
   const normalized=require('./normalizeVoiceWords').normalizeVoiceWords(text);
-  const command=/^κατοψη\s+(.+?)\s*[.!;]?$/u.exec(normalized);
+  const command=/^κατοψη(?:\s*[,;:··]\s*|\s+)(.+?)\s*[.!;]?$/u.exec(normalized);
   if(command){
     const mapNumber=parseNumber(command[1].trim());
     const map=Number.isInteger(mapNumber)&&mapNumber>0?maps[mapNumber-1]:null;

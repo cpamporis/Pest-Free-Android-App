@@ -20,3 +20,16 @@ test('command variants and split numbers pass through actual station parser',()=
  for(const phrase of ['κατωψη','κατ οπσι','κάτοψη'])assert.equal(normalizeVoiceWords(phrase+' πε ντε'),'κατοψη πε ντε');
  assert.equal(parseStationFields('σταθμός 5 0 κατανάλωση 25').ok,false);
 });
+test('reported A71 comma-separated condition and joined station transcript',()=>{
+ const result=parseStationFields('Σταθμος, εξι, Κατασταση, Κατεστραμμενο');
+ assert.equal(result.ok,true);assert.equal(result.stationNumber,6);assert.equal(result.condition,'Damaged');assert.equal(result.terminal,true);assert.equal(result.consumption,null);
+ assert.equal(parseStationFields('Σταθμός, εξ, κατάσταση, λείπει').condition,'Missing');
+ assert.equal(parseStationFields('Σταθμός, έξι, πρόσβαση, όχι').access,'No');
+ for(const keyword of ['κατλωση','καλωσι']){
+  const r=parseStationFields(`σταφμοζεξι, ${keyword}, ει κο σι πε ντε`);
+  assert.equal(r.ok,true);assert.equal(r.stationNumber,6);assert.equal(r.consumption,'25%');
+ }
+});
+test('separator tolerance never turns decimal, signed or ambiguous station into another integer',()=>{
+ for(const text of ['Σταθμός, 2,5, κατάσταση, λείπει','Σταθμός, -6, κατάσταση, λείπει','Σταθμός X κατάσταση λείπει','Σταθμός χ κατάσταση λείπει','Σταθμός, έξι, κατανάλωση, 2,5','Σταθμός, έξι, κατανάλωση, -25'])assert.equal(parseStationFields(text).ok,false,text);
+});
