@@ -145,10 +145,8 @@ test('new sessions send observed wake and stop variants to existing configurable
  assert.equal(await controller.start(),true);
  assert.ok(configured.wakePhrases.includes('Αλήρτ'));assert.ok(configured.stopPhrases.includes('Ακύρω'));
 });
-test('unrelated recognition returns silently to wake without committing or speaking',async()=>{
- for(const text of ['', '...', 'Ευχαριστώ', 'Υπότιτλοι', 'μουσική']){
-  const f=setup({invalid:true});await f.controller.start();await f.event(text);
-  assert.equal(f.waits,1);assert.equal(f.commits,0);assert.equal(f.continued,0);
-  assert.equal(f.states.some(([phase])=>phase==='speaking'),false);assert.equal(f.active,true);
- }
+test('unrelated decoder output must not force premature wake mode on current binary',async()=>{
+ const f=setup({invalid:true});await f.controller.start();const result=f.event('Ευχαριστώ');
+ assert.equal(f.waits,0);f.answer(true);await result;
+ assert.equal(f.waits,0);assert.equal(f.continued,1);assert.equal(f.commits,0);
 });

@@ -87,11 +87,6 @@ function createFieldVoiceSession({native,prepare,validate,commit,onState,onActiv
     if(['παυση','ακυρωση'].includes(phrase)){busy=null;native.waitForWake();return;}
     try {
       const result=prepare(event.text);
-      if(!result.ok && !require('./voiceCommandIntent').hasCommandIntent(event.text)) {
-        // Existing native binaries can silently discard a processing result via waitForWake.
-        // continueAfterCommit is NOT valid here: it requires completed speech.
-        busy=null;onState('wake','Αναμονή για «Αλέρτ».');native.waitForWake();return;
-      }
       if(result.ok && !validate(result.candidate)){stop('Άλλαξε η εργασία. Δεν έγινε καταχώριση.');return;}
       onState('speaking',result.ok?result.readback:'Επαναλάβετε την εντολή.');
       const replied=await native.reply(event.commandId,result.ok?result.readback:(result.message||'Επαναλάβετε την εντολή.'),result.ok);
