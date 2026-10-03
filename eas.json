@@ -13,7 +13,41 @@
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "PESTIFY_ANDROID_VOICE": "1"
+      },
+      "developmentClient": false,
+      "distribution": "store",
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "security-lab-voice": {
+      "extends": "security-lab",
+      "env": {
+        "APP_VARIANT": "security-lab",
+        "PESTIFY_ANDROID_VOICE_LAB": "1"
+      }
+    },
+    "security-lab-field": {
+      "extends": "security-lab-voice",
+      "developmentClient": false
+    },
+    "security-lab-continuous": {
+      "extends": "security-lab-voice",
+      "developmentClient": true
+    },
+    "security-lab": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "security-lab",
+      "env": {
+        "APP_VARIANT": "security-lab"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

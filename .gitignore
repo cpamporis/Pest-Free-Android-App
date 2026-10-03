@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Verified build-time Whisper artifacts (regenerated on EAS)
+.pestify-voice-cache/

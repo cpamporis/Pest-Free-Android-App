@@ -1,3 +1,5 @@
+import VoiceStationFlow, { voiceAvailable } from "../../voice/VoiceStationFlow";
+const { validateVoiceCandidate, candidateContext } = require("../../voice/voiceMapRouting");
 import {stationOnMap, mapIdOf} from "../../utils/stationMapIdentity";
 import useStationNumbering from "../../components/useStationNumbering";
 import CommercialServicePanel from "../../components/CommercialServicePanel";
@@ -157,6 +159,10 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
     session?.visitId ?? null
   );
   
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceMounted, setVoiceMounted] = useState(false);
+  const [voiceSessionState, setVoiceSessionState] = useState({phase:'idle',status:''});
+  const [voiceDefaults, setVoiceDefaults] = useState(null);
   const [selectedMap, setSelectedMap] = useState(null);
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null); 
@@ -1017,7 +1023,7 @@ useEffect(() => {
   };
 
   // In MyocideScreen.js - Update upsertLoggedStation
-  const upsertLoggedStation = (stationData) => {
+  const upsertLoggedStation = (stationData, silent = false, targetMap = selectedMap) => {
     // Ensure stationType is included
     if (!stationData.stationType) {
       stationData.stationType = selectedStation?.type || "BS";
@@ -1033,8 +1039,8 @@ useEffect(() => {
     // When access is "No", explicitly set other fields to null
     const normalized = normalizeStation({
       ...stationData,
-      mapId: mapIdOf(selectedMap),
-      mapName: selectedMap?.name || null,
+      mapId: mapIdOf(targetMap),
+      mapName: targetMap?.name || null,
       stationId: fixedStationId,
       stationType: stationData.stationType || "BS",
       // Ensure all fields are properly set (null for "No access", undefined otherwise)
@@ -1057,7 +1063,7 @@ useEffect(() => {
     setLoggedStations(prev => {
       const index = prev.findIndex(
         s =>
-          stationOnMap(s, selectedMap, customerMaps) && String(s.stationId) === String(normalized.stationId) &&
+          stationOnMap(s, targetMap, customerMaps) && String(s.stationId) === String(normalized.stationId) &&
           s.stationType === normalized.stationType
       );
 
@@ -1069,7 +1075,7 @@ useEffect(() => {
       return [...prev, normalized];
     });
 
-    Alert.alert(
+    if (!silent) Alert.alert(
       i18n.t("technician.common.success"),
       i18n.t("technician.myocide.alerts.stationLogged", { 
         type: normalized.stationType, 
@@ -1414,6 +1420,35 @@ useEffect(() => {
     setAddingStation(false);
   };
 
+  const voiceFormDefaults = useMemo(() => voiceDefaults ? {
+    baitType: voiceDefaults.baitType, dosage_g: voiceDefaults.dosageG,
+    condition: "Functional", access: "Yes"
+  } : null, [voiceDefaults]);
+
+  useEffect(() => { setVoiceDefaults(null); }, [session?.appointmentId, effectiveCustomer?.customerId, technician?.id, workStarted]);
+
+  const voiceContext = {
+    appointmentId: session?.appointmentId,
+    customerId: effectiveCustomer?.customerId,
+    technicianId: technician?.id,
+    visitId: sessionVisitId,
+    map: selectedMap,
+    maps: customerMaps,
+    stations,
+    active: workStarted && !editMode && !saving && !loadingCustomer && !serviceCompleted && !isEditCompletedVisit
+  };
+  const voiceSessionView = voiceMounted && voiceAvailable ? (
+    <VoiceStationFlow visible={voiceOpen} onSessionState={setVoiceSessionState} context={voiceContext} loggedStations={loggedStations} technician={technician}
+      defaults={voiceDefaults} onDefaultsChange={setVoiceDefaults}
+      onClose={() => setVoiceOpen(false)}
+      onCommit={candidate => {
+        if (!validateVoiceCandidate(voiceContext, candidate)) throw new Error("VOICE_CONTEXT_CHANGED");
+        const target=candidateContext(voiceContext,candidate);
+        if(candidate.kind==='station')upsertLoggedStation(candidate.data, true, target.map);
+        if(mapIdOf(target.map)!==mapIdOf(selectedMap))handleMapSelect(target.map);
+      }} />
+  ) : null;
+
   if (loadingCustomer) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -1517,6 +1552,7 @@ useEffect(() => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 110 : 0}
     >
       {paymentDialog}
+      {voiceSessionView}
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.container}>
@@ -1537,6 +1573,12 @@ useEffect(() => {
             ) : (
               <TouchableOpacity style={styles.backBtn} onPress={onBack}>
                 <Text style={styles.backBtnText}>← {i18n.t("technician.common.back")}</Text>
+              </TouchableOpacity>
+            )}
+
+            {voiceAvailable && (voiceContext.active || voiceSessionState.phase !== 'idle') && !selectedStation && (
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Ηχογράφηση" style={[styles.backBtn,voiceSessionState.phase !== 'idle' && styles.recordingButton]} onPress={()=>{setVoiceMounted(true);setVoiceOpen(true);}}>
+                <Text style={styles.backBtnText}>{voiceSessionState.phase !== 'idle' ? '● ' : ''}Ηχογράφηση</Text>
               </TouchableOpacity>
             )}
 
@@ -1567,6 +1609,7 @@ useEffect(() => {
             </TouchableOpacity>
           </View>
 
+          {voiceMounted && !!voiceSessionState.status && <Text accessibilityLiveRegion="polite" style={styles.voiceStatus}>{voiceSessionState.status}</Text>}
           {showMapDropdown && (
             <View style={styles.mapDropdown}>
               {customerMaps.map((map, index) => (
@@ -2006,7 +2049,7 @@ useEffect(() => {
                     loggedStations.find(
                       s => stationOnMap(s, selectedMap, customerMaps) && String(s.stationId) === String(selectedStation.id) && 
                       s.stationType === (selectedStation.type || "BS")
-                    ) || null
+                    ) || voiceFormDefaults
                   }
                   onClose={() => setSelectedStation(null)}
                 />
@@ -2178,6 +2221,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 8,
   },
+  recordingButton:{backgroundColor:'#167d6f',borderWidth:1,borderColor:'#0e6256'},
+  voiceStatus:{marginHorizontal:20,marginTop:8,fontSize:13,lineHeight:18,color:'#64737d'},
   backBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
 
   chooseMapBtn: {
@@ -2487,3 +2532,4 @@ const styles = StyleSheet.create({
   },
 });
 export default MapScreen;
+

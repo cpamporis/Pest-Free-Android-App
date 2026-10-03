@@ -1,0 +1,1 @@
+-keep class com.cpamporis.pestfree.voice.PestifyWhisperProbe { *; }
