@@ -32,7 +32,7 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   }
   @Override public Map<String,Object> getConstants() {
     Map<String,Object> m=new HashMap<>(); boolean allowed=enabled(getReactApplicationContext());
-    m.put("enabled",allowed); m.put("voiceEnabled",allowed); m.put("wakeVersion",6); m.put("configurationVersion",2); m.put("diagnosticVersion","base-field-2"); return m;
+    m.put("enabled",allowed); m.put("voiceEnabled",allowed); m.put("wakeVersion",6); m.put("configurationVersion",3); m.put("continuousCaptureVersion",1); m.put("diagnosticVersion","continuous-field-1"); return m;
   }
   boolean isForeground() { return foreground && getCurrentActivity()!=null && !disposed; }
   @Override public void onHostResume() { foreground=true; }
@@ -56,7 +56,7 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   interface SupportResult { void complete(boolean installed,String reason); }
   static void checkGreek(Context c,VoiceConfig cfg,SupportResult callback) {
     boolean available=Build.VERSION.SDK_INT>=33&&PestifyWhisperProbe.available();
-    callback.complete(available,available?"":"Απαιτείται Android 13+ και build με το τοπικό μοντέλο Tiny.");
+    callback.complete(available,available?"":"Απαιτείται Android 13+ και build με το τοπικό μοντέλο Base.");
   }
   @ReactMethod public void capabilities(Promise p) {
     main.post(()->{
@@ -115,6 +115,9 @@ public final class PestifyFieldSession extends ReactContextBaseJavaModule implem
   }
   @ReactMethod public void continueAfterCommit(String commandId) {
     main.post(()->{ PestifyVoiceService s=PestifyVoiceService.current; if (s!=null && s.module==this) s.continueAfterCommit(commandId); });
+  }
+  @ReactMethod public void ignoreCommand(String commandId) {
+    main.post(()->{PestifyVoiceService s=PestifyVoiceService.current;if(s!=null&&s.module==this)s.ignoreCommand(commandId);});
   }
   @ReactMethod public void waitForWake() {
     main.post(()->{ PestifyVoiceService s=PestifyVoiceService.current; if (s!=null && s.module==this) s.waitForWake(); });

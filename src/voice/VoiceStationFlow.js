@@ -1,4 +1,3 @@
-import LocalRecognitionDiagnostic from './LocalRecognitionDiagnostic';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Modal, PermissionsAndroid, NativeEventEmitter, NativeModules, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -37,7 +36,6 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
   const fieldActive = useRef(false);
   const [dropdown, setDropdown] = useState(null);
   const [phase, setPhase] = useState('idle');
-  const [diagnosticBusy, setDiagnosticBusy] = useState(false);
   const [lastHeard,setLastHeard]=useState('');
   const [speechStage,setSpeechStage]=useState('');
   const [speechEngine,setSpeechEngine]=useState('');
@@ -111,7 +109,6 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
     setSettingsOpen(!defaults?.baitType || !defaults?.dosageG); setDropdown(null);
   }, [defaults?.baitType, defaults?.dosageG]);
   async function start() {
-    if (diagnosticBusy) return;
     if (!current.current.defaults?.baitType || !current.current.defaults?.dosageG || settingsOpen) return;
     setStartupError('');setLastHeard('');setSpeechStage('');setSpeechEngine('');
     pause('Έλεγχος αδειών…'); setPhase('permissions');
@@ -138,7 +135,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
     } catch(error) { if (alive.current && token === permissionAttempt.current) { const code=/^[A-Z0-9_]{1,100}$/.test(String(error?.code||''))?error.code:'PREFLIGHT_FAILED'; const message=`Δεν ολοκληρώθηκε ο έλεγχος εκκίνησης.\nΚωδικός: ${code}`; pause(message);setStartupError(message);Alert.alert('Η ακρόαση διακόπηκε',message); } }
     finally { permissionPrompt.current = false; }
   }
-  const compatible = Boolean(fieldNative?.enabled && fieldNative?.wakeVersion >= 6);
+  const compatible = Boolean(fieldNative?.enabled && fieldNative?.continuousCaptureVersion >= 1);
   const running = phase !== 'idle';
   function action(label, onPress, disabled=false, danger=false) {
     return <TouchableOpacity accessibilityRole="button" accessibilityState={{disabled}} disabled={disabled} onPress={onPress} style={[styles.button,danger && styles.danger,disabled && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></TouchableOpacity>;
@@ -160,9 +157,8 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
       <View style={styles.header}><TouchableOpacity accessibilityRole="button" accessibilityLabel="Επιστροφή στην κάτοψη" style={styles.back} onPress={onClose}><MaterialIcons name="arrow-back" size={24} color="#1f9c8b" /></TouchableOpacity><Text style={styles.title}>Ηχογράφηση</Text><View style={styles.headerIcon}><MaterialIcons name="mic" size={24} color="#1f9c8b" /></View></View>
       {!!startupError && <View style={{padding:16,backgroundColor:'#fff0f0'}}><Text selectable style={{color:'#a32121'}}>{startupError}</Text></View>}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {visible && <LocalRecognitionDiagnostic enabled={!running} onBusy={setDiagnosticBusy} />}
         <View style={styles.card}>
-          <Text style={styles.helper}>Κανόνες φωνής: voice-js-7</Text>
+          <Text style={styles.helper}>Κανόνες φωνής: continuous-js-1</Text>
           <Text style={styles.helper}>Έκδοση φωνής: {fieldNative?.diagnosticVersion || 'base-field-2'}</Text>
           <Text selectable style={styles.helper}>{speechEngine}</Text>
           <Text selectable style={styles.helper}>Εκφώνηση: {speechStage || 'Δεν ξεκίνησε ακόμη'}</Text>
@@ -189,11 +185,11 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
         </View>
         <View style={styles.card}>
           <View style={styles.statusHeading}><View style={[styles.dot,running && styles.dotActive]} /><Text style={styles.sectionTitle}>{phase==='permissions'?'Έλεγχος διαθεσιμότητας':phase==='starting'?'Εκκίνηση ακρόασης':running?'Ακρόαση ενεργή':'Έτοιμο για έναρξη'}</Text></View>
-          <Text accessibilityLiveRegion="polite" style={styles.helper}>{compatible?status:'Απαιτείται η νέα έκδοση της εφαρμογής για φωνητική διακοπή.'}</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.helper}>{compatible?status:'Απαιτείται το νέο Dev build συνεχούς ακρόασης.'}</Text>
           <Text style={styles.helper}>Πείτε «{fieldConfiguration.wakePhrases[0]}», περιμένετε «{fieldConfiguration.readyMessage}» και δώστε τον σταθμό και την κατανάλωση. Μετά από κάθε εντολή περιμένετε την επανάληψη πριν μιλήσετε ξανά. Η ακρόαση συνεχίζεται στην κάτοψη και με κλειδωμένη οθόνη, με μόνιμη ειδοποίηση Android.</Text>
           <Text style={styles.helper}>Ο ήχος και το αναγνωρισμένο κείμενο χρησιμοποιούνται προσωρινά στη συσκευή, χωρίς αποθήκευση ή αποστολή. Καταχωρίζονται μόνο τα στοιχεία του ελέγχου.</Text>
-          <Text style={styles.helper}>Η αναγνώριση γίνεται με το ενσωματωμένο Tiny. Απαιτούνται Android 13 ή νεότερο και εγκατεστημένη ελληνική φωνή εκτός σύνδεσης για την εκφώνηση. Για διακοπή πείτε «Άκυρο» όταν ακούει ή πατήστε «Διακοπή» στην εφαρμογή ή στην ειδοποίηση. Οι καταχωρισμένες εγγραφές διατηρούνται. Η τελική αποθήκευση γίνεται με την ολοκλήρωση της εργασίας.</Text>
-          {running ? action('Διακοπή',()=>pause('Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.'),false,true) : action('Έναρξη ακρόασης',start,diagnosticBusy || !compatible || settingsOpen || !defaults?.baitType || !defaults?.dosageG || !context.active)}
+          <Text style={styles.helper}>Η αναγνώριση γίνεται με το ενσωματωμένο Base. Απαιτούνται Android 13 ή νεότερο και εγκατεστημένη ελληνική φωνή εκτός σύνδεσης για την εκφώνηση. Για διακοπή πείτε «Άκυρο» όταν ακούει ή πατήστε «Διακοπή» στην εφαρμογή ή στην ειδοποίηση. Οι καταχωρισμένες εγγραφές διατηρούνται. Η τελική αποθήκευση γίνεται με την ολοκλήρωση της εργασίας.</Text>
+          {running ? action('Διακοπή',()=>pause('Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.'),false,true) : action('Έναρξη ακρόασης',start,!compatible || settingsOpen || !defaults?.baitType || !defaults?.dosageG || !context.active)}
         </View>
         <TouchableOpacity accessibilityRole="button" style={styles.textButton} onPress={onClose}><Text style={styles.link}>Επιστροφή στην κάτοψη</Text></TouchableOpacity>
       </ScrollView>

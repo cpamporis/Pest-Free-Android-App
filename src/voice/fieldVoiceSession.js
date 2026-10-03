@@ -77,7 +77,8 @@ function createFieldVoiceSession({native,prepare,validate,commit,onState,onActiv
       stop('Η ακρόαση σταμάτησε. Οι καταχωρίσεις διατηρήθηκαν.');return;
     }
     if(event.code==='WAITING_WAKE') {onState('wake',`Αναμονή για «${configuration.wakePhrases[0]}». Το μικρόφωνο παραμένει ενεργό.`);return;}
-    if(event.code==='DECODING') {onState('decoding','Αναγνώριση στη συσκευή… Περιμένετε πριν μιλήσετε ξανά.');return;}
+    if(event.code==='QUEUE_DROPPED'){onState('decoding','Η ουρά γέμισε ή έληξε μία φράση. Θα ζητηθεί επανάληψη.');return;}
+    if(event.code==='DECODING') {onState('decoding','Αναγνώριση στη συσκευή — το μικρόφωνο παραμένει ανοιχτό.');return;}
     if(event.code==='LISTENING') {onState('listening',`${configuration.readyMessage} — πείτε τον επόμενο σταθμό ή κάτοψη.`);return;}
     if(event.code!=='COMMAND'||!event.commandId||busy||consumed.has(event.commandId))return;
     consumed.add(event.commandId);
@@ -87,6 +88,10 @@ function createFieldVoiceSession({native,prepare,validate,commit,onState,onActiv
     if(['παυση','ακυρωση'].includes(phrase)){busy=null;native.waitForWake();return;}
     try {
       const result=prepare(event.text);
+      if(!result.ok && !require('./voiceCommandIntent').hasCommandIntent(event.text)){
+        if(typeof native.ignoreCommand!=='function'){stop('Χρειάζεται το νέο Dev build συνεχούς ακρόασης.');return;}
+        busy=null;native.ignoreCommand(event.commandId);onState('listening','Ακρόαση ενεργή.');return;
+      }
       if(result.ok && !validate(result.candidate)){stop('Άλλαξε η εργασία. Δεν έγινε καταχώριση.');return;}
       onState('speaking',result.ok?result.readback:'Επαναλάβετε την εντολή.');
       const replied=await native.reply(event.commandId,result.ok?result.readback:(result.message||'Επαναλάβετε την εντολή.'),result.ok);

@@ -29,7 +29,7 @@ public final class PestifyVoiceService extends Service {
   private Promise replyPromise;
   private Runnable afterSpeech;
   private int recognitionGeneration;
-  private boolean stopping, heardSpeech, speechStarted;
+  private boolean stopping, heardSpeech, speechStarted, wakeMode=true, droppedAudio;
   private long lastActivity;
   private Runnable idleTimer, replyTimer, speechTimer;
 
@@ -105,53 +105,65 @@ public final class PestifyVoiceService extends Service {
   private void clear(Runnable task) { if (task!=null) main.removeCallbacks(task); }
   private void disposeRecognizer() {
     recognitionGeneration++; clear(idleTimer);
-    if(engine!=null)engine.cancel();
+    if(engine!=null)engine.mute(true);
+  }
+  private void armIdle(){
+    clear(idleTimer);if(wakeMode||stopping)return;
+    idleTimer=()->{
+      if(stopping||wakeMode)return;
+      if("processing".equals(phase)||"speaking".equals(phase)||"awaitingCommit".equals(phase)){main.postDelayed(idleTimer,1000);return;}
+      long remaining=cfg.idleMs-(SystemClock.elapsedRealtime()-lastActivity);
+      if(remaining>0){main.postDelayed(idleTimer,remaining);return;}
+      // Finish an in-flight phrase before changing modes; noise never resets lastActivity.
+      if(engine.hasSpeechWork()&&SystemClock.elapsedRealtime()-lastActivity<cfg.idleMs+cfg.captureMs+30000){main.postDelayed(idleTimer,1000);return;}
+      engine.discardPending();wakeMode=true;
+      speak("Αναμονή για αλέρτ.",()->rearm(true,300));
+    };
+    main.postDelayed(idleTimer,Math.max(1,cfg.idleMs-(SystemClock.elapsedRealtime()-lastActivity)));
   }
   private void listen(boolean wake) {
     if(stopping)return;
-    disposeRecognizer();phase=wake?"wake":"listening";heardSpeech=false;
-    final int generation=recognitionGeneration;
-    if(engine==null)engine=new WhisperFieldEngine(this,main);
-    if(module.startPromise!=null)emit("START_STAGE","Μοντέλο Base και μικρόφωνο",null);
-    boolean started=engine.start(cfg.silenceMs,cfg.captureMs,new WhisperFieldEngine.Listener(){
-      private boolean valid(){return !stopping&&generation==recognitionGeneration;}
-      public void ready(){if(!valid())return;if(module.startPromise!=null)module.started();emit(wake?"WAITING_WAKE":"LISTENING",null,null);}
-      public void speech(){if(valid())heardSpeech=true;}
-      public void decoding(){if(valid())emit("DECODING",null,null);}
-      public void failure(String code){if(valid())shutdown(code);}
-      public void result(String text){
-        if(!valid())return;
-        disposeRecognizer();
-        if(text==null||text.trim().isEmpty()||text.length()>500){rearm(wake,150);return;}
-        if(getPackageName().equals("com.cpamporis.pestfree.dev"))emit("TRANSCRIPT",text,null);
-        String normalized=VoiceConfig.normalize(text);
-        if(VoiceConfig.matches(cfg.stop,normalized)){shutdown("VOICE_CANCELLED");return;}
-        if(wake){
-          if(VoiceConfig.matches(cfg.wake,normalized)){lastActivity=SystemClock.elapsedRealtime();speak(cfg.ready,()->rearm(false,300));}
-          else rearm(true,150);
-          return;
+    if(wake!=wakeMode&&engine!=null)engine.discardPending();
+    wakeMode=wake;phase=wake?"wake":"listening";heardSpeech=false;
+    if(engine==null){
+      engine=new WhisperFieldEngine(this,main);
+      boolean started=engine.start(cfg,new WhisperFieldEngine.Listener(){
+        public void ready(){if(stopping)return;if(module.startPromise!=null)module.started();emit(wakeMode?"WAITING_WAKE":"LISTENING",null,null);}
+        public void speech(){if(!stopping)heardSpeech=true;}
+        public void decoding(){if(!stopping){heardSpeech=true;emit("DECODING","Το μικρόφωνο παραμένει ενεργό.",null);}}
+        public void failure(String code){if(!stopping)shutdown(code);}
+        public void dropped(){if(!stopping){droppedAudio=true;emit("QUEUE_DROPPED","Μία φράση δεν διατηρήθηκε. Θα ζητηθεί επανάληψη.",null);}}
+        public void result(String text){
+          if(stopping)return;heardSpeech=false;
+          if(text==null||text.trim().isEmpty()||text.length()>500){rearm(wakeMode,0);return;}
+          if(getPackageName().equals("com.cpamporis.pestfree.dev"))emit("TRANSCRIPT",text,null);
+          String normalized=VoiceConfig.normalize(text);
+          if(VoiceConfig.matches(cfg.stop,normalized)){shutdown("VOICE_CANCELLED");return;}
+          if(wakeMode){
+            if(VoiceConfig.matches(cfg.wake,normalized)){lastActivity=SystemClock.elapsedRealtime();engine.discardPending();wakeMode=false;speak(cfg.ready,()->rearm(false,300));}
+            else rearm(true,0);
+            return;
+          }
+          command=UUID.randomUUID().toString();phase="processing";
+          emit("COMMAND",text,null);
+          replyTimer=()->shutdown("APP_RESPONSE_TIMEOUT");main.postDelayed(replyTimer,10000);
         }
-        lastActivity=SystemClock.elapsedRealtime();command=UUID.randomUUID().toString();phase="processing";
-        emit("COMMAND",text,null);
-        replyTimer=()->shutdown("APP_RESPONSE_TIMEOUT");main.postDelayed(replyTimer,10000);
-      }
-    });
-    if(!started){
-      main.postDelayed(()->{if(!stopping&&generation==recognitionGeneration)listen(wake);},100);
-      return;
+      });
+      if(!started){engine.close();engine=null;shutdown("ENGINE_BUSY");return;}
     }
-    if(!wake){
-      idleTimer=()->{if(generation==recognitionGeneration&&!stopping&&!heardSpeech&&SystemClock.elapsedRealtime()-lastActivity>=cfg.idleMs)rearm(true,150);};
-      main.postDelayed(idleTimer,Math.max(1,cfg.idleMs-(SystemClock.elapsedRealtime()-lastActivity)));
-    }
+    engine.mute(false);engine.next();armIdle();emit(wakeMode?"WAITING_WAKE":"LISTENING",null,null);
   }
   private void rearm(boolean wake,long delay) {
-    if (stopping) return;
-    disposeRecognizer(); phase="settling";
-    int generation=recognitionGeneration;
+    if(stopping)return;clear(idleTimer);
+    if(droppedAudio){droppedAudio=false;engine.discardPending();speak("Δεν κρατήθηκαν οι επόμενες εντολές. Επαναλάβετε. Έτοιμος.",()->rearm(wake,300));return;}
+    phase="settling";int generation=++recognitionGeneration;
     main.postDelayed(()->{
-      if (!stopping && recognitionGeneration==generation) listen(wake || SystemClock.elapsedRealtime()-lastActivity>=cfg.idleMs);
+      if(!stopping&&recognitionGeneration==generation)listen(wake);
     },delay);
+  }
+  void ignoreCommand(String id){
+    if(stopping||!"processing".equals(phase)||!Objects.equals(id,command))return;
+    clear(replyTimer);command=null;rearm(false,0);
   }
   private void speak(String text,Runnable completion) {
     if (stopping || speaker==null) return;
@@ -175,7 +187,7 @@ public final class PestifyVoiceService extends Service {
   }
   void reply(String id,String text,boolean accepted,Promise p) {
     if (stopping || !"processing".equals(phase) || !Objects.equals(id,command) || replyPromise!=null || text==null || text.isEmpty() || text.length()>1000) { p.resolve(false); return; }
-    clear(replyTimer); replyPromise=p;
+    clear(replyTimer); lastActivity=SystemClock.elapsedRealtime(); replyPromise=p;
     speak(text,()->{
       phase="awaitingCommit";
       Promise completed=replyPromise; replyPromise=null;

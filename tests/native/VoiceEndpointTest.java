@@ -10,7 +10,7 @@ public final class VoiceEndpointTest {
     check(!idle.started()&&!idle.usable());
     VoiceEndpoint utterance=new VoiceEndpoint(16000,900,10000);
     check(!utterance.accept(speech,1600));check(utterance.started());
-    check(!utterance.accept(speech,1600));check(utterance.usable());
+    check(!utterance.accept(speech,1600));check(!utterance.accept(speech,1600));check(utterance.usable());
     for(int i=0;i<8;i++)check(!utterance.accept(silent,1600));
     check(utterance.accept(silent,1600));
     VoiceEndpoint pause=new VoiceEndpoint(16000,900,10000);

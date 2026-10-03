@@ -14,7 +14,7 @@ module.exports = ({ config }) => {
     throw new Error("Android voice requires an Android build");
   }
   const voiceConfig = voice ? {
-    runtimeVersion: lab ? "pestify-android-voice-lab-9" : "pestify-android-voice-4",
+    runtimeVersion: lab ? "pestify-android-continuous-lab-1" : "pestify-android-voice-4",
     plugins: [...(config.plugins || []), "./plugins/withPestifyAndroidVoice"],
   } : {};
   if (!lab) return { ...config, ...voiceConfig };

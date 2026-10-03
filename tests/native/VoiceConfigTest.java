@@ -21,6 +21,7 @@ public final class VoiceConfigTest {
     check(c.stop.contains(VoiceConfig.normalize("ΑΚΥΡΟ!")));
     check(!c.stop.contains(VoiceConfig.normalize("δεν είναι άκυρο")));
     check(c.idleMs==60000 && c.silenceMs==1400 && c.captureMs==20000);
+    reject("queueCapacity",4);reject("queueCapacity",1.5);reject("speechRms",0);reject("noSpeechThreshold",0.9);reject("queueTtlSeconds",31);
     reject("idleSeconds",Double.NaN);reject("idleSeconds",Double.POSITIVE_INFINITY);reject("captureSeconds",46);
     reject("captureSeconds",true);reject("silenceSeconds",0);reject("idleSeconds",14);reject("idleSeconds",301);
     reject("readyMessage"," ");reject("wakePhrases",Arrays.asList("!"));reject("wakePhrases",Arrays.asList(2));

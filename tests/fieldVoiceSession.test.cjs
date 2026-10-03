@@ -1,12 +1,12 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {createFieldVoiceSession}=require('../src/voice/fieldVoiceSession');
 function setup(options={}) {
- let id,answer,valid=true,commits=0,continued=0,waits=0,active=false;
+ let id,answer,valid=true,commits=0,continued=0,waits=0,ignored=0,active=false;
  const states=[],previews=[];
- const native={stopField(){},async startField(key){id=key;return true;},reply(){return new Promise(resolve=>{answer=resolve;});},continueAfterCommit(){continued++;},waitForWake(){waits++;}};
+ const native={ignoreCommand(){ignored++;},stopField(){},async startField(key){id=key;return true;},reply(){return new Promise(resolve=>{answer=resolve;});},continueAfterCommit(){continued++;},waitForWake(){waits++;}};
  const controller=createFieldVoiceSession({native,newId:()=>String(Math.random()),prepare:()=>options.invalid?{ok:false}:{ok:true,candidate:{},readback:'Σταθμός 2, κατανάλωση 25%.'},validate:()=>valid,
   onWakePreview:x=>previews.push(x),commit(){commits++;},onActive:x=>{active=x;},onState:(...x)=>states.push(x)});
- return {controller,states,previews,get id(){return id;},get commits(){return commits;},get continued(){return continued;},get waits(){return waits;},get active(){return active;},answer:x=>answer(x),invalidate:()=>{valid=false;},
+ return {controller,states,previews,get id(){return id;},get commits(){return commits;},get continued(){return continued;},get waits(){return waits;},get ignored(){return ignored;},get active(){return active;},answer:x=>answer(x),invalidate:()=>{valid=false;},
   event:(text='Σταθμός 2 κατανάλωση 25',commandId='cmd')=>controller.handleEvent({code:'COMMAND',sessionId:id,commandId,text})};
 }
 test('field command commits only after readback and resumes natively',async()=>{
@@ -54,17 +54,17 @@ test('wake preview is bounded and never advances the session',async()=>{
 });
 test('configuration is applied before opening native capture',async()=>{
  const calls=[];const configuration={wakePhrases:['Δοκιμή'],readyMessage:'Ναι',idleSeconds:90,silenceSeconds:2,captureSeconds:30};
- const native={stopField(){},async configureField(value){calls.push(value);return true;},async startField(){calls.push('start');return true;}};
+ const native={ignoreCommand(){ignored++;},stopField(){},async configureField(value){calls.push(value);return true;},async startField(){calls.push('start');return true;}};
  const flow=createFieldVoiceSession({native,configuration,onActive(){},onState(){}});await flow.start();assert.deepEqual(calls,[configuration,'start']);
 });
 test('invalid configuration never starts microphone capture',async()=>{
  let started=false;const states=[];
- const native={stopField(){},async configureField(){throw Object.assign(Error('invalid'),{code:'INVALID_CONFIGURATION'});},async startField(){started=true;}};
+ const native={ignoreCommand(){ignored++;},stopField(){},async configureField(){throw Object.assign(Error('invalid'),{code:'INVALID_CONFIGURATION'});},async startField(){started=true;}};
  const flow=createFieldVoiceSession({native,onActive(){},onState:(...s)=>states.push(s)});await flow.start();assert.equal(started,false);assert.equal(states.at(-1)[0],'idle');
 });
 test('stop during configuration prevents delayed native start',async()=>{
  let resolve,started=false;
- const native={stopField(){},configureField(){return new Promise(r=>{resolve=r;});},async startField(){started=true;}};
+ const native={ignoreCommand(){ignored++;},stopField(){},configureField(){return new Promise(r=>{resolve=r;});},async startField(){started=true;}};
  const flow=createFieldVoiceSession({native,onActive(){},onState(){}});const pending=flow.start();flow.stop();resolve(true);await pending;assert.equal(started,false);
 });
 test('successful start reports readiness to dismiss settings without stopping session',async()=>{
@@ -113,14 +113,14 @@ test('cancellation is scoped to the old session even when its native delivery is
 });
 test('startup rejection shows its exact fixed code once',async()=>{
  const errors=[],states=[];
- const native={stopField(){},async startField(){throw Object.assign(Error('private platform details'),{code:'LOCAL_TTS_VOICE_MISSING'});}};
+ const native={ignoreCommand(){ignored++;},stopField(){},async startField(){throw Object.assign(Error('private platform details'),{code:'LOCAL_TTS_VOICE_MISSING'});}};
  const flow=createFieldVoiceSession({native,onState:(...s)=>states.push(s),onActive(){},onStartFailure:e=>errors.push(e)});
  assert.equal(await flow.start(),false);assert.equal(errors.length,1);assert.match(errors[0],/LOCAL_TTS_VOICE_MISSING/);assert.doesNotMatch(errors[0],/private platform details/);
  assert.equal(states.at(-1)[0],'idle');
 });
 test('STOPPED event before startup rejection retains the error and reports only once',async()=>{
  let reject,id;const errors=[];
- const native={stopField(){},startField(key){id=key;return new Promise((_,r)=>{reject=r;});}};
+ const native={ignoreCommand(){ignored++;},stopField(){},startField(key){id=key;return new Promise((_,r)=>{reject=r;});}};
  const flow=createFieldVoiceSession({native,onState(){},onActive(){},onStartFailure:e=>errors.push(e)});
  const start=flow.start();await flow.handleEvent({code:'STOPPED',sessionId:id,reason:'SERVICE_START_SECURITYEXCEPTION'});
  reject(Object.assign(Error(),{code:'SERVICE_START_SECURITYEXCEPTION'}));await start;
@@ -140,13 +140,15 @@ test('diagnostic transcript and TTS status never enter command path',async()=>{
 });
 test('new sessions send observed wake and stop variants to existing configurable native bridge',async()=>{
  let configured;
- const native={stopField(){},configureField:async c=>{configured=c;return true;},startField:async()=>true};
+ const native={ignoreCommand(){ignored++;},stopField(){},configureField:async c=>{configured=c;return true;},startField:async()=>true};
  const controller=createFieldVoiceSession({native,prepare:()=>({ok:false}),validate:()=>true,commit(){},onState(){},onActive(){}});
  assert.equal(await controller.start(),true);
  assert.ok(configured.wakePhrases.includes('Αλήρτ'));assert.ok(configured.stopPhrases.includes('Ακύρω'));
 });
-test('unrelated decoder output must not force premature wake mode on current binary',async()=>{
- const f=setup({invalid:true});await f.controller.start();const result=f.event('Ευχαριστώ');
- assert.equal(f.waits,0);f.answer(true);await result;
- assert.equal(f.waits,0);assert.equal(f.continued,1);assert.equal(f.commits,0);
+test('unrelated output is silently ignored without premature wake or commit',async()=>{
+ for(const text of ['Ευχαριστώ','...', 'Υπότιτλοι']){
+  const f=setup({invalid:true});await f.controller.start();await f.event(text);
+  assert.equal(f.waits,0);assert.equal(f.ignored,1);assert.equal(f.continued,0);assert.equal(f.commits,0);
+  assert.equal(f.states.some(([phase])=>phase==='speaking'),false);
+ }
 });

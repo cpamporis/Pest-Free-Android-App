@@ -39,6 +39,10 @@
     "security-lab-field": {
       "extends": "security-lab-voice",
       "developmentClient": false
+    },
+    "security-lab-continuous": {
+      "extends": "security-lab-voice",
+      "developmentClient": true
     }
   },
   "submit": {
