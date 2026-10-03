@@ -22,3 +22,9 @@ test('ambiguous matches and numbers remain rejected',()=>{
  for(const value of ['X','5 0','-4','2.5','δύο ή πέντε'])assert.equal(parseNumber(value),null);
  const config=require('../src/voice/fieldVoiceConfig');assert.ok(config.stopPhrases.includes('Ακείρο'));assert.ok(config.stopPhrases.length<=8);
 });
+test('nu and mu spelling confusion preserves numeric ambiguity protection',()=>{
+ assert.equal(parseNumber('εμα'),1);
+ assert.equal(parseStationFields('σταθμός εμα κατανάλωση 25').stationNumber,1);
+ assert.ok(require('../src/voice/fieldVoiceConfig').wakePhrases.includes('Αλέρθ'));
+ assert.ok(require('../src/voice/fieldVoiceConfig').wakePhrases.length<=8);
+});

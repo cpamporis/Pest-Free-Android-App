@@ -5,7 +5,7 @@ function phoneticKey(text) {
   .replace(/ΐ|ϊ/g,'J').replace(/ΰ|ϋ/g,'Y')
   .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ς/g,'σ')
   .replace(/ου/g,'U').replace(/οι|ει|υι/g,'ι').replace(/η|υ/g,'ι')
-  .replace(/ω/g,'ο').replace(/ψ/g,'πσ').replace(/ξ/g,'κσ')
+  .replace(/ν/g,'μ').replace(/ω/g,'ο').replace(/ψ/g,'πσ').replace(/ξ/g,'κσ')
   .replace(/([βγδζθκλμνπρστφχ])\1+/g,'$1').replace(/\s+/g,'');
 }
 // Vowel-nucleus groups, not a general-purpose Greek linguistic syllabifier.

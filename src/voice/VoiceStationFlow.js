@@ -162,7 +162,7 @@ export default function VoiceStationFlow({ context, loggedStations, technician, 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {visible && <LocalRecognitionDiagnostic enabled={!running} onBusy={setDiagnosticBusy} />}
         <View style={styles.card}>
-          <Text style={styles.helper}>Κανόνες φωνής: voice-js-5</Text>
+          <Text style={styles.helper}>Κανόνες φωνής: voice-js-6</Text>
           <Text style={styles.helper}>Έκδοση φωνής: {fieldNative?.diagnosticVersion || 'base-field-2'}</Text>
           <Text selectable style={styles.helper}>{speechEngine}</Text>
           <Text selectable style={styles.helper}>Εκφώνηση: {speechStage || 'Δεν ξεκίνησε ακόμη'}</Text>
