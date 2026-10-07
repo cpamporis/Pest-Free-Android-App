@@ -350,7 +350,7 @@ function MapScreen({ customer, onBack, session, technician, onGenerateReport }) 
   const [serviceStarted, setServiceStarted] = useState(false);
   const [serviceCompleted, setServiceCompleted] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const SERVER_BASE_URL = API_BASE_URL.replace("/api", ""); 
+  const SERVER_BASE_URL = new URL(API_BASE_URL).origin; 
 
   const effectiveCustomer = customerWithMaps ?? normalizedCustomer;
   const certificationCustomerType =

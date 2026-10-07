@@ -20,3 +20,18 @@ test("untrusted origins and malformed legacy image paths fail closed", () => {
  assert.equal(privateUploadUrl(legacy+"/uploads/photo.png","https://other.test/api"),null);
  assert.equal(privateUploadUrl("http://api.pestify.gr/uploads/photo.png", "http://api.pestify.gr/api"),null);
 });
+
+test("technician image origins preserve the api subdomain", () => {
+ const path = require("node:path");
+ const names = ["ReportScreen", "DisinfectionScreen", "CertificationServiceScreen", "InsecticideScreen", "MyocideScreen", "SpecialServicesScreen"];
+ for (const name of names) {
+  const source = fs.readFileSync(path.join(__dirname, "../src/screens/Technician", name + ".js"), "utf8");
+  assert.doesNotMatch(source, /\.replace\(["']\/api["']/);
+  const expressions = source.match(/new URL\((?:apiService\.)?API_BASE_URL\)\.origin/g);
+  assert.ok(expressions?.length, name);
+  for (const expression of expressions) {
+   const origin = new Function("API_BASE_URL", "apiService", "return " + expression)(api, {API_BASE_URL:api});
+   assert.equal(origin + "/uploads/photo.jpg", "https://api.pestify.gr/uploads/photo.jpg", name);
+  }
+ }
+});

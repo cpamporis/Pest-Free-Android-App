@@ -1620,7 +1620,7 @@ export default function ReportScreen({ route, navigation, context, onBack }) {
       value = value.substring(value.lastIndexOf("/") + 1);
     }
 
-    return `${apiService.API_BASE_URL.replace("/api", "")}/uploads/${value}`;
+    return `${new URL(apiService.API_BASE_URL).origin}/uploads/${value}`;
   };
 
   if (loading) {
