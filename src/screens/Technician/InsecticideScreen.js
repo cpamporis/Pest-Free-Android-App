@@ -554,7 +554,7 @@ export default function InsecticideScreen({
       value = value.substring(value.lastIndexOf("/") + 1);
     }
 
-    const base = apiService.API_BASE_URL.replace("/api", "");
+    const base = new URL(apiService.API_BASE_URL).origin;
 
     return `${base}/uploads/${value}`;
   };

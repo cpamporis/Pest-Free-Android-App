@@ -1,6 +1,10 @@
+const STABLE_ORIGIN = "https://api.pestify.gr";
+const LEGACY_UPLOAD_ORIGIN = "https://field-inspections-backend-production.up.railway.app";
+
 const SAFE_NAME =
   /^[a-z0-9][a-z0-9._-]{0,150}\.(jpg|jpeg|png|webp|gif|heic|heif)$/i;
 
+// Rewrite the one known legacy upload origin to the stable API; never fetch it.
 // Return a canonical API URL. A stored off-origin upload must not cause a
 // image request to forward its Authorization header elsewhere.
 function privateUploadUrl(uri, apiBaseUrl) {
@@ -9,15 +13,17 @@ function privateUploadUrl(uri, apiBaseUrl) {
     const url = new URL(uri);
     const api = new URL(apiBaseUrl);
     if (
+      api.protocol !== "https:" || api.username || api.password ||
       url.protocol !== "https:" ||
-      url.origin !== api.origin ||
+      !(url.origin === api.origin ||
+        (api.origin === STABLE_ORIGIN && url.origin === LEGACY_UPLOAD_ORIGIN)) ||
       url.username ||
       url.password
     ) return null;
 
     const parts = url.pathname.match(/^\/uploads\/([^/]+)$/);
     if (!parts || !SAFE_NAME.test(parts[1])) return null;
-    return `${url.origin}/uploads/${parts[1]}`;
+    return `${api.origin}/uploads/${parts[1]}`;
   } catch {
     return null;
   }
