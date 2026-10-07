@@ -24,7 +24,7 @@ test("Android authentication uses the production API and SecureStore", () => {
 
   assert.match(
     source,
-    /https:\/\/field-inspections-backend-production\.up\.railway\.app/
+    /https:\/\/api\.pestify\.gr/
   );
   assert.match(source, /SecureStore\.setItemAsync/);
   assert.match(source, /SecureStore\.WHEN_UNLOCKED_THIS_DEVICE_ONLY/);
