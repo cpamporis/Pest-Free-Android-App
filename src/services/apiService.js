@@ -1,3 +1,4 @@
+import { createReportDownloadsClient } from "./reportDownloadsClient";
 const { uploadedFileUrl } = require("../utils/privateUploadUrl");
 import { createMaterialsCatalogClient } from "./materialsCatalogClient";
 import { Platform } from "react-native";
@@ -578,6 +579,7 @@ const apiService = {
     const data=await response.json();return response.ok?data:{success:false,error:data.error||"REQUEST_FAILED"};
   },
   ...createMaterialsCatalogClient({ request, ready: () => authStorageReady, token: () => authToken, baseUrl: API_BASE_URL }),
+  ...createReportDownloadsClient({ request, ready: () => authStorageReady, token: () => authToken, baseUrl: API_BASE_URL }),
   // TOKEN MANAGEMENT
   setAuthToken,
   clearAuthToken,

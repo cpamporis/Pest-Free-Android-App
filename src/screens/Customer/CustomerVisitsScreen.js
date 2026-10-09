@@ -1,4 +1,4 @@
-import SdsDownloadButton from "../../components/SdsDownloadButton";
+import ReportDownloadsMenu from "../../components/ReportDownloadsMenu";
 // CustomerVisitsScreen.js - FIXED VERSION with i18n
 import React, { useEffect, useState } from "react";
 import {
@@ -530,80 +530,13 @@ const certificateCopy =
         </View>
 
         <View style={styles.cardFooter}>
-          <View style={styles.footerActions}>
-            <SdsDownloadButton reportId={item.visitId || item.logId || item.id} />
-            <TouchableOpacity
+          <View style={styles.footerActions}><TouchableOpacity
               style={styles.viewButton}
               onPress={() => handleViewDetails(item)}
             >
               <Text style={styles.viewButtonText}>{i18n.t("customer.visits.card.viewReport")}</Text>
               <MaterialIcons name="visibility" size={16} color="#1f9c8b" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-  style={styles.downloadButton}
-  onPress={() =>
-    downloadPDFReport(item, "report")
-  }
-  disabled={
-    downloadingId === `${item.visitId}:report`
-  }
->
-  {downloadingId === `${item.visitId}:report` ? (
-    <ActivityIndicator size="small" color="#fff" />
-  ) : (
-    <>
-      <MaterialIcons
-        name="picture-as-pdf"
-        size={16}
-        color="#fff"
-      />
-
-      <Text style={styles.downloadButtonText}>
-        {i18n.t(
-          "customer.visits.card.downloadPDF"
-        )}
-      </Text>
-    </>
-  )}
-</TouchableOpacity>
-
-{canDownloadCertificate && (
-  <TouchableOpacity
-    style={[
-      styles.downloadButton,
-      { backgroundColor: "#c3922e" },
-    ]}
-    onPress={() =>
-      downloadPDFReport(item, "certificate")
-    }
-    disabled={
-      downloadingId ===
-      `${item.visitId}:certificate`
-    }
-  >
-    {downloadingId ===
-    `${item.visitId}:certificate` ? (
-      <ActivityIndicator
-        size="small"
-        color="#fff"
-      />
-    ) : (
-      <>
-        <MaterialIcons
-          name="verified"
-          size={16}
-          color="#fff"
-        />
-
-        <Text style={styles.downloadButtonText}>
-          {certificateCopy.label}
-        </Text>
-      </>
-    )}
-  </TouchableOpacity>
-)}
-          </View>
+            </TouchableOpacity><ReportDownloadsMenu visit={item} canDownloadCertificate={canDownloadCertificate}/></View>
         </View>
       </TouchableOpacity>
     );
