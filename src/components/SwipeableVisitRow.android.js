@@ -1,4 +1,4 @@
-import SdsDownloadButton from "./SdsDownloadButton";
+import ReportDownloadsMenu from "./ReportDownloadsMenu";
 // components/SwipeableVisitRow.android.js
 import React, { useState } from 'react';
 import {
@@ -443,68 +443,7 @@ export default function SwipeableVisitRow({
 
           </View>
 
-          <View style={styles.actionButtons}>
-<SdsDownloadButton reportId={visit.visitId || visit.logId || visit.id} style={{maxWidth:84}}/>
-            <TouchableOpacity
-              onPress={() => handleDownloadPDF("report")}
-              style={[
-                styles.pdfIconButton,
-                isDownloading && styles.disabledIconButton
-              ]}
-              disabled={isDownloading}
-              accessibilityRole="button"
-              accessibilityLabel={i18n.t(
-                "components.swipeableVisitRow.downloadReport"
-              )}
-            >
-              {activeDownloadType === "report" ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#1f9c8b"
-                />
-              ) : (
-                <MaterialIcons
-                  name="picture-as-pdf"
-                  size={22}
-                  color="#1f9c8b"
-                />
-              )}
-            </TouchableOpacity>
-
-            {canDownloadCertificate && (
-              <TouchableOpacity
-                onPress={() =>
-                  handleDownloadPDF("certificate")
-                }
-                style={[
-                  styles.certificateIconButton,
-                  isDownloading && styles.disabledIconButton
-                ]}
-                disabled={isDownloading}
-                accessibilityRole="button"
-                accessibilityLabel={certificateCopy.label}
-              >
-                {activeDownloadType === "certificate" ? (
-                  <ActivityIndicator
-                    size="small"
-                    color="#176f64"
-                  />
-                ) : (
-                  <MaterialIcons
-                    name="verified"
-                    size={22}
-                    color="#176f64"
-                  />
-                )}
-              </TouchableOpacity>
-            )}
-
-            <MaterialIcons
-              name="chevron-right"
-              size={22}
-              color="#1f9c8b"
-            />
-          </View>
+          <ReportDownloadsMenu visit={visit} canDownloadCertificate={canDownloadCertificate}/>
 
         </View>
 
