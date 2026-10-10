@@ -334,6 +334,32 @@ function AmaNumbersFields({
 }
 
 // UPDATED: AddCustomerModal with Image Upload (Gallery only)
+function CustomerLanguageField({ value, onChange, disabled }) {
+  return (
+    <View style={styles.inputContainer}>
+      <Text style={styles.inputLabel}>{i18n.t("customerCommunication.language")}</Text>
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        {["GR", "EN"].map(code => (
+          <TouchableOpacity key={code} disabled={disabled}
+            accessibilityRole="radio" accessibilityState={{ checked: value === code, disabled }}
+            accessibilityLabel={code === "GR" ? "GR — Ελληνικά" : "EN — English"}
+            onPress={() => onChange(code)}
+            style={[styles.input, { flex: 1, alignItems: "center", opacity: disabled ? 0.5 : 1,
+              borderColor: value === code ? "#1f9c8b" : "#ddd",
+              backgroundColor: value === code ? "#e9f7f3" : "#fff" }]}>
+            <Text style={{ color: "#17312c", fontWeight: value === code ? "700" : "400" }}>
+              {code === "GR" ? "GR — Ελληνικά" : "EN — English"}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Text style={{ color: "#666", fontSize: 12, marginTop: 6 }}>
+        {i18n.t("customerCommunication.help")}
+      </Text>
+    </View>
+  );
+}
+
 function CustomerTypeField({ value, onChange, disabled }) {
   const [open, setOpen] = useState(false);
   const options = [
@@ -369,6 +395,7 @@ function CustomerTypeField({ value, onChange, disabled }) {
 function AddCustomerModal({ onClose, onSave }) {
   const [customerName, setCustomerName] = useState("");
   const [customerType, setCustomerType] = useState("");
+  const [communicationLanguage, setCommunicationLanguage] = useState("GR");
   const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -439,6 +466,7 @@ function AddCustomerModal({ onClose, onSave }) {
       const customerData = {
         customerName: customerName.trim(),
         customerType,
+        communicationLanguage,
         address: address.trim(),
         email: email.trim(),
         telephone: telephone.trim(),
@@ -583,6 +611,7 @@ function AddCustomerModal({ onClose, onSave }) {
                 </View>
 
                 <CustomerTypeField value={customerType} onChange={setCustomerType} disabled={loading} />
+                <CustomerLanguageField value={communicationLanguage} onChange={setCommunicationLanguage} disabled={loading} />
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>{i18n.t("admin.customers.addModal.address")}</Text>
                   <TextInput
@@ -817,6 +846,7 @@ function AddCustomerModal({ onClose, onSave }) {
 function EditCustomerModal({ customer, onClose, onSave }) {
   const [customerName, setCustomerName] = useState("");
   const [customerType, setCustomerType] = useState("");
+  const [communicationLanguage, setCommunicationLanguage] = useState("GR");
   const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -851,6 +881,7 @@ const [amaNumbers, setAmaNumbers] = useState([""]);
 
         setCustomerName(fresh.customerName || "");
         setCustomerType(fresh.customerType || fresh.customer_type || "");
+        setCommunicationLanguage(fresh.communicationLanguage === "EN" ? "EN" : "GR");
         setAddress(fresh.address || "");
         setEmail(fresh.email || "");
         setTelephone(fresh.telephone || "");
@@ -1012,6 +1043,7 @@ const [amaNumbers, setAmaNumbers] = useState([""]);
         customerId: customer.customerId,
         customerName: customerName.trim(),
         customerType,
+        communicationLanguage,
         address: address.trim(),
         email: email.trim(),
         telephone: telephone.trim(),
@@ -1067,6 +1099,7 @@ const [amaNumbers, setAmaNumbers] = useState([""]);
                 </View>
 
                 <CustomerTypeField value={customerType} onChange={setCustomerType} disabled={loading} />
+                <CustomerLanguageField value={communicationLanguage} onChange={setCommunicationLanguage} disabled={loading} />
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>{i18n.t("admin.customers.addModal.address")}</Text>
                   <TextInput
@@ -3276,3 +3309,4 @@ customerSearchEmptyText: {
   fontFamily: "System",
 },
 });
+
