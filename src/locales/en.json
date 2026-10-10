@@ -2263,5 +2263,9 @@
     "catalogCopy": "A copy from the shared catalog. Your edits remain within your organization.",
     "localVariant": "The name or formulation changed. This material will be saved as a local variant without the automatic SDS link.",
     "materialsChanged": "The list changed. Refresh it and apply your change again."
-  }
+  },
+  "customerCommunication": {
+  "language": "Communication language",
+  "help": "For emails, reports and certificates only. Does not change the app language."
+}
 }
